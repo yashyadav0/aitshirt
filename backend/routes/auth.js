@@ -10,119 +10,182 @@ const User =
 const router =
   express.Router();
 
+function createToken(user) {
 
-// ✅ FIREBASE PHONE LOGIN
-router.post(
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d"
+    }
+  );
+}
 
-  "/firebase-login",
+function publicUser(user) {
 
-  async (req, res) => {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone
+  };
+}
 
-    try {
+router.post("/phone-status", async (req, res) => {
 
-      const { phone } =
-        req.body;
+  try {
 
-      if (!phone) {
+    const { phone } =
+      req.body;
 
-        return res.status(400)
-          .json({
+    if (!phone) {
+      return res.status(400).json({
+        error: "Phone number required"
+      });
+    }
 
-            error:
-              "Phone number required"
-          });
-      }
+    const user =
+      await User.findOne({
+        phone
+      });
 
+    res.json({
+      exists: Boolean(user),
+      profileComplete:
+        Boolean(user?.name),
+      name: user?.name || ""
+    });
 
-      // 🔍 Find user
-      let user =
-        await User.findOne({
-          phone
-        });
+  } catch (err) {
 
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
 
-      // 🆕 Create if not exists
-      if (!user) {
+router.post("/complete-profile", async (req, res) => {
 
-        user = new User({
+  try {
 
+    const {
+      phone,
+      name,
+      email
+    } = req.body;
+
+    if (!phone || !name) {
+      return res.status(400).json({
+        error: "Name and phone are required"
+      });
+    }
+
+    let user =
+      await User.findOne({
+        phone
+      });
+
+    if (!user) {
+      user =
+        new User({
           phone,
-
+          role: "user",
           weeklyPromptsLeft: 5,
-
           extraPrompts: 0,
-
           promptCreditBalance: 0,
+          lastPromptReset: new Date()
+        });
+    }
 
-          lastPromptReset:
-            new Date(),
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: "User is blocked"
+      });
+    }
 
+    user.name = name;
+    user.email =
+      email || "";
+
+    await user.save();
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "COMPLETE PROFILE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.post("/firebase-login", async (req, res) => {
+
+  try {
+
+    const { phone } =
+      req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        error: "Phone number required"
+      });
+    }
+
+    let user =
+      await User.findOne({
+        phone
+      });
+
+    if (!user) {
+      user =
+        new User({
+          phone,
+          weeklyPromptsLeft: 5,
+          extraPrompts: 0,
+          promptCreditBalance: 0,
+          lastPromptReset: new Date(),
           role: "user"
         });
 
-        await user.save();
-      }
-
-
-      // 🚫 Block check
-      if (user.isBlocked) {
-
-        return res.status(403)
-          .json({
-
-            error:
-              "User is blocked"
-          });
-      }
-
-
-      // 🔑 JWT
-      const token =
-        jwt.sign(
-
-          {
-            id: user._id,
-            role: user.role
-          },
-
-          process.env.JWT_SECRET,
-
-          {
-            expiresIn: "7d"
-          }
-        );
-
-
-      // ✅ Response
-      res.json({
-
-        token,
-
-        user: {
-
-          id: user._id,
-
-          role: user.role,
-
-          phone: user.phone
-        }
-      });
-
-    } catch (err) {
-
-      console.log(
-        "FIREBASE LOGIN ERROR:",
-        err
-      );
-
-      res.status(500)
-        .json({
-
-          error:
-            err.message
-        });
+      await user.save();
     }
-  }
-);
 
-module.exports = router;
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: "User is blocked"
+      });
+    }
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "FIREBASE LOGIN ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+module.exports =
+  router;

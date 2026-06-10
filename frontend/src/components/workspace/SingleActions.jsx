@@ -30,6 +30,7 @@ export default function SingleActions({
   API,
 
   getMockup,
+  productType,
 
   setSuccessMessage
 
@@ -115,6 +116,7 @@ export default function SingleActions({
 
         mockupImage.src =
           getMockup(
+            productType,
             selectedColor,
             selectedSide
           );

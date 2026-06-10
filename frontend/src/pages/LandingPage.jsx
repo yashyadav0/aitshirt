@@ -1,431 +1,141 @@
-import { Sparkles, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import {
+  ArrowRight
+} from "lucide-react";
+
+import {
+  useNavigate
+} from "react-router-dom";
+
+import tshirtMockup
+from "../templates/tshirts/black/front.png";
+
+import hoodieMockup
+from "../templates/hoodies/blue/front.png";
+
+import whiteMockup
+from "../templates/tshirts/white/front.png";
 
 export default function LandingPage() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
+
+  const examples = [
+    {
+      label: "T-Shirts",
+      image: tshirtMockup
+    },
+    {
+      label: "Hoodies",
+      image: hoodieMockup
+    },
+    {
+      label: "Couple Designs",
+      image: whiteMockup
+    }
+  ];
 
   return (
 
-    <div
-      className="
-        min-h-screen
-        bg-black
-        text-white
-        overflow-hidden
-        relative
-      "
-    >
+    <main className="min-h-screen bg-[#0b0b0b] text-white">
 
-      {/* Background Blur */}
-      <div
-        className="
-          absolute
-          top-[-200px]
-          left-[-200px]
-          w-[400px]
-          h-[400px]
-          md:w-[500px]
-          md:h-[500px]
-          bg-purple-600/20
-          blur-[120px]
-          rounded-full
-        "
-      />
-
-      <div
-        className="
-          absolute
-          bottom-[-200px]
-          right-[-200px]
-          w-[400px]
-          h-[400px]
-          md:w-[500px]
-          md:h-[500px]
-          bg-cyan-500/20
-          blur-[120px]
-          rounded-full
-        "
-      />
-
-
-
-      {/* Navbar */}
-      <nav
-        className="
-          relative
-          z-10
-          flex
-          items-center
-          justify-between
-          px-5
-          md:px-10
-          py-5
-          border-b
-          border-zinc-900
-        "
-      >
-
-        <h1
-          className="
-            text-2xl
-            md:text-3xl
-            font-bold
-            bg-gradient-to-r
-            from-purple-400
-            to-cyan-400
-            bg-clip-text
-            text-transparent
-          "
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 md:px-8">
+        <button
+          onClick={() =>
+            navigate("/")
+          }
+          className="text-xl font-semibold"
         >
           AIWear
-        </h1>
-
+        </button>
 
         <button
-
           onClick={() =>
             navigate("/login")
           }
-
-          className="
-            bg-white
-            text-black
-            px-5
-            md:px-6
-            py-2.5
-            rounded-xl
-            font-semibold
-            hover:bg-zinc-200
-            transition-all
-            text-sm
-          "
+          className="min-h-11 rounded-2xl border border-[#2f2f2f] px-5 text-sm text-zinc-300 transition hover:bg-[#171717] hover:text-white"
         >
           Login
         </button>
-
       </nav>
 
+      <section className="mx-auto grid max-w-6xl gap-10 px-4 pb-16 pt-14 md:grid-cols-[1fr_0.9fr] md:px-8 md:pt-24">
 
-
-      {/* Hero */}
-      <section
-        className="
-          relative
-          z-10
-          max-w-7xl
-          mx-auto
-          px-5
-          md:px-10
-          pt-14
-          md:pt-24
-          pb-20
-          grid
-          lg:grid-cols-2
-          gap-12
-          lg:gap-20
-          items-center
-        "
-      >
-
-        {/* Left */}
-        <div
-          className="
-            text-center
-            lg:text-left
-            order-2
-            lg:order-1
-          "
-        >
-
-          {/* Small Badge */}
-          <div
-            className="
-              inline-flex
-              items-center
-              gap-2
-              bg-zinc-900/80
-              border
-              border-zinc-800
-              rounded-full
-              px-4
-              py-2
-              mb-6
-            "
-          >
-
-            <Sparkles size={16} />
-
-            <span
-              className="
-                text-sm
-                text-zinc-300
-              "
-            >
-              AI Fashion Platform
-            </span>
-
-          </div>
-
-
-
-          <h1
-            className="
-              text-4xl
-              sm:text-5xl
-              md:text-6xl
-              font-bold
-              leading-[1.1]
-              tracking-tight
-              mb-6
-            "
-          >
-            Create Premium
-            <span
-              className="
-                bg-gradient-to-r
-                from-purple-400
-                to-cyan-400
-                bg-clip-text
-                text-transparent
-              "
-            >
-              {" "}AI Clothing
-            </span>
-            {" "}Designs
-          </h1>
-
-
-
-          <p
-            className="
-              text-zinc-400
-              text-base
-              md:text-lg
-              leading-relaxed
-              max-w-2xl
-              mx-auto
-              lg:mx-0
-              mb-8
-            "
-          >
-            Generate high-quality fashion mockups,
-            customize apparel styles,
-            save your favorite creations,
-            and build unique designs instantly using AI.
+        <div className="flex flex-col justify-center">
+          <p className="mb-4 text-sm font-medium text-cyan-300">
+            AI apparel studio
           </p>
 
+          <h1 className="max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            Create AI Apparel Designs Instantly
+          </h1>
 
+          <p className="mt-5 max-w-xl text-base leading-7 text-zinc-400 md:text-lg">
+            Generate professional T-shirt and Hoodie designs using AI.
+          </p>
 
-          <div
-            className="
-              flex
-              flex-col
-              sm:flex-row
-              gap-4
-              justify-center
-              lg:justify-start
-            "
-          >
-
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <button
-
               onClick={() =>
                 navigate("/login")
               }
-
-              className="
-                flex
-                items-center
-                justify-center
-                gap-2
-                bg-gradient-to-r
-                from-purple-600
-                to-cyan-500
-                px-8
-                py-4
-                rounded-2xl
-                font-semibold
-                hover:scale-[1.02]
-                active:scale-100
-                transition-all
-                shadow-lg
-                shadow-purple-900/20
-              "
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 text-sm font-semibold text-black transition hover:bg-cyan-300"
             >
-
               Start Designing
-
-              <ArrowRight size={20} />
-
+              <ArrowRight size={18} />
             </button>
 
-
-            <button
-
-              className="
-                border
-                border-zinc-700
-                bg-zinc-900/40
-                px-8
-                py-4
-                rounded-2xl
-                hover:bg-zinc-900
-                transition-all
-              "
+            <a
+              href="#examples"
+              className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-[#2f2f2f] px-6 text-sm text-zinc-300 transition hover:bg-[#171717] hover:text-white"
             >
-              Explore Designs
-            </button>
-
+              View Examples
+            </a>
           </div>
-
         </div>
 
-
-
-        {/* Right */}
         <div
-          className="
-            relative
-            flex
-            justify-center
-            order-1
-            lg:order-2
-          "
+          id="examples"
+          className="grid grid-cols-3 gap-3 md:gap-4"
         >
+          {
+            examples.map((item, index) => (
 
-          <div
-            className="
-              bg-gradient-to-br
-              from-purple-600
-              to-cyan-500
-              p-[2px]
-              rounded-[32px]
-              w-full
-              max-w-[460px]
-            "
-          >
+              <article
+                key={item.label}
+                className={`
+                  rounded-3xl
+                  border
+                  border-[#2f2f2f]
+                  bg-[#171717]
+                  p-2
+                  transition
+                  duration-500
+                  hover:-translate-y-1
+                  hover:border-cyan-500/50
+                  ${
+                    index === 1
+                      ? "mt-10"
+                      : ""
+                  }
+                `}
+              >
+                <img
+                  src={item.image}
+                  alt={item.label}
+                  className="aspect-[3/4] w-full rounded-2xl object-cover"
+                />
 
-            <div
-              className="
-                bg-zinc-950
-                rounded-[32px]
-                p-3
-                md:p-5
-              "
-            >
-
-              <img
-
-                src="
-                https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=1200&auto=format&fit=crop
-                "
-
-                alt="fashion"
-
-                className="
-                  rounded-[24px]
-                  h-[300px]
-                  sm:h-[380px]
-                  md:h-[500px]
-                  w-full
-                  object-cover
-                "
-              />
-
-            </div>
-
-          </div>
-
+                <p className="px-2 py-3 text-center text-xs text-zinc-400 md:text-sm">
+                  {item.label}
+                </p>
+              </article>
+            ))
+          }
         </div>
 
       </section>
 
-
-
-      {/* CTA */}
-      <section
-        className="
-          relative
-          z-10
-          px-5
-          md:px-10
-          pb-16
-          md:pb-24
-        "
-      >
-
-        <div
-          className="
-            max-w-5xl
-            mx-auto
-            text-center
-            bg-gradient-to-r
-            from-purple-600/15
-            to-cyan-500/15
-            border
-            border-zinc-800
-            rounded-[32px]
-            px-6
-            md:px-12
-            py-12
-            md:py-16
-          "
-        >
-
-          <h1
-            className="
-              text-3xl
-              md:text-5xl
-              font-bold
-              leading-tight
-              mb-5
-            "
-          >
-            Ready to create your
-            next fashion design?
-          </h1>
-
-          <p
-            className="
-              text-zinc-400
-              text-base
-              md:text-lg
-              mb-8
-              max-w-2xl
-              mx-auto
-            "
-          >
-            Start generating AI-powered
-            apparel designs with a modern,
-            seamless creative experience.
-          </p>
-
-
-          <button
-
-            onClick={() =>
-              navigate("/login")
-            }
-
-            className="
-              bg-white
-              text-black
-              px-8
-              py-4
-              rounded-2xl
-              font-semibold
-              hover:bg-zinc-200
-              transition-all
-            "
-          >
-            Get Started
-          </button>
-
-        </div>
-
-      </section>
-
-    </div>
+    </main>
   );
 }

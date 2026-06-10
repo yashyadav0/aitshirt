@@ -188,7 +188,7 @@ export default function Wishlist() {
       <div
         className="
           min-h-screen
-          bg-black
+          bg-[#0b0b0b]
           text-white
           flex
           items-center
@@ -208,17 +208,19 @@ export default function Wishlist() {
     <div
       className="
         min-h-screen
-        bg-black
+        bg-[#0b0b0b]
         text-white
-        px-5
-        py-8
+        px-4
+        py-20
+        md:p-8
       "
     >
 
       <h1
         className="
-          text-5xl
-          font-black
+          text-3xl
+          font-semibold
+          tracking-tight
           mb-8
         "
       >
@@ -245,11 +247,11 @@ export default function Wishlist() {
                 key={item._id}
 
                 className="
-                  bg-[#18181b]
-                  rounded-[32px]
+                  bg-[#171717]
+                  rounded-3xl
                   overflow-hidden
                   border
-                  border-[#27272a]
+                  border-[#2f2f2f]
                 "
               >
 

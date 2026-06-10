@@ -1,6 +1,7 @@
 import React, {
   useState,
-  useRef
+  useRef,
+  useEffect
 } from "react";
 
 import {
@@ -61,6 +62,15 @@ from "../templates/tshirts/white/front.png";
 import redFront
 from "../templates/tshirts/red/front.png";
 
+import hoodieBlackFront
+from "../templates/hoodies/black/front.png";
+
+import hoodieWhiteFront
+from "../templates/hoodies/white/front.png";
+
+import hoodieBlueFront
+from "../templates/hoodies/blue/front.png";
+
 
 // ===== BACK =====
 
@@ -73,6 +83,14 @@ from "../templates/tshirts/white/back.png";
 import redBack
 from "../templates/tshirts/red/back.png";
 
+import hoodieBlackBack
+from "../templates/hoodies/black/back.png";
+
+import hoodieWhiteBack
+from "../templates/hoodies/white/back.png";
+
+import hoodieBlueBack
+from "../templates/hoodies/blue/back.png";
 
 export default function AIWorkspace() {
 
@@ -107,6 +125,10 @@ export default function AIWorkspace() {
   const [generationMode,
     setGenerationMode] =
     useState("single");
+
+  const [productType,
+    setProductType] =
+    useState("tshirt");
 
   const [generationStep,
     setGenerationStep] =
@@ -143,6 +165,40 @@ export default function AIWorkspace() {
     setIsListening] =
     useState(false);
 
+  const fallbackPresets = [
+    {
+      name: "Anime",
+      emoji: "🔥",
+      prompt: "Create an anime-inspired apparel design with bold artwork and premium typography."
+    },
+    {
+      name: "Gym",
+      emoji: "💪",
+      prompt: "Create a premium gym apparel design with powerful typography and athletic energy."
+    },
+    {
+      name: "Gaming",
+      emoji: "🎮",
+      prompt: "Create a gaming-inspired apparel design with neon details and futuristic graphics."
+    },
+    {
+      name: "Cars",
+      emoji: "🏎️",
+      prompt: "Create a motorsport apparel design with speed lines, racing typography, and premium detail."
+    },
+    {
+      name: "Luxury",
+      emoji: "💎",
+      prompt: "Create a luxury streetwear apparel design with minimal premium typography and elegant artwork."
+    }
+  ];
+
+  const [presets,
+    setPresets] =
+    useState(
+      fallbackPresets
+    );
+
 
   // =====================================
   // COUPLE STATES
@@ -164,17 +220,92 @@ export default function AIWorkspace() {
     setHerSide] =
     useState("front");
 
-  const [hisScale,
-    setHisScale] =
-    useState(45);
-
-  const [herScale,
-    setHerScale] =
-    useState(45);
 
 
   const mockupRef =
     useRef(null);
+
+  const hasGenerated =
+    Boolean(
+      generatedImage ||
+      (
+        generatedHisImage &&
+        generatedHerImage
+      )
+    );
+
+  const productDesignScale =
+    productType === "hoodie"
+      ? 55
+      : 48;
+
+  useEffect(() => {
+
+    const loadPresets =
+      async () => {
+
+        try {
+
+          const res =
+            await API.get(
+              "/presets"
+            );
+
+          if (
+            res.data?.length
+          ) {
+            setPresets(
+              res.data
+            );
+          }
+
+        } catch (err) {
+
+          console.log(
+            err
+          );
+        }
+      };
+
+    loadPresets();
+
+  }, []);
+
+  const applyPreset =
+    (preset) => {
+
+      if (
+        generationMode === "single"
+      ) {
+        setPrompt(
+          preset.prompt
+        );
+      } else {
+        setCouplePrompt(
+          preset.prompt
+        );
+      }
+    };
+
+  const selectProductType =
+    (type) => {
+
+      setProductType(
+        type
+      );
+
+      setSelectedColor(
+        "white"
+      );
+
+      setHisColor(
+        "white"
+      );
+
+      setHerColor(
+        "white"
+      );
+    };
 
 
   // =====================================
@@ -182,33 +313,56 @@ export default function AIWorkspace() {
   // =====================================
 
   const getMockup = (
-    color,
-    side
+  productType,
+  color,
+  side
   ) => {
 
-    const mockups = {
+  const tshirts = {
 
-      white: {
-        front: whiteFront,
-        back: whiteBack
-      },
+    white: {
+      front: whiteFront,
+      back: whiteBack
+    },
 
-      black: {
-        front: blackFront,
-        back: blackBack
-      },
+    black: {
+      front: blackFront,
+      back: blackBack
+    },
 
-      red: {
-        front: redFront,
-        back: redBack
-      }
-    };
-
-
-    return mockups[
-      color
-    ][side];
+    red: {
+      front: redFront,
+      back: redBack
+    }
   };
+
+  const hoodies = {
+
+    white: {
+      front: hoodieWhiteFront,
+      back: hoodieWhiteBack
+    },
+
+    black: {
+      front: hoodieBlackFront,
+      back: hoodieBlackBack
+    },
+
+    blue: {
+      front: hoodieBlueFront,
+      back: hoodieBlueBack
+    }
+  };
+
+  const mockups =
+    productType === "hoodie"
+      ? hoodies
+      : tshirts;
+
+  return mockups[
+    color
+  ][side];
+};
 
 
   // =====================================
@@ -666,9 +820,13 @@ const startListening = () => {
     <div
       className="
         min-h-screen
-        bg-black
+        bg-[#0b0b0b]
         text-white
+        px-4
         pb-20
+        pt-20
+        md:px-8
+        md:pt-8
       "
     >
 
@@ -684,12 +842,14 @@ const startListening = () => {
               left-1/2
               -translate-x-1/2
               z-50
-              bg-green-500
+              bg-[#171717]
+              border
+              border-[#2f2f2f]
               text-white
               px-6
-              py-4
+              py-3
               rounded-2xl
-              font-bold
+              text-sm
               shadow-2xl
             "
           >
@@ -701,149 +861,292 @@ const startListening = () => {
       }
 
 
-      {/* HEADER */}
-
       <div
         className="
-          px-5
-          pt-10
-          pb-5
+          mx-auto
+          max-w-6xl
         "
       >
 
-        <h1
-          className="
-            text-6xl
-            font-black
-            leading-none
-            mb-4
-          "
+        <header
+          className={`
+            transition-all
+            duration-500
+            ${
+              hasGenerated
+                ? "mb-8"
+                : "flex min-h-[calc(100vh-140px)] flex-col justify-center"
+            }
+          `}
         >
-
-          Create AI
-          <br />
-          Designs Instantly.
-
-        </h1>
-
-      </div>
-
-
-      {/* CONTENT */}
-
-      <div
-        className="
-          px-5
-        "
-      >
-
-        <GenerationModeToggle
-
-          generationMode={
-            generationMode
-          }
-
-          setGenerationMode={
-            setGenerationMode
-          }
-        />
-
-
-        <ReferenceUploader
-
-          referenceImages={
-            referenceImages
-          }
-
-          setReferenceImages={
-            setReferenceImages
-          }
-        />
-
-
-        <div
-          className="
-            bg-[#18181b]
-            rounded-[32px]
-            p-5
-            border
-            border-[#27272a]
-          "
-        >
-
-          {
-            generationMode === "single"
-
-            ? (
-
-              <SinglePromptBox
-
-                prompt={prompt}
-
-                setPrompt={
-                  setPrompt
-                }
-              />
-
-            ) : (
-
-              <CouplePromptBox
-
-                couplePrompt={
-                  couplePrompt
-                }
-
-                setCouplePrompt={
-                  setCouplePrompt
-                }
-              />
-            )
-          }
-
 
           <div
-            className="
-              flex
-              justify-end
-              mt-4
-            "
+            className={`
+              mx-auto
+              w-full
+              ${
+                hasGenerated
+                  ? "max-w-4xl"
+                  : "max-w-3xl text-center"
+              }
+            `}
           >
-           <GenerateButton
 
-            loading={loading}
+            <p className="mb-3 text-sm font-medium text-cyan-300">
+              AI creative studio
+            </p>
 
-             handleGenerate={
-             handleGenerate
-             }
+            <h1
+              className="
+                text-4xl
+                font-semibold
+                tracking-tight
+                text-white
+                sm:text-5xl
+                md:text-6xl
+              "
+            >
+              Imagine Your Style...
+            </h1>
 
-          />
+            <p
+              className="
+                mx-auto
+                mt-4
+                max-w-2xl
+                text-base
+                leading-7
+                text-zinc-400
+              "
+            >
+              Describe an idea, generate artwork, then apply it to premium apparel mockups.
+            </p>
 
-            <button
+            <div
+              className="
+                mt-8
+                rounded-[28px]
+                border
+                border-[#2f2f2f]
+                bg-[#171717]
+                p-3
+                shadow-2xl
+                shadow-black/30
+              "
+            >
 
-  onClick={startListening}
+              <ReferenceUploader
+                referenceImages={
+                  referenceImages
+                }
+                setReferenceImages={
+                  setReferenceImages
+                }
+              />
 
-  className={`
-    w-16
-    h-16
-    rounded-full
-    flex
-    items-center
-    justify-center
-    ${
-      isListening
-        ? "bg-red-500"
-        : "bg-cyan-500"
-    }
-  `}
->
+              <div className="px-2">
+                {
+                  generationMode === "single"
 
-  <Mic size={30} />
+                  ? (
 
-</button>
+                    <SinglePromptBox
+                      prompt={prompt}
+                      setPrompt={
+                        setPrompt
+                      }
+                    />
+
+                  ) : (
+
+                    <CouplePromptBox
+                      couplePrompt={
+                        couplePrompt
+                      }
+                      setCouplePrompt={
+                        setCouplePrompt
+                      }
+                    />
+                  )
+                }
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <button
+                  onClick={startListening}
+                  className={`
+                    flex
+                    h-12
+                    w-12
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    border
+                    border-[#333]
+                    transition
+                    ${
+                      isListening
+                        ? "bg-red-500 text-white"
+                        : "bg-[#202020] text-zinc-300 hover:text-white"
+                    }
+                  `}
+                  aria-label="Voice input"
+                >
+                  <Mic size={20} />
+                </button>
+
+                <GenerateButton
+                  loading={loading}
+                  handleGenerate={
+                    handleGenerate
+                  }
+                />
+              </div>
+
+            </div>
+
+            <div
+              className="
+                mt-5
+                flex
+                gap-2
+                overflow-x-auto
+                pb-1
+                [-ms-overflow-style:none]
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
+              "
+            >
+              {
+                presets.map((preset) => (
+
+                  <button
+                    key={preset._id || preset.name}
+                    onClick={() =>
+                      applyPreset(
+                        preset
+                      )
+                    }
+                    className="
+                      shrink-0
+                      rounded-full
+                      border
+                      border-[#2f2f2f]
+                      bg-[#121212]
+                      px-4
+                      py-3
+                      text-sm
+                      text-zinc-300
+                      transition
+                      hover:border-cyan-500/60
+                      hover:text-white
+                    "
+                  >
+                    {preset.emoji} {preset.name}
+                  </button>
+                ))
+              }
+            </div>
+
+            <div className="mt-5">
+              <GenerationModeToggle
+                generationMode={
+                  generationMode
+                }
+                setGenerationMode={
+                  setGenerationMode
+                }
+              />
+            </div>
+
+            {
+              loading && (
+                <GenerationLoader
+                  generationStep={
+                    generationStep
+                  }
+                />
+              )
+            }
 
           </div>
 
-        </div>
+        </header>
+
+        {
+          hasGenerated && (
+      <div
+  className="
+    flex
+    gap-1
+    mb-4
+    rounded-2xl
+    bg-[#171717]
+    border
+    border-[#2f2f2f]
+    p-1
+  "
+>
+
+  <button
+
+    onClick={() =>
+      selectProductType(
+        "tshirt"
+      )
+    }
+
+    className={`
+      flex-1
+      py-3
+      rounded-xl
+      text-sm
+      font-medium
+      transition-all
+
+      ${
+        productType === "tshirt"
+          ? "bg-[#2f2f2f] text-white"
+          : "text-zinc-400 hover:text-white"
+      }
+    `}
+  >
+
+    T-Shirt
+
+  </button>
+
+  <button
+
+    onClick={() =>
+      selectProductType(
+        "hoodie"
+      )
+    }
+
+    className={`
+      flex-1
+      py-3
+      rounded-xl
+      text-sm
+      font-medium
+      transition-all
+
+      ${
+        productType === "hoodie"
+          ? "bg-[#2f2f2f] text-white"
+          : "text-zinc-400 hover:text-white"
+      }
+    `}
+  >
+
+    Hoodie
+
+  </button>
+
+</div>
+          )
+        }
 
 
 
@@ -860,7 +1163,7 @@ const startListening = () => {
 
               <SinglePreview
 
-                generatedImage={
+                 generatedImage={
                   generatedImage
                 }
 
@@ -870,6 +1173,10 @@ const startListening = () => {
 
                 getMockup={
                   getMockup
+                  }
+
+                productType={
+                   productType
                 }
 
                 selectedColor={
@@ -881,8 +1188,8 @@ const startListening = () => {
                 }
 
                 designScale={
-                  designScale
-                }
+                  productDesignScale
+               }
               />
 
 
@@ -905,11 +1212,14 @@ const startListening = () => {
                 }
 
                 designScale={
-                  designScale
+                  productDesignScale
                 }
 
                 setDesignScale={
                   setDesignScale
+                }
+                productType={
+                  productType
                 }
               />
 
@@ -933,7 +1243,7 @@ const startListening = () => {
                 }
 
                 designScale={
-                  designScale
+                  productDesignScale
                 }
 
                 confirmedDesign={
@@ -961,6 +1271,10 @@ const startListening = () => {
                 setSuccessMessage={
                   setSuccessMessage
                 }
+
+                productType={
+                  productType
+                }
               />
 
             </>
@@ -982,52 +1296,56 @@ const startListening = () => {
 
               <CouplePreview
 
-                generatedHisImage={
-                  generatedHisImage
-                }
+  productType={
+    productType
+  }
 
-                generatedHerImage={
-                  generatedHerImage
-                }
+  generatedHisImage={
+    generatedHisImage
+  }
 
-                getMockup={
-                  getMockup
-                }
+  generatedHerImage={
+    generatedHerImage
+  }
 
-                hisColor={
-                  hisColor
-                }
+  getMockup={
+    getMockup
+  }
 
-                herColor={
-                  herColor
-                }
+  hisColor={
+    hisColor
+  }
 
-                hisSide={
-                  hisSide
-                }
+  herColor={
+    herColor
+  }
 
-                herSide={
-                  herSide
-                }
+  hisSide={
+    hisSide
+  }
 
-                hisScale={
-                  hisScale
-                }
+  herSide={
+    herSide
+  }
 
-                herScale={
-                  herScale
-                }
-              />
+  
+  
+/>
 
 
               <CoupleControls
+
+                productType={
+                  productType
+                }
+
 
                 hisColor={
                   hisColor
                 }
 
                 setHisColor={
-                  setHisColor
+                  setHisColor 
                 }
 
                 herColor={
@@ -1038,21 +1356,22 @@ const startListening = () => {
                   setHerColor
                 }
 
-                hisScale={
-                  hisScale
+                hisSide={
+                  hisSide
                 }
 
-                setHisScale={
-                  setHisScale
+                setHisSide={
+                  setHisSide
                 }
 
-                herScale={
-                  herScale
+                herSide={
+                  herSide
                 }
 
-                setHerScale={
-                  setHerScale
+                setHerSide={
+                  setHerSide
                 }
+               
               />
 
 
@@ -1068,6 +1387,10 @@ const startListening = () => {
 
                 getMockup={
                   getMockup
+                }
+
+                productType={
+                  productType
                 }
 
                 couplePrompt={
@@ -1091,11 +1414,11 @@ const startListening = () => {
                 }
 
                 hisScale={
-                  hisScale
+                  productDesignScale
                 }
 
                 herScale={
-                  herScale
+                  productDesignScale
                 }
 
                 API={API}

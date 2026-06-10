@@ -1,47 +1,578 @@
-import { showSuccess, showError } from "../utils/toast";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
+
+import {
+  useLocation,
+  useNavigate
+} from "react-router-dom";
+
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber
+} from "firebase/auth";
+
+import {
+  collection,
+  doc,
+  getDocs,
+  limit,
+  query,
+  serverTimestamp,
+  setDoc,
+  where
+} from "firebase/firestore";
+
 import API from "../api";
 
+import {
+  auth,
+  db,
+  logFirebaseClientDiagnostics
+} from "../firebase";
+
+import {
+  showError,
+  showSuccess
+} from "../utils/toast";
+
+const OTP_TTL_SECONDS =
+  300;
+
+function normalizePhone(value) {
+
+  const trimmed =
+    value.trim();
+
+  if (trimmed.startsWith("+")) {
+    return trimmed.replace(
+      /\s/g,
+      ""
+    );
+  }
+
+  const digits =
+    trimmed.replace(
+      /\D/g,
+      ""
+    );
+
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+
+  return digits
+    ? `+${digits}`
+    : "";
+}
+
+function logFirebaseError(label, error) {
+
+  console.error(
+    label,
+    {
+      code: error.code,
+      message: error.message,
+      customData: error.customData,
+      serverResponse: error.serverResponse,
+      name: error.name
+    }
+  );
+}
+
+function firebaseErrorMessage(error) {
+
+  const messages = {
+    "auth/billing-not-enabled":
+      "Firebase SMS billing is not enabled. Enable billing on the Firebase/Google Cloud project to send real OTP messages.",
+    "auth/invalid-app-credential":
+      "Firebase rejected the app credential. Check Authorized Domains, authDomain, and reCAPTCHA/App Check settings.",
+    "auth/captcha-check-failed":
+      "reCAPTCHA verification failed. Refresh and try again.",
+    "auth/invalid-phone-number":
+      "Enter a valid phone number with country code.",
+    "auth/missing-phone-number":
+      "Enter your phone number.",
+    "auth/quota-exceeded":
+      "SMS quota exceeded. Try again later or check Firebase billing/quota.",
+    "auth/too-many-requests":
+      "Too many OTP attempts. Please wait before trying again.",
+    "auth/code-expired":
+      "OTP expired. Request a new code.",
+    "auth/invalid-verification-code":
+      "Invalid OTP. Check the code and try again."
+  };
+
+  return messages[error.code] ||
+    error.message ||
+    "Firebase phone authentication failed.";
+}
+
 export default function Login() {
-  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
+  const navigate =
+    useNavigate();
 
-  async function loginDirectly() {
-    try {
-      setLoading(true);
+  const location =
+    useLocation();
 
-      const res = await API.post(
-        "/auth/firebase-login",
+  const recaptchaRef =
+    useRef(null);
+
+  const [step,
+    setStep] =
+    useState("phone");
+
+  const [phone,
+    setPhone] =
+    useState("");
+
+  const [verifiedPhone,
+    setVerifiedPhone] =
+    useState("");
+
+  const [otp,
+    setOtp] =
+    useState("");
+
+  const [confirmation,
+    setConfirmation] =
+    useState(null);
+
+  const [otpExpiresAt,
+    setOtpExpiresAt] =
+    useState(null);
+
+  const [secondsLeft,
+    setSecondsLeft] =
+    useState(0);
+
+  const [name,
+    setName] =
+    useState("");
+
+  const [email,
+    setEmail] =
+    useState("");
+
+  const [loading,
+    setLoading] =
+    useState(false);
+
+  const redirectTo =
+    location.state?.from?.pathname ||
+    "/workspace";
+
+  useEffect(() => {
+
+    logFirebaseClientDiagnostics();
+
+    return () => {
+
+      if (recaptchaRef.current) {
+        recaptchaRef.current.clear();
+        recaptchaRef.current = null;
+      }
+    };
+
+  }, []);
+
+  useEffect(() => {
+
+    if (!otpExpiresAt) {
+      setSecondsLeft(0);
+      return undefined;
+    }
+
+    const updateTimer =
+      () => {
+        setSecondsLeft(
+          Math.max(
+            0,
+            Math.ceil(
+              (otpExpiresAt - Date.now()) / 1000
+            )
+          )
+        );
+      };
+
+    updateTimer();
+
+    const timer =
+      window.setInterval(
+        updateTimer,
+        1000
+      );
+
+    return () =>
+      window.clearInterval(
+        timer
+      );
+
+  }, [otpExpiresAt]);
+
+  function getRecaptchaVerifier() {
+
+    if (recaptchaRef.current) {
+      return recaptchaRef.current;
+    }
+
+    const container =
+      document.getElementById(
+        "recaptcha-container"
+      );
+
+    if (!container) {
+      throw new Error(
+        "reCAPTCHA container is missing from the login page."
+      );
+    }
+
+    recaptchaRef.current =
+      new RecaptchaVerifier(
+        auth,
+        container,
         {
-          phone: "+919999999999"
+          size: "invisible",
+          callback: () => {
+            console.info(
+              "Firebase reCAPTCHA solved"
+            );
+          },
+          "expired-callback": () => {
+            console.warn(
+              "Firebase reCAPTCHA expired"
+            );
+
+            if (recaptchaRef.current) {
+              recaptchaRef.current.clear();
+              recaptchaRef.current = null;
+            }
+          }
         }
       );
 
-      localStorage.setItem(
-        "token",
-        res.data.token
+    return recaptchaRef.current;
+  }
+
+  async function findUserByPhone(phoneNumber) {
+
+    const snapshot =
+      await getDocs(
+        query(
+          collection(
+            db,
+            "users"
+          ),
+          where(
+            "phone",
+            "==",
+            phoneNumber
+          ),
+          limit(1)
+        )
       );
 
-      localStorage.setItem(
-        "role",
-        res.data.user.role
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const userDoc =
+      snapshot.docs[0];
+
+    return {
+      id: userDoc.id,
+      ...userDoc.data()
+    };
+  }
+
+  async function syncBackendSession(phoneNumber, profile = null) {
+
+    const endpoint =
+      profile?.name
+        ? "/auth/complete-profile"
+        : "/auth/firebase-login";
+
+    const payload =
+      profile?.name
+        ? {
+          phone: phoneNumber,
+          name: profile.name,
+          email: profile.email || ""
+        }
+        : {
+          phone: phoneNumber
+        };
+
+    const res =
+      await API.post(
+        endpoint,
+        payload
       );
+
+    localStorage.setItem(
+      "token",
+      res.data.token
+    );
+
+    localStorage.setItem(
+      "role",
+      res.data.user.role || profile?.role || "user"
+    );
+  }
+
+  async function finishLogin(profile = null) {
+
+    try {
+      await syncBackendSession(
+        verifiedPhone,
+        profile
+      );
+    } catch (error) {
+      console.error(
+        "Backend login token sync failed",
+        {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        }
+      );
+    }
+
+    showSuccess(
+      "Welcome to AIWear"
+    );
+
+    navigate(
+      redirectTo,
+      {
+        replace: true
+      }
+    );
+  }
+
+  async function sendOtp(event) {
+
+    event?.preventDefault();
+
+    try {
+
+      const normalizedPhone =
+        normalizePhone(
+          phone
+        );
+
+      if (normalizedPhone.length < 11) {
+        return showError(
+          "Enter a valid phone number"
+        );
+      }
+
+      setLoading(true);
+      setOtp("");
+
+      const verifier =
+        getRecaptchaVerifier();
+
+      await verifier.render();
+
+      const result =
+        await signInWithPhoneNumber(
+          auth,
+          normalizedPhone,
+          verifier
+        );
+
+      setConfirmation(
+        result
+      );
+
+      setVerifiedPhone(
+        normalizedPhone
+      );
+
+      setOtpExpiresAt(
+        Date.now() +
+        OTP_TTL_SECONDS * 1000
+      );
+
+      setStep("otp");
 
       showSuccess(
-        "Login successful"
+        "OTP sent"
       );
 
-      navigate("/workspace");
+    } catch (error) {
 
-    } catch (err) {
-
-      console.log(err);
+      logFirebaseError(
+        "Firebase OTP send failed",
+        error
+      );
 
       showError(
-        err.response?.data?.error ||
-        err.message
+        firebaseErrorMessage(
+          error
+        )
+      );
+
+      if (recaptchaRef.current) {
+        recaptchaRef.current.clear();
+        recaptchaRef.current = null;
+      }
+
+    } finally {
+
+      setLoading(false);
+    }
+  }
+
+  async function resendOtp() {
+
+    if (secondsLeft > 240) {
+      return showError(
+        "Please wait before requesting another OTP"
+      );
+    }
+
+    await sendOtp();
+  }
+
+  async function verifyOtp(event) {
+
+    event.preventDefault();
+
+    try {
+
+      if (!confirmation) {
+        return showError(
+          "Request OTP again"
+        );
+      }
+
+      if (!otpExpiresAt || Date.now() > otpExpiresAt) {
+        setConfirmation(null);
+        return showError(
+          "OTP expired. Request a new code."
+        );
+      }
+
+      setLoading(true);
+
+      const credential =
+        await confirmation.confirm(
+          otp.trim()
+        );
+
+      const phoneUser =
+        await findUserByPhone(
+          verifiedPhone
+        );
+
+      if (phoneUser) {
+        localStorage.setItem(
+          "role",
+          phoneUser.role || "user"
+        );
+
+        await finishLogin(
+          phoneUser
+        );
+
+        return;
+      }
+
+      setName(
+        credential.user.displayName || ""
+      );
+
+      setStep("account");
+
+      showSuccess(
+        "Phone verified"
+      );
+
+    } catch (error) {
+
+      logFirebaseError(
+        "Firebase OTP verification failed",
+        error
+      );
+
+      showError(
+        firebaseErrorMessage(
+          error
+        )
+      );
+
+    } finally {
+
+      setLoading(false);
+    }
+  }
+
+  async function submitAccount(event) {
+
+    event.preventDefault();
+
+    try {
+
+      const currentUser =
+        auth.currentUser;
+
+      if (!currentUser) {
+        return showError(
+          "Session expired. Verify your phone again."
+        );
+      }
+
+      if (!name.trim()) {
+        return showError(
+          "Enter your name"
+        );
+      }
+
+      setLoading(true);
+
+      const profile = {
+        uid: currentUser.uid,
+        phone: verifiedPhone,
+        name: name.trim(),
+        email: email.trim(),
+        role: "user",
+        provider: "phone",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      };
+
+      await setDoc(
+        doc(
+          db,
+          "users",
+          currentUser.uid
+        ),
+        profile,
+        {
+          merge: true
+        }
+      );
+
+      await finishLogin(
+        profile
+      );
+
+    } catch (error) {
+
+      logFirebaseError(
+        "Firestore registration failed",
+        error
+      );
+
+      showError(
+        firebaseErrorMessage(
+          error
+        )
       );
 
     } finally {
@@ -51,23 +582,188 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#171717]">
-      <button
-        onClick={loginDirectly}
-        disabled={loading}
-        className="
-          bg-gradient-to-r
-          from-purple-600
-          to-cyan-500
-          px-8
-          py-4
-          rounded-xl
-          text-white
-          font-bold
-        "
-      >
-        {loading ? "Logging in..." : "Login"}
-      </button>
-    </div>
+
+    <main className="flex min-h-screen items-center justify-center bg-[#0b0b0b] px-4 py-10 text-white">
+
+      <section className="w-full max-w-md rounded-[28px] border border-[#2f2f2f] bg-[#171717]/90 p-5 shadow-2xl shadow-black/40 backdrop-blur md:p-7">
+
+        <div className="mb-8 text-center">
+          <p className="mb-3 text-sm font-medium text-cyan-300">
+            AI creative studio
+          </p>
+
+          <h1 className="text-3xl font-semibold tracking-tight">
+            AIWear
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-zinc-400">
+            Login with OTP. New users can complete their profile after verification.
+          </p>
+        </div>
+
+        {
+          step === "phone" && (
+            <form
+              onSubmit={sendOtp}
+              className="space-y-4"
+            >
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-zinc-300">
+                  Phone Number
+                </span>
+
+                <input
+                  value={phone}
+                  onChange={(event) =>
+                    setPhone(
+                      event.target.value
+                    )
+                  }
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="9876543210"
+                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </button>
+            </form>
+          )
+        }
+
+        {
+          step === "otp" && (
+            <form
+              onSubmit={verifyOtp}
+              className="space-y-4"
+            >
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-zinc-300">
+                  Enter OTP
+                </span>
+
+                <input
+                  value={otp}
+                  onChange={(event) =>
+                    setOtp(
+                      event.target.value
+                    )
+                  }
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="6-digit code"
+                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
+                />
+              </label>
+
+              <p className="text-xs text-zinc-500">
+                {
+                  secondsLeft > 0
+                    ? `OTP expires in ${secondsLeft}s`
+                    : "OTP expired"
+                }
+              </p>
+
+              <button
+                type="submit"
+                disabled={loading || secondsLeft === 0}
+                className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Verifying..." : "Verify OTP"}
+              </button>
+
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={loading || secondsLeft > 240}
+                className="min-h-12 w-full rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Resend OTP
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmation(null);
+                  setOtpExpiresAt(null);
+                  setStep("phone");
+                }}
+                className="min-h-12 w-full rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white"
+              >
+                Change Number
+              </button>
+            </form>
+          )
+        }
+
+        {
+          step === "account" && (
+            <form
+              onSubmit={submitAccount}
+              className="space-y-4"
+            >
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-zinc-300">
+                  Name
+                </span>
+
+                <input
+                  value={name}
+                  onChange={(event) =>
+                    setName(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Your name"
+                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-zinc-300">
+                  Email
+                </span>
+
+                <input
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(
+                      event.target.value
+                    )
+                  }
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {
+                  loading
+                    ? "Continuing..."
+                    : "Create Account"
+                }
+              </button>
+            </form>
+          )
+        }
+
+        <div id="recaptcha-container" />
+
+      </section>
+
+    </main>
   );
 }

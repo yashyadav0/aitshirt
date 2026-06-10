@@ -192,12 +192,13 @@ export default function Checkout() {
 
   return (
 
-    <div className="p-8">
+    <main className="min-h-screen bg-[#0b0b0b] px-4 py-20 text-white md:p-8">
 
       <h1
         className="
-          text-4xl
-          font-bold
+          text-3xl
+          font-semibold
+          tracking-tight
           mb-8
         "
       >
@@ -224,9 +225,11 @@ export default function Checkout() {
                 key={item._id}
 
                 className="
-                  bg-[#2a2a2a]
+                  bg-[#171717]
+                  border
+                  border-[#2f2f2f]
                   p-4
-                  rounded-2xl
+                  rounded-3xl
                   flex
                   gap-4
                   items-center
@@ -297,16 +300,18 @@ export default function Checkout() {
       <div
         className="
           mt-10
-          bg-[#2a2a2a]
+          bg-[#171717]
+          border
+          border-[#2f2f2f]
           p-6
-          rounded-2xl
+          rounded-3xl
         "
       >
 
         <h2
           className="
             text-2xl
-            font-bold
+            font-semibold
             mb-6
           "
         >
@@ -340,10 +345,10 @@ export default function Checkout() {
 
             className="
               flex-1
-              bg-black
+              bg-[#101010]
               border
-              border-zinc-700
-              rounded-xl
+              border-[#333]
+              rounded-2xl
               px-4
               py-3
               outline-none
@@ -358,10 +363,11 @@ export default function Checkout() {
             }
 
             className="
-              bg-cyan-500
+              bg-cyan-400
+              text-black
               px-5
-              rounded-xl
-              font-bold
+              rounded-2xl
+              font-semibold
             "
           >
 
@@ -454,12 +460,12 @@ export default function Checkout() {
           disabled={loading}
 
           className="
-            bg-white
+            bg-cyan-400
             text-black
             px-6
-            py-3
-            rounded-xl
-            font-bold
+            py-4
+            rounded-2xl
+            font-semibold
             w-full
           "
         >
@@ -476,6 +482,6 @@ export default function Checkout() {
 
       </div>
 
-    </div>
+    </main>
   );
 }

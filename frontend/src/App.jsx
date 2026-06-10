@@ -1,7 +1,8 @@
 import {
   BrowserRouter,
-  Routes,
-  Route
+  Navigate,
+  Route,
+  Routes
 } from "react-router-dom";
 
 import AIWorkspace
@@ -28,8 +29,9 @@ import LandingPage
 import History
   from "./pages/History";
 
+import Settings
+  from "./pages/Settings";
 
-// 👑 Admin
 import AdminDashboard
   from "./pages/AdminDashboard";
 
@@ -45,159 +47,154 @@ import AdminProducts
 import AdminCoupons
   from "./pages/AdminCoupons";
 
+import AdminPresets
+  from "./pages/AdminPresets";
 
-// 🧩 Components
 import Sidebar
   from "./components/Sidebar";
 
 import AdminRoute
   from "./components/AdminRoute";
 
+import ProtectedRoute
+  from "./components/ProtectedRoute";
+
+function AppShell() {
+
+  return (
+    <ProtectedRoute>
+      <div className="flex w-full">
+        <Sidebar />
+
+        <div className="min-w-0 flex-1 md:pl-[280px]">
+          <Routes>
+            <Route
+              path="/workspace"
+              element={<AIWorkspace />}
+            />
+
+            <Route
+              path="/history"
+              element={<History />}
+            />
+
+            <Route
+              path="/cart"
+              element={<Cart />}
+            />
+
+            <Route
+              path="/wishlist"
+              element={<Wishlist />}
+            />
+
+            <Route
+              path="/orders"
+              element={<Orders />}
+            />
+
+            <Route
+              path="/checkout"
+              element={<Checkout />}
+            />
+
+            <Route
+              path="/settings"
+              element={<Settings />}
+            />
+
+            <Route
+              path="/profile"
+              element={<Settings />}
+            />
+
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-users"
+              element={
+                <AdminRoute>
+                  <AdminUsers />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-orders"
+              element={
+                <AdminRoute>
+                  <AdminOrders />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-products"
+              element={
+                <AdminRoute>
+                  <AdminProducts />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-coupons"
+              element={
+                <AdminRoute>
+                  <AdminCoupons />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-presets"
+              element={
+                <AdminRoute>
+                  <AdminPresets />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="*"
+              element={<Navigate to="/workspace" replace />}
+            />
+          </Routes>
+        </div>
+      </div>
+    </ProtectedRoute>
+  );
+}
 
 export default function App() {
 
   return (
-
     <BrowserRouter>
-
-      <div
-        className="
-          flex
-          bg-[#171717]
-          text-white
-          min-h-screen
-        "
-      >
-
+      <div className="flex min-h-screen bg-[#171717] text-white">
         <Routes>
-
-          {/* 🌍 Landing */}
           <Route
             path="/"
             element={<LandingPage />}
           />
 
-
-          {/* 🔐 Login */}
           <Route
             path="/login"
             element={<Login />}
           />
 
-
-          {/* 📦 Main App */}
           <Route
             path="/*"
-            element={
-
-              <div className="flex w-full">
-
-                <Sidebar />
-
-                <div className="flex-1">
-
-                  <Routes>
-
-                    {/* 🎨 Workspace */}
-                    <Route
-                      path="/workspace"
-                      element={<AIWorkspace />}
-                    />
-
-
-                    {/* 🕘 History */}
-                    <Route
-                      path="/history"
-                      element={<History />}
-                    />
-
-
-                    {/* 🛒 Cart */}
-                    <Route
-                      path="/cart"
-                      element={<Cart />}
-                    />
-
-
-                    {/* ❤️ Wishlist */}
-                    <Route
-                      path="/wishlist"
-                      element={<Wishlist />}
-                    />
-
-
-                    {/* 📦 Orders */}
-                    <Route
-                      path="/orders"
-                      element={<Orders />}
-                    />
-
-
-                    {/* 💳 Checkout */}
-                    <Route
-                      path="/checkout"
-                      element={<Checkout />}
-                    />
-
-
-                    {/* 👑 Admin */}
-                    <Route
-                      path="/admin"
-                      element={
-                        <AdminRoute>
-                          <AdminDashboard />
-                        </AdminRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/admin-users"
-                      element={
-                        <AdminRoute>
-                          <AdminUsers />
-                        </AdminRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/admin-orders"
-                      element={
-                        <AdminRoute>
-                          <AdminOrders />
-                        </AdminRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/admin-products"
-                      element={
-                        <AdminRoute>
-                          <AdminProducts />
-                        </AdminRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/admin-coupons"
-                      element={
-                        <AdminRoute>
-                          <AdminCoupons />
-                        </AdminRoute>
-                      }
-                    />
-
-                  </Routes>
-
-                </div>
-
-              </div>
-            }
+            element={<AppShell />}
           />
-
         </Routes>
-
       </div>
-
     </BrowserRouter>
   );
 }

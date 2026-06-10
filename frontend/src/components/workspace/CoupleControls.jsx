@@ -6,19 +6,23 @@ export default function CoupleControls({
   herColor,
   setHerColor,
 
-  hisScale,
-  setHisScale,
+  productType,
 
-  herScale,
-  setHerScale
+  hisSide,
+  setHisSide,
+
+  herSide,
+  setHerSide
+
 }) {
 
-  const colors = [
+  const colors =
 
-    "white",
-    "black",
-    "red"
-  ];
+    productType === "hoodie"
+
+      ? ["black", "white", "blue"]
+
+      : ["black", "white", "red"];
 
 
   return (
@@ -27,7 +31,7 @@ export default function CoupleControls({
       className="
         flex
         flex-col
-        gap-6
+        gap-3
         mt-6
       "
     >
@@ -36,21 +40,24 @@ export default function CoupleControls({
 
       <div
         className="
-          bg-[#18181b]
-          rounded-[28px]
-          p-5
+          bg-[#171717]
+          rounded-2xl
+          p-4
+          border
+          border-[#2f2f2f]
         "
       >
 
         <div
           className="
-            text-xl
-            font-bold
-            mb-4
+            text-sm
+            font-medium
+            text-zinc-200
+            mb-3
           "
         >
 
-          His Shirt
+          His {productType === "hoodie" ? "Hoodie" : "T-Shirt"}
 
         </div>
 
@@ -59,62 +66,72 @@ export default function CoupleControls({
           className="
             flex
             gap-3
-            mb-4
+            mb-3
           "
         >
 
           {
-            colors.map(
-              (color) => (
 
-                <button
+            colors.map((color) => (
 
-                  key={color}
+              <button
 
-                  onClick={() =>
-                    setHisColor(
-                      color
-                    )
+                key={color}
+
+                onClick={() =>
+                  setHisColor(color)
+                }
+
+                className={`
+                  w-12
+                  h-12
+                  rounded-full
+                  border
+                  border-[#3f3f46]
+                  transition-all
+
+                  ${
+                    hisColor === color
+
+                      ? "ring-2 ring-white scale-105"
+
+                      : ""
                   }
+                `}
 
-                  className="
-                    flex-1
-                    py-3
-                    rounded-full
-                    border
-                  "
-                >
+                style={{
+                  backgroundColor:
+                    color
+                }}
+              />
 
-                  {color}
-
-                </button>
-              )
-            )
+            ))
           }
 
         </div>
 
-
-        <input
-
-          type="range"
-
-          min="30"
-
-          max="60"
-
-          value={hisScale}
-
-          onChange={(e) =>
-            setHisScale(
-              e.target.value
+        <button
+          onClick={() =>
+            setHisSide(
+              hisSide === "front"
+                ? "back"
+                : "front"
             )
           }
-
           className="
+            min-h-12
             w-full
+            rounded-2xl
+            bg-[#202020]
+            text-sm
+            font-medium
+            text-zinc-200
+            transition
+            hover:bg-[#2a2a2a]
           "
-        />
+        >
+          {hisSide === "front" ? "Front" : "Back"}
+        </button>
 
       </div>
 
@@ -123,21 +140,24 @@ export default function CoupleControls({
 
       <div
         className="
-          bg-[#18181b]
-          rounded-[28px]
-          p-5
+          bg-[#171717]
+          rounded-2xl
+          p-4
+          border
+          border-[#2f2f2f]
         "
       >
 
         <div
           className="
-            text-xl
-            font-bold
-            mb-4
+            text-sm
+            font-medium
+            text-zinc-200
+            mb-3
           "
         >
 
-          Her Shirt
+          Her {productType === "hoodie" ? "Hoodie" : "T-Shirt"}
 
         </div>
 
@@ -146,62 +166,72 @@ export default function CoupleControls({
           className="
             flex
             gap-3
-            mb-4
+            mb-3
           "
         >
 
           {
-            colors.map(
-              (color) => (
 
-                <button
+            colors.map((color) => (
 
-                  key={color}
+              <button
 
-                  onClick={() =>
-                    setHerColor(
-                      color
-                    )
+                key={color}
+
+                onClick={() =>
+                  setHerColor(color)
+                }
+
+                className={`
+                  w-12
+                  h-12
+                  rounded-full
+                  border
+                  border-[#3f3f46]
+                  transition-all
+
+                  ${
+                    herColor === color
+
+                      ? "ring-2 ring-white scale-105"
+
+                      : ""
                   }
+                `}
 
-                  className="
-                    flex-1
-                    py-3
-                    rounded-full
-                    border
-                  "
-                >
+                style={{
+                  backgroundColor:
+                    color
+                }}
+              />
 
-                  {color}
-
-                </button>
-              )
-            )
+            ))
           }
 
         </div>
 
-
-        <input
-
-          type="range"
-
-          min="30"
-
-          max="60"
-
-          value={herScale}
-
-          onChange={(e) =>
-            setHerScale(
-              e.target.value
+        <button
+          onClick={() =>
+            setHerSide(
+              herSide === "front"
+                ? "back"
+                : "front"
             )
           }
-
           className="
+            min-h-12
             w-full
+            rounded-2xl
+            bg-[#202020]
+            text-sm
+            font-medium
+            text-zinc-200
+            transition
+            hover:bg-[#2a2a2a]
           "
-        />
+        >
+          {herSide === "front" ? "Front" : "Back"}
+        </button>
 
       </div>
 

@@ -1,4 +1,6 @@
-import React from "react";
+import React, {
+  useState
+} from "react";
 
 import {
   Heart
@@ -24,6 +26,7 @@ export default function CoupleActions({
   API,
 
   getMockup,
+  productType,
 
   setSuccessMessage,
 
@@ -34,6 +37,20 @@ export default function CoupleActions({
   setIsConfirmed
 
 }) {
+
+  const [hisSize,
+    setHisSize] =
+    useState("M");
+
+  const [herSize,
+    setHerSize] =
+    useState("M");
+
+  const sizes = [
+    "S",
+    "M",
+    "L"
+  ];
 
   // =====================================
   // TOAST
@@ -250,6 +267,7 @@ export default function CoupleActions({
           await createFinalMockup(
 
             getMockup(
+              productType,
               hisColor,
               hisSide
             ),
@@ -277,6 +295,7 @@ export default function CoupleActions({
           await createFinalMockup(
 
             getMockup(
+              productType,
               herColor,
               herSide
             ),
@@ -304,6 +323,8 @@ export default function CoupleActions({
 
           isCouple: true,
 
+          productType,
+
           // FINAL MOCKUPS
 
           hisDesignImage:
@@ -328,6 +349,9 @@ export default function CoupleActions({
 
           hisColor,
           herColor,
+
+          hisSize,
+          herSize,
 
           hisSide,
           herSide,
@@ -414,11 +438,20 @@ export default function CoupleActions({
             couplePrompt:
               confirmedDesign.couplePrompt,
 
+            productType:
+              confirmedDesign.productType,
+
             hisColor:
               confirmedDesign.hisColor,
 
             herColor:
               confirmedDesign.herColor,
+
+            hisSize:
+              confirmedDesign.hisSize,
+
+            herSize:
+              confirmedDesign.herSize,
 
             hisSide:
               confirmedDesign.hisSide,
@@ -494,11 +527,20 @@ export default function CoupleActions({
             couplePrompt:
               confirmedDesign.couplePrompt,
 
+            productType:
+              confirmedDesign.productType,
+
             hisColor:
               confirmedDesign.hisColor,
 
             herColor:
               confirmedDesign.herColor,
+
+            hisSize:
+              confirmedDesign.hisSize,
+
+            herSize:
+              confirmedDesign.herSize,
 
             hisSide:
               confirmedDesign.hisSide,
@@ -537,6 +579,105 @@ export default function CoupleActions({
   return (
 
     <>
+
+      <div
+        className="
+          mt-6
+          grid
+          gap-3
+          sm:grid-cols-2
+        "
+      >
+
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[#2f2f2f]
+            bg-[#171717]
+            p-4
+          "
+        >
+          <p className="mb-3 text-sm font-medium text-zinc-200">
+            His Size
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {
+              sizes.map((size) => (
+
+                <button
+                  key={size}
+                  onClick={() =>
+                    setHisSize(
+                      size
+                    )
+                  }
+                  className={`
+                    min-h-11
+                    rounded-xl
+                    text-sm
+                    font-medium
+                    transition
+                    ${
+                      hisSize === size
+                        ? "bg-cyan-400 text-black"
+                        : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                    }
+                  `}
+                >
+                  {size}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[#2f2f2f]
+            bg-[#171717]
+            p-4
+          "
+        >
+          <p className="mb-3 text-sm font-medium text-zinc-200">
+            Her Size
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {
+              sizes.map((size) => (
+
+                <button
+                  key={size}
+                  onClick={() =>
+                    setHerSize(
+                      size
+                    )
+                  }
+                  className={`
+                    min-h-11
+                    rounded-xl
+                    text-sm
+                    font-medium
+                    transition
+                    ${
+                      herSize === size
+                        ? "bg-cyan-400 text-black"
+                        : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                    }
+                  `}
+                >
+                  {size}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
+      </div>
 
       {/* CONFIRM */}
 

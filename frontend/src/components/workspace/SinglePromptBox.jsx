@@ -9,9 +9,7 @@ export default function SinglePromptBox({
 
     <textarea
 
-      placeholder="
-Describe your dream design...
-"
+      placeholder="Describe your dream design..."
 
       value={prompt}
 
@@ -28,7 +26,10 @@ Describe your dream design...
         outline-none
         resize-none
         text-white
-        text-[20px]
+        text-base
+        leading-7
+        placeholder:text-zinc-600
+        md:text-lg
       "
     />
   );

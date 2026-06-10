@@ -320,17 +320,19 @@ export default function Cart() {
     <div
       className="
         min-h-screen
-        bg-black
+        bg-[#0b0b0b]
         text-white
-        px-5
-        py-10
+        px-4
+        py-20
+        md:p-8
       "
     >
 
       <h1
         className="
-          text-5xl
-          font-black
+          text-3xl
+          font-semibold
+          tracking-tight
           mb-10
         "
       >
@@ -383,10 +385,10 @@ export default function Cart() {
                     key={item._id}
 
                     className="
-                      bg-[#18181b]
+                      bg-[#171717]
                       border
-                      border-[#27272a]
-                      rounded-[32px]
+                      border-[#2f2f2f]
+                      rounded-3xl
                       overflow-hidden
                     "
                   >
@@ -757,17 +759,20 @@ export default function Cart() {
             <div
               className="
                 mt-5
-                bg-white
+                sticky
+                bottom-4
+                z-20
+                bg-cyan-400
                 text-black
-                rounded-[32px]
-                p-6
+                rounded-3xl
+                p-5
               "
             >
 
               <div
                 className="
-                  text-3xl
-                  font-black
+                  text-2xl
+                  font-semibold
                 "
               >
 
@@ -784,10 +789,10 @@ export default function Cart() {
 
             <div
               className="
-                bg-[#18181b]
+                bg-[#171717]
                 border
-                border-[#27272a]
-                rounded-[32px]
+                border-[#2f2f2f]
+                rounded-3xl
                 p-6
                 flex
                 flex-col
@@ -797,8 +802,8 @@ export default function Cart() {
 
               <h2
                 className="
-                  text-3xl
-                  font-black
+                  text-2xl
+                  font-semibold
                   mb-2
                 "
               >
@@ -829,10 +834,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                 "
@@ -860,10 +865,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                 "
@@ -889,10 +894,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                   resize-none
@@ -922,10 +927,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                 "
@@ -953,10 +958,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                 "
@@ -984,10 +989,10 @@ export default function Cart() {
                 }
 
                 className="
-                  bg-[#232326]
+                  bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-[20px]
+                  rounded-2xl
                   p-4
                   outline-none
                 "
@@ -1006,13 +1011,14 @@ export default function Cart() {
 
                 className="
                   mt-4
-                  bg-cyan-500
-                  hover:bg-cyan-400
+                  bg-cyan-400
+                  hover:bg-cyan-300
                   transition
                   py-5
-                  rounded-[24px]
-                  text-xl
-                  font-black
+                  rounded-2xl
+                  text-sm
+                  font-semibold
+                  text-black
                   disabled:opacity-50
                 "
               >

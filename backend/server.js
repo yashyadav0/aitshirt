@@ -49,6 +49,9 @@ const adminRoutes =
 const uploadRoutes =
   require("./routes/upload");
 
+const presetRoutes =
+  require("./routes/presets");
+
 
 // =====================================
 // APP
@@ -130,6 +133,11 @@ app.use(
 app.use(
   "/api/upload",
   uploadRoutes
+);
+
+app.use(
+  "/api/presets",
+  presetRoutes
 );
 
 

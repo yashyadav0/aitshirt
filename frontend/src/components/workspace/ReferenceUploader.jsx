@@ -12,13 +12,19 @@ export default function ReferenceUploader({
         className="
           w-full
           block
-          bg-[#18181b]
-          rounded-[24px]
-          p-6
-          mb-5
+          bg-[#101010]
+          rounded-2xl
+          px-4
+          py-3
+          mb-3
           border
-          border-[#27272a]
+          border-[#2f2f2f]
           cursor-pointer
+          text-sm
+          text-zinc-400
+          transition
+          hover:text-white
+          hover:border-[#3f3f46]
         "
       >
 
@@ -47,7 +53,7 @@ export default function ReferenceUploader({
 
             ? `${referenceImages.length} files selected`
 
-            : "Choose Files"
+            : "Upload Image"
         }
 
       </label>
@@ -85,9 +91,9 @@ export default function ReferenceUploader({
                       w-24
                       h-24
                       object-cover
-                      rounded-2xl
+                      rounded-xl
                       border
-                      border-[#27272a]
+                      border-[#2f2f2f]
                       flex-shrink-0
                     "
                   />

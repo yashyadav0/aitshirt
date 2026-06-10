@@ -1,68 +1,113 @@
-import { useState } from "react";
-import { Rnd } from "react-rnd";
-
 export default function SinglePreview({
+
   generatedImage,
   mockupRef,
   getMockup,
-  selectedColor,
-  selectedSide,
-}) {
-  const [selected, setSelected] = useState(false);
 
-  if (!generatedImage) return null;
+  productType,
+
+  selectedColor,
+  selectedSide
+
+}) {
+
+  if (!generatedImage)
+    return null;
+
+  const designStyles = {
+
+    tshirt: {
+
+      top: "50%",
+
+      width: "48%"
+    },
+
+    hoodie: {
+
+      top: "42%",
+
+      width: "27%"
+    }
+  };
+
+  const currentStyle =
+    designStyles[
+      productType
+    ] || designStyles.tshirt;
 
   return (
-    <div className="mt-10 px-5">
+
+    <div
+      className="
+        mt-10
+      "
+    >
+
       <div
+
         ref={mockupRef}
-        className="relative rounded-[40px] bg-[#18181b]"
-        onClick={() => setSelected(false)}
+
+        className="
+          relative
+          overflow-hidden
+          rounded-3xl
+          bg-[#171717]
+          border
+          border-[#2f2f2f]
+        "
       >
+
         <img
-          src={getMockup(selectedColor, selectedSide)}
+
+          src={
+            getMockup(
+              productType,
+              selectedColor,
+              selectedSide
+            )
+          }
+
           alt="mockup"
-          className="w-full block select-none pointer-events-none"
-          draggable={false}
+
+          className="
+            w-full
+            block
+          "
         />
 
-        <Rnd
-          default={{
-            x: 150,
-            y: 150,
-            width: 220,
-            height: 220,
-          }}
-          bounds="parent"
-          lockAspectRatio
-          enableUserSelectHack={false}
-          minWidth={50}
-          minHeight={50}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            setSelected(true);
-          }}
+        <img
+
+          src={generatedImage}
+
+          alt="design"
+
           style={{
-            zIndex: 100,
-            border: selected
-              ? "2px solid #06b6d4"
-              : "none",
+
+            position:
+              "absolute",
+
+            top:
+              currentStyle.top,
+
+            left: "50%",
+
+            transform:
+              "translate(-50%, -50%)",
+
+            width:
+              currentStyle.width,
+
+            objectFit:
+              "contain",
+
+            pointerEvents:
+              "none"
           }}
-        >
-          <img
-            src={generatedImage}
-            alt="design"
-            className="
-              w-full
-              h-full
-              object-contain
-              select-none
-              pointer-events-none
-            "
-            draggable={false}
-          />
-        </Rnd>
+        />
+
       </div>
+
     </div>
   );
 }

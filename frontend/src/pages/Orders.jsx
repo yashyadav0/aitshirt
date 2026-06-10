@@ -90,7 +90,7 @@ export default function Orders() {
         className="
           flex-1
           min-h-screen
-          bg-black
+          bg-[#0b0b0b]
           text-white
           flex
           items-center
@@ -114,7 +114,7 @@ export default function Orders() {
       className="
         flex-1
         min-h-screen
-        bg-black
+        bg-[#0b0b0b]
         text-white
         p-4
         pt-24
@@ -139,9 +139,9 @@ export default function Orders() {
 
         <h1
           className="
-            text-4xl
-            md:text-5xl
-            font-bold
+            text-3xl
+            font-semibold
+            tracking-tight
           "
         >
 
@@ -191,9 +191,9 @@ export default function Orders() {
                 key={order._id}
 
                 className="
-                  bg-zinc-900
+                  bg-[#171717]
                   border
-                  border-zinc-800
+                  border-[#2f2f2f]
                   rounded-3xl
                   overflow-hidden
                   hover:border-zinc-700

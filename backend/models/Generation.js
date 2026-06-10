@@ -82,7 +82,13 @@ const generationSchema =
       hisColor:
         String,
 
+      hisSize:
+        String,
+
       herColor:
+        String,
+
+      herSize:
         String,
 
 

@@ -13,6 +13,11 @@ export default function GenerationModeToggle({
         flex
         gap-3
         mb-5
+        rounded-2xl
+        bg-[#171717]
+        border
+        border-[#2f2f2f]
+        p-1
       "
     >
 
@@ -27,18 +32,18 @@ export default function GenerationModeToggle({
         className={`
 
           flex-1
-          py-4
-          rounded-2xl
-          text-lg
-          font-bold
+          py-3
+          rounded-xl
+          text-sm
+          font-medium
           transition-all
 
           ${
             generationMode === "single"
 
-            ? "bg-white text-black"
+            ? "bg-[#2f2f2f] text-white"
 
-            : "bg-[#18181b] text-white"
+            : "text-zinc-400 hover:text-white"
           }
 
         `}
@@ -60,18 +65,18 @@ export default function GenerationModeToggle({
         className={`
 
           flex-1
-          py-4
-          rounded-2xl
-          text-lg
-          font-bold
+          py-3
+          rounded-xl
+          text-sm
+          font-medium
           transition-all
 
           ${
             generationMode === "couple"
 
-            ? "bg-pink-500 text-white"
+            ? "bg-[#2f2f2f] text-white"
 
-            : "bg-[#18181b] text-white"
+            : "text-zinc-400 hover:text-white"
           }
 
         `}

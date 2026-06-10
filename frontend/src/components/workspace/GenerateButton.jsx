@@ -14,14 +14,18 @@ export default function GenerateButton({
       disabled={loading}
 
       className="
-        w-full
-        mt-8
-        py-5
-        rounded-full
-        bg-white
+        min-h-12
+        flex-1
+        rounded-2xl
+        bg-cyan-400
+        px-5
+        text-sm
+        font-semibold
         text-black
-        text-3xl
-        font-bold
+        transition
+        hover:bg-cyan-300
+        disabled:cursor-not-allowed
+        disabled:opacity-60
       "
     >
 

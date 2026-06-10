@@ -4,24 +4,44 @@ export default function CouplePreview({
   generatedHerImage,
 
   getMockup,
+  productType,
 
   hisColor,
   herColor,
 
   hisSide,
-  herSide,
+  herSide
 
-  hisScale,
-  herScale
 }) {
+
+  const designStyles = {
+
+    tshirt: {
+
+      top: "42%",
+      width: "48%"
+    },
+
+    hoodie: {
+
+      top: "43%",
+      width: "55%"
+    }
+  };
+
+  const currentStyle =
+    designStyles[
+      productType
+    ] || designStyles.tshirt;
 
   return (
 
     <div
       className="
         grid
-        grid-cols-2
-        gap-4
+        grid-cols-1
+        sm:grid-cols-2
+        gap-3
         mt-8
       "
     >
@@ -30,12 +50,12 @@ export default function CouplePreview({
 
       <div
         className="
-          bg-[#18181b]
-          rounded-[32px]
+          bg-[#171717]
+          rounded-2xl
           overflow-hidden
           border
-          border-[#27272a]
-          p-4
+          border-[#2f2f2f]
+          p-3
         "
       >
 
@@ -50,6 +70,7 @@ export default function CouplePreview({
 
             src={
               getMockup(
+                productType,
                 hisColor,
                 hisSide
               )
@@ -64,7 +85,6 @@ export default function CouplePreview({
             "
           />
 
-
           <img
 
             src={
@@ -76,7 +96,6 @@ export default function CouplePreview({
             className="
               absolute
               left-1/2
-              top-[38%]
               -translate-x-1/2
               -translate-y-1/2
               object-contain
@@ -84,8 +103,11 @@ export default function CouplePreview({
 
             style={{
 
+              top:
+                currentStyle.top,
+
               width:
-                `${hisScale}%`
+                currentStyle.width
             }}
           />
 
@@ -98,12 +120,12 @@ export default function CouplePreview({
 
       <div
         className="
-          bg-[#18181b]
-          rounded-[32px]
+          bg-[#171717]
+          rounded-2xl
           overflow-hidden
           border
-          border-[#27272a]
-          p-4
+          border-[#2f2f2f]
+          p-3
         "
       >
 
@@ -118,6 +140,7 @@ export default function CouplePreview({
 
             src={
               getMockup(
+                productType,
                 herColor,
                 herSide
               )
@@ -132,7 +155,6 @@ export default function CouplePreview({
             "
           />
 
-
           <img
 
             src={
@@ -144,7 +166,6 @@ export default function CouplePreview({
             className="
               absolute
               left-1/2
-              top-[38%]
               -translate-x-1/2
               -translate-y-1/2
               object-contain
@@ -152,8 +173,11 @@ export default function CouplePreview({
 
             style={{
 
+              top:
+                currentStyle.top,
+
               width:
-                `${herScale}%`
+                currentStyle.width
             }}
           />
 

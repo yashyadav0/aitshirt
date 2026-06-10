@@ -4,34 +4,47 @@ export default function SingleControls({
   setSelectedColor,
 
   selectedSide,
-  setSelectedSide
+  setSelectedSide,
+
+  productType
 
 }) {
+
+  const colors =
+
+    productType === "hoodie"
+
+      ? ["black", "white", "blue"]
+
+      : ["black", "white", "red"];
 
   return (
 
     <div
       className="
         mt-5
-        bg-[#18181b]
-        rounded-[24px]
-        p-5
+        bg-[#171717]
+        rounded-2xl
+        p-4
         border
-        border-[#27272a]
+        border-[#2f2f2f]
       "
     >
+
+      {/* COLOR PICKER */}
 
       <div
         className="
           flex
-          gap-2
-          mb-5
+          justify-center
+          gap-3
+          mb-3
         "
       >
 
         {
-          ["black", "white", "red"]
-          .map((color) => (
+
+          colors.map((color) => (
 
             <button
 
@@ -44,31 +57,35 @@ export default function SingleControls({
               }
 
               className={`
-                flex-1
-                py-3
+                w-12
+                h-12
                 rounded-full
-                text-sm
-                font-bold
                 border
+                border-[#3f3f46]
+                transition-all
 
                 ${
                   selectedColor === color
 
-                  ? "bg-white text-black border-white"
+                    ? "ring-2 ring-white scale-105"
 
-                  : "bg-transparent text-white border-[#3f3f46]"
+                    : ""
                 }
               `}
-            >
 
-              {color}
+              style={{
+                backgroundColor:
+                  color
+              }}
+            />
 
-            </button>
           ))
         }
 
       </div>
 
+
+      {/* FRONT / BACK */}
 
       <button
 
@@ -78,28 +95,28 @@ export default function SingleControls({
 
             selectedSide === "front"
 
-            ? "back"
+              ? "back"
 
-            : "front"
+              : "front"
           )
         }
 
         className="
           w-full
-          py-4
-          rounded-full
-          bg-cyan-500
-          font-bold
-          mb-5
+          min-h-12
+          rounded-2xl
+          bg-[#202020]
+          text-sm
+          font-medium
+          text-zinc-200
+          transition
+          hover:bg-[#2a2a2a]
         "
       >
 
-        {selectedSide}
+        {selectedSide === "front" ? "Front" : "Back"}
 
       </button>
-
-
-      
 
     </div>
   );

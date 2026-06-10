@@ -132,7 +132,7 @@ export default function History() {
       <div
         className="
           min-h-screen
-          bg-black
+          bg-[#0b0b0b]
           text-white
           flex
           items-center
@@ -152,10 +152,11 @@ export default function History() {
     <div
       className="
         min-h-screen
-        bg-black
+        bg-[#0b0b0b]
         text-white
-        px-5
-        py-10
+        px-4
+        py-20
+        md:p-8
       "
     >
 
@@ -174,8 +175,9 @@ export default function History() {
 
         <h1
           className="
-            text-6xl
-            font-black
+            text-3xl
+            font-semibold
+            tracking-tight
           "
         >
 
@@ -203,11 +205,11 @@ export default function History() {
                 key={item._id}
 
                 className="
-                  bg-zinc-900
-                  rounded-[40px]
+                  bg-[#171717]
+                  rounded-3xl
                   overflow-hidden
                   border
-                  border-zinc-800
+                  border-[#2f2f2f]
                 "
               >
 

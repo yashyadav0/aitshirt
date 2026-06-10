@@ -18,12 +18,7 @@ export default function CoupleInputs({
 
       <textarea
 
-        placeholder="
-Describe your matching couple design...
-
-Example:
-Dark fantasy anime couple with matching blue flame aura, oversized streetwear, split composition, emotional connection, premium cyberpunk aesthetic.
-"
+        placeholder="Describe your matching couple design..."
 
         value={couplePrompt}
 
@@ -35,15 +30,15 @@ Dark fantasy anime couple with matching blue flame aura, oversized streetwear, s
 
         className="
           w-full
-          min-h-[220px]
-          bg-[#18181b]
-          border
-          border-[#27272a]
-          rounded-[28px]
-          p-5
+          min-h-[180px]
+          bg-transparent
           text-white
           outline-none
           resize-none
+          text-base
+          leading-7
+          placeholder:text-zinc-600
+          md:text-lg
         "
       />
 
