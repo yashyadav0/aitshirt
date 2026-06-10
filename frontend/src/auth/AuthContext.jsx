@@ -6,78 +6,10 @@ import {
   useState
 } from "react";
 
-import {
-  onAuthStateChanged,
-  signOut
-} from "firebase/auth";
-
-import {
-  doc,
-  getDoc
-} from "firebase/firestore";
-
 import API from "../api";
-
-import {
-  auth,
-  db
-} from "../firebase";
 
 const AuthContext =
   createContext(null);
-
-async function syncBackendSession(firebaseUser, profile) {
-
-  if (!firebaseUser?.phoneNumber) {
-    return;
-  }
-
-  try {
-
-    const endpoint =
-      profile?.name
-        ? "/auth/complete-profile"
-        : "/auth/firebase-login";
-
-    const payload =
-      profile?.name
-        ? {
-          phone: firebaseUser.phoneNumber,
-          name: profile.name,
-          email: profile.email || ""
-        }
-        : {
-          phone: firebaseUser.phoneNumber
-        };
-
-    const res =
-      await API.post(
-        endpoint,
-        payload
-      );
-
-    localStorage.setItem(
-      "token",
-      res.data.token
-    );
-
-    localStorage.setItem(
-      "role",
-      res.data.user.role || profile?.role || "user"
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Backend session sync failed after Firebase auth",
-      {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      }
-    );
-  }
-}
 
 export function AuthProvider({
 
@@ -85,116 +17,124 @@ export function AuthProvider({
 
 }) {
 
-  const [currentUser,
-    setCurrentUser] =
-    useState(null);
-
-  const [profile,
-    setProfile] =
+  const [user,
+    setUser] =
     useState(null);
 
   const [loading,
     setLoading] =
     useState(true);
 
-  useEffect(() => {
+  async function loadUser() {
 
-    const unsubscribe =
-      onAuthStateChanged(
-        auth,
-        async (firebaseUser) => {
+    const token =
+      localStorage.getItem(
+        "token"
+      );
 
-          setCurrentUser(
-            firebaseUser
-          );
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return null;
+    }
 
-          if (!firebaseUser) {
-            setProfile(null);
-            localStorage.removeItem("token");
-            localStorage.removeItem("role");
-            setLoading(false);
-            return;
-          }
+    try {
 
-          try {
+      const res =
+        await API.get(
+          "/auth/me"
+        );
 
-            const snapshot =
-              await getDoc(
-                doc(
-                  db,
-                  "users",
-                  firebaseUser.uid
-                )
-              );
+      setUser(
+        res.data.user
+      );
 
-            const userProfile =
-              snapshot.exists()
-                ? {
-                  id: snapshot.id,
-                  ...snapshot.data()
-                }
-                : null;
+      localStorage.setItem(
+        "role",
+        res.data.user.role || "user"
+      );
 
-            setProfile(
-              userProfile
-            );
+      return res.data.user;
 
-            localStorage.setItem(
-              "role",
-              userProfile?.role || "user"
-            );
+    } catch (error) {
 
-            await syncBackendSession(
-              firebaseUser,
-              userProfile
-            );
-
-          } catch (error) {
-
-            console.error(
-              "Firebase profile load failed",
-              {
-                code: error.code,
-                message: error.message
-              }
-            );
-
-            setProfile(null);
-
-          } finally {
-
-            setLoading(false);
-          }
+      console.error(
+        "JWT session validation failed",
+        {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
         }
       );
 
-    return unsubscribe;
+      localStorage.removeItem(
+        "token"
+      );
+
+      localStorage.removeItem(
+        "role"
+      );
+
+      setUser(null);
+      return null;
+
+    } finally {
+
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+
+    loadUser();
 
   }, []);
 
-  async function logout() {
+  function saveSession(token, nextUser) {
 
-    await signOut(
-      auth
+    localStorage.setItem(
+      "token",
+      token
     );
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    localStorage.setItem(
+      "role",
+      nextUser.role || "user"
+    );
+
+    setUser(
+      nextUser
+    );
+  }
+
+  function logout() {
+
+    localStorage.removeItem(
+      "token"
+    );
+
+    localStorage.removeItem(
+      "role"
+    );
+
+    setUser(null);
   }
 
   const value =
     useMemo(
       () => ({
-        currentUser,
-        profile,
+        currentUser: user,
+        user,
+        profile: user,
         loading,
-        logout,
         isAuthenticated:
-          Boolean(currentUser)
+          Boolean(user),
+        loadUser,
+        logout,
+        saveSession
       }),
       [
-        currentUser,
-        profile,
+        user,
         loading
       ]
     );

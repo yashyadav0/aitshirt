@@ -5,14 +5,10 @@ import {
 } from "firebase/app";
 
 import {
-  browserLocalPersistence,
   getAuth,
+  inMemoryPersistence,
   setPersistence
 } from "firebase/auth";
-
-import {
-  getFirestore
-} from "firebase/firestore";
 
 export const firebaseConfig = {
 
@@ -57,7 +53,7 @@ auth.languageCode = "en";
 
 setPersistence(
   auth,
-  browserLocalPersistence
+  inMemoryPersistence
 ).catch((error) => {
   console.error(
     "Firebase auth persistence failed",
@@ -67,9 +63,6 @@ setPersistence(
     }
   );
 });
-
-export const db =
-  getFirestore(app);
 
 export function logFirebaseClientDiagnostics() {
 
