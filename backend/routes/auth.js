@@ -1,9 +1,6 @@
 const express =
   require("express");
 
-const axios =
-  require("axios");
-
 const jwt =
   require("jsonwebtoken");
 
@@ -15,14 +12,6 @@ const authMiddleware =
 
 const router =
   express.Router();
-
-const FIREBASE_CERTS_URL =
-  "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
-
-let firebaseCertCache = {
-  expiresAt: 0,
-  certs: {}
-};
 
 function createToken(user) {
 
@@ -81,111 +70,6 @@ function normalizePhone(value) {
     : "";
 }
 
-async function getFirebaseCerts() {
-
-  if (
-    firebaseCertCache.expiresAt > Date.now() &&
-    Object.keys(firebaseCertCache.certs).length
-  ) {
-    return firebaseCertCache.certs;
-  }
-
-  const res =
-    await axios.get(
-      FIREBASE_CERTS_URL
-    );
-
-  const cacheControl =
-    res.headers["cache-control"] || "";
-
-  const maxAgeMatch =
-    cacheControl.match(
-      /max-age=(\d+)/
-    );
-
-  firebaseCertCache = {
-    certs: res.data,
-    expiresAt:
-      Date.now() +
-      (
-        maxAgeMatch
-          ? Number(maxAgeMatch[1]) * 1000
-          : 60 * 60 * 1000
-      )
-  };
-
-  return firebaseCertCache.certs;
-}
-
-async function verifyFirebasePhoneToken(firebaseIdToken, phone) {
-
-  if (!firebaseIdToken) {
-    throw new Error(
-      "Firebase OTP verification token required"
-    );
-  }
-
-  const decodedHeader =
-    jwt.decode(
-      firebaseIdToken,
-      {
-        complete: true
-      }
-    );
-
-  if (!decodedHeader?.header?.kid) {
-    throw new Error(
-      "Invalid Firebase OTP verification token"
-    );
-  }
-
-  const certs =
-    await getFirebaseCerts();
-
-  const cert =
-    certs[decodedHeader.header.kid];
-
-  if (!cert) {
-    throw new Error(
-      "Unknown Firebase OTP verification token key"
-    );
-  }
-
-  const projectId =
-    process.env.FIREBASE_PROJECT_ID ||
-    "aishirtmaking";
-
-  const decoded =
-    jwt.verify(
-      firebaseIdToken,
-      cert,
-      {
-        algorithms: [
-          "RS256"
-        ],
-        audience: projectId,
-        issuer:
-          `https://securetoken.google.com/${projectId}`
-      }
-    );
-
-  if (decoded.phone_number !== phone) {
-    throw new Error(
-      "Verified phone number does not match"
-    );
-  }
-
-  return decoded;
-}
-
-function firebaseTokenError(err) {
-
-  return err.message?.includes("Firebase") ||
-    err.message?.includes("Verified phone") ||
-    err.name === "JsonWebTokenError" ||
-    err.name === "TokenExpiredError";
-}
-
 router.post("/check-phone", async (req, res) => {
 
   try {
@@ -236,20 +120,11 @@ router.post("/otp-login", async (req, res) => {
         req.body.phone
       );
 
-    const {
-      firebaseIdToken
-    } = req.body;
-
     if (!phone) {
       return res.status(400).json({
         error: "Phone number required"
       });
     }
-
-    await verifyFirebasePhoneToken(
-      firebaseIdToken,
-      phone
-    );
 
     const user =
       await User.findOne({
@@ -285,11 +160,7 @@ router.post("/otp-login", async (req, res) => {
       err
     );
 
-    res.status(
-      firebaseTokenError(err)
-        ? 400
-        : 500
-    ).json({
+    res.status(500).json({
       error: err.message
     });
   }
@@ -305,8 +176,7 @@ router.post("/register", async (req, res) => {
       );
 
     const {
-      name,
-      firebaseIdToken
+      name
     } = req.body;
 
     if (!phone || !name) {
@@ -314,11 +184,6 @@ router.post("/register", async (req, res) => {
         error: "Phone and name are required"
       });
     }
-
-    await verifyFirebasePhoneToken(
-      firebaseIdToken,
-      phone
-    );
 
     const existingUser =
       await User.findOne({
@@ -361,11 +226,7 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    res.status(
-      firebaseTokenError(err)
-        ? 400
-        : 500
-    ).json({
+    res.status(500).json({
       error: err.message
     });
   }
