@@ -81,7 +81,7 @@ function firebaseErrorMessage(error) {
     "auth/billing-not-enabled":
       "Firebase SMS billing is not enabled. Enable billing on the Firebase/Google Cloud project to send real OTP messages.",
     "auth/invalid-app-credential":
-      "Firebase rejected the app credential. Check Authorized Domains, authDomain, and reCAPTCHA/App Check settings.",
+      "Firebase rejected the app credential. Check Authorized Domains, authDomain, and reCAPTCHA settings.",
     "auth/captcha-check-failed":
       "reCAPTCHA verification failed. Refresh and try again.",
     "auth/invalid-phone-number":
@@ -119,10 +119,6 @@ export default function Login() {
   const recaptchaRef =
     useRef(null);
 
-  const [mode,
-    setMode] =
-    useState("login");
-
   const [step,
     setStep] =
     useState("phone");
@@ -131,28 +127,16 @@ export default function Login() {
     setPhone] =
     useState("");
 
-  const [password,
-    setPassword] =
-    useState("");
-
-  const [confirmPassword,
-    setConfirmPassword] =
-    useState("");
-
-  const [name,
-    setName] =
-    useState("");
-
-  const [otp,
-    setOtp] =
-    useState("");
-
   const [verifiedPhone,
     setVerifiedPhone] =
     useState("");
 
   const [firebaseIdToken,
     setFirebaseIdToken] =
+    useState("");
+
+  const [otp,
+    setOtp] =
     useState("");
 
   const [confirmation,
@@ -166,6 +150,10 @@ export default function Login() {
   const [secondsLeft,
     setSecondsLeft] =
     useState(0);
+
+  const [name,
+    setName] =
+    useState("");
 
   const [loading,
     setLoading] =
@@ -223,19 +211,15 @@ export default function Login() {
 
   }, [otpExpiresAt]);
 
-  function resetFlow(nextMode) {
+  function resetToPhone() {
 
-    setMode(nextMode);
     setStep("phone");
-    setPhone("");
-    setPassword("");
-    setConfirmPassword("");
-    setName("");
     setOtp("");
     setVerifiedPhone("");
     setFirebaseIdToken("");
     setConfirmation(null);
     setOtpExpiresAt(null);
+    setName("");
   }
 
   function getRecaptchaVerifier() {
@@ -282,7 +266,7 @@ export default function Login() {
     return recaptchaRef.current;
   }
 
-  function saveJwtSession(res) {
+  function finishAuth(res) {
 
     saveSession(
       res.data.token,
@@ -299,61 +283,6 @@ export default function Login() {
         replace: true
       }
     );
-  }
-
-  async function login(event) {
-
-    event.preventDefault();
-
-    try {
-
-      const normalizedPhone =
-        normalizePhone(
-          phone
-        );
-
-      if (!normalizedPhone || !password) {
-        return showError(
-          "Enter phone number and password"
-        );
-      }
-
-      setLoading(true);
-
-      const res =
-        await API.post(
-          "/auth/login",
-          {
-            phone: normalizedPhone,
-            password
-          }
-        );
-
-      saveJwtSession(
-        res
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Password login failed",
-        {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        }
-      );
-
-      showError(
-        error.response?.data?.error ||
-        error.message ||
-        "Login failed"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
   }
 
   async function sendOtp(event) {
@@ -375,6 +304,7 @@ export default function Login() {
 
       setLoading(true);
       setOtp("");
+      setFirebaseIdToken("");
 
       const verifier =
         getRecaptchaVerifier();
@@ -487,35 +417,24 @@ export default function Login() {
           }
         );
 
-      if (mode === "register" && status.data.exists) {
-        showError(
-          "Phone number already registered. Please login."
-        );
+      if (status.data.exists) {
+        const res =
+          await API.post(
+            "/auth/otp-login",
+            {
+              phone: verifiedPhone,
+              firebaseIdToken: idToken
+            }
+          );
 
-        resetFlow(
-          "login"
-        );
-
-        return;
-      }
-
-      if (mode === "forgot" && !status.data.exists) {
-        showError(
-          "No account found for this phone number"
-        );
-
-        resetFlow(
-          "login"
+        finishAuth(
+          res
         );
 
         return;
       }
 
-      setStep(
-        mode === "register"
-          ? "register"
-          : "reset"
-      );
+      setStep("account");
 
       showSuccess(
         "Phone verified"
@@ -529,6 +448,7 @@ export default function Login() {
       );
 
       showError(
+        error.response?.data?.error ||
         firebaseErrorMessage(
           error
         )
@@ -540,7 +460,7 @@ export default function Login() {
     }
   }
 
-  async function register(event) {
+  async function submitAccount(event) {
 
     event.preventDefault();
 
@@ -548,19 +468,13 @@ export default function Login() {
 
       if (!name.trim()) {
         return showError(
-          "Enter your full name"
+          "Enter your name"
         );
       }
 
-      if (password.length < 6) {
+      if (!firebaseIdToken) {
         return showError(
-          "Password must be at least 6 characters"
-        );
-      }
-
-      if (password !== confirmPassword) {
-        return showError(
-          "Passwords do not match"
+          "Phone verification expired. Request OTP again."
         );
       }
 
@@ -572,20 +486,18 @@ export default function Login() {
           {
             phone: verifiedPhone,
             name: name.trim(),
-            password,
-            phoneVerified: true,
             firebaseIdToken
           }
         );
 
-      saveJwtSession(
+      finishAuth(
         res
       );
 
     } catch (error) {
 
       console.error(
-        "Registration failed",
+        "OTP registration failed",
         {
           status: error.response?.status,
           data: error.response?.data,
@@ -605,74 +517,6 @@ export default function Login() {
     }
   }
 
-  async function resetPassword(event) {
-
-    event.preventDefault();
-
-    try {
-
-      if (password.length < 6) {
-        return showError(
-          "Password must be at least 6 characters"
-        );
-      }
-
-      if (password !== confirmPassword) {
-        return showError(
-          "Passwords do not match"
-        );
-      }
-
-      setLoading(true);
-
-      await API.post(
-        "/auth/forgot-password",
-        {
-          phone: verifiedPhone,
-          password,
-          phoneVerified: true,
-          firebaseIdToken
-        }
-      );
-
-      showSuccess(
-        "Password updated. Please login."
-      );
-
-      resetFlow(
-        "login"
-      );
-
-    } catch (error) {
-
-      console.error(
-        "Password reset failed",
-        {
-          status: error.response?.status,
-          data: error.response?.data,
-          message: error.message
-        }
-      );
-
-      showError(
-        error.response?.data?.error ||
-        error.message ||
-        "Password reset failed"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  }
-
-  const title =
-    mode === "register"
-      ? "Create account"
-      : mode === "forgot"
-        ? "Reset password"
-        : "Login";
-
   return (
 
     <main className="flex min-h-screen items-center justify-center bg-[#0b0b0b] px-4 py-10 text-white">
@@ -689,94 +533,12 @@ export default function Login() {
           </h1>
 
           <p className="mt-2 text-sm leading-6 text-zinc-400">
-            {title}
+            Login with phone OTP. New users add their name after verification.
           </p>
         </div>
 
         {
-          mode === "login" && (
-            <form
-              onSubmit={login}
-              className="space-y-4"
-            >
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-zinc-300">
-                  Phone Number
-                </span>
-
-                <input
-                  value={phone}
-                  onChange={(event) =>
-                    setPhone(
-                      event.target.value
-                    )
-                  }
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  placeholder="9876543210"
-                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-2 block text-sm font-medium text-zinc-300">
-                  Password
-                </span>
-
-                <input
-                  value={password}
-                  onChange={(event) =>
-                    setPassword(
-                      event.target.value
-                    )
-                  }
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Your password"
-                  className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Logging in..." : "Login"}
-              </button>
-
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    resetFlow(
-                      "register"
-                    )
-                  }
-                  className="min-h-12 rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white"
-                >
-                  Register
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    resetFlow(
-                      "forgot"
-                    )
-                  }
-                  className="min-h-12 rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white"
-                >
-                  Forgot Password
-                </button>
-              </div>
-            </form>
-          )
-        }
-
-        {
-          mode !== "login" && step === "phone" && (
+          step === "phone" && (
             <form
               onSubmit={sendOtp}
               className="space-y-4"
@@ -808,24 +570,12 @@ export default function Login() {
               >
                 {loading ? "Sending OTP..." : "Send OTP"}
               </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  resetFlow(
-                    "login"
-                  )
-                }
-                className="min-h-12 w-full rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white"
-              >
-                Back to Login
-              </button>
             </form>
           )
         }
 
         {
-          mode !== "login" && step === "otp" && (
+          step === "otp" && (
             <form
               onSubmit={verifyOtp}
               className="space-y-4"
@@ -873,19 +623,27 @@ export default function Login() {
               >
                 Resend OTP
               </button>
+
+              <button
+                type="button"
+                onClick={resetToPhone}
+                className="min-h-12 w-full rounded-2xl border border-[#333] text-sm text-zinc-300 transition hover:bg-[#202020] hover:text-white"
+              >
+                Change Number
+              </button>
             </form>
           )
         }
 
         {
-          mode === "register" && step === "register" && (
+          step === "account" && (
             <form
-              onSubmit={register}
+              onSubmit={submitAccount}
               className="space-y-4"
             >
               <label className="block">
                 <span className="mb-2 block text-sm font-medium text-zinc-300">
-                  Full Name
+                  Name
                 </span>
 
                 <input
@@ -901,43 +659,12 @@ export default function Login() {
                 />
               </label>
 
-              <PasswordFields
-                password={password}
-                setPassword={setPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-              />
-
               <button
                 type="submit"
                 disabled={loading}
                 className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? "Creating..." : "Create Account"}
-              </button>
-            </form>
-          )
-        }
-
-        {
-          mode === "forgot" && step === "reset" && (
-            <form
-              onSubmit={resetPassword}
-              className="space-y-4"
-            >
-              <PasswordFields
-                password={password}
-                setPassword={setPassword}
-                confirmPassword={confirmPassword}
-                setConfirmPassword={setConfirmPassword}
-              />
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="min-h-12 w-full rounded-2xl bg-cyan-400 text-sm font-semibold text-black transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? "Updating..." : "Update Password"}
+                {loading ? "Creating..." : "Save Name & Continue"}
               </button>
             </form>
           )
@@ -948,57 +675,5 @@ export default function Login() {
       </section>
 
     </main>
-  );
-}
-
-function PasswordFields({
-
-  password,
-  setPassword,
-  confirmPassword,
-  setConfirmPassword
-
-}) {
-
-  return (
-    <>
-      <label className="block">
-        <span className="mb-2 block text-sm font-medium text-zinc-300">
-          Password
-        </span>
-
-        <input
-          value={password}
-          onChange={(event) =>
-            setPassword(
-              event.target.value
-            )
-          }
-          type="password"
-          autoComplete="new-password"
-          placeholder="Create password"
-          className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
-        />
-      </label>
-
-      <label className="block">
-        <span className="mb-2 block text-sm font-medium text-zinc-300">
-          Confirm Password
-        </span>
-
-        <input
-          value={confirmPassword}
-          onChange={(event) =>
-            setConfirmPassword(
-              event.target.value
-            )
-          }
-          type="password"
-          autoComplete="new-password"
-          placeholder="Confirm password"
-          className="min-h-12 w-full rounded-2xl border border-[#333] bg-[#0f0f0f] px-4 text-sm outline-none transition placeholder:text-zinc-600 focus:border-cyan-500/70"
-        />
-      </label>
-    </>
   );
 }

@@ -1,9 +1,6 @@
 const express =
   require("express");
 
-const bcrypt =
-  require("bcrypt");
-
 const axios =
   require("axios");
 
@@ -18,9 +15,6 @@ const authMiddleware =
 
 const router =
   express.Router();
-
-const SALT_ROUNDS =
-  12;
 
 const FIREBASE_CERTS_URL =
   "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
@@ -87,12 +81,6 @@ function normalizePhone(value) {
     : "";
 }
 
-function validatePassword(password) {
-
-  return typeof password === "string" &&
-    password.length >= 6;
-}
-
 async function getFirebaseCerts() {
 
   if (
@@ -115,15 +103,15 @@ async function getFirebaseCerts() {
       /max-age=(\d+)/
     );
 
-  const maxAgeMs =
-    maxAgeMatch
-      ? Number(maxAgeMatch[1]) * 1000
-      : 60 * 60 * 1000;
-
   firebaseCertCache = {
     certs: res.data,
     expiresAt:
-      Date.now() + maxAgeMs
+      Date.now() +
+      (
+        maxAgeMatch
+          ? Number(maxAgeMatch[1]) * 1000
+          : 60 * 60 * 1000
+      )
   };
 
   return firebaseCertCache.certs;
@@ -133,7 +121,7 @@ async function verifyFirebasePhoneToken(firebaseIdToken, phone) {
 
   if (!firebaseIdToken) {
     throw new Error(
-      "Firebase verification token required"
+      "Firebase OTP verification token required"
     );
   }
 
@@ -147,7 +135,7 @@ async function verifyFirebasePhoneToken(firebaseIdToken, phone) {
 
   if (!decodedHeader?.header?.kid) {
     throw new Error(
-      "Invalid Firebase verification token"
+      "Invalid Firebase OTP verification token"
     );
   }
 
@@ -159,7 +147,7 @@ async function verifyFirebasePhoneToken(firebaseIdToken, phone) {
 
   if (!cert) {
     throw new Error(
-      "Unknown Firebase verification token key"
+      "Unknown Firebase OTP verification token key"
     );
   }
 
@@ -190,6 +178,14 @@ async function verifyFirebasePhoneToken(firebaseIdToken, phone) {
   return decoded;
 }
 
+function firebaseTokenError(err) {
+
+  return err.message?.includes("Firebase") ||
+    err.message?.includes("Verified phone") ||
+    err.name === "JsonWebTokenError" ||
+    err.name === "TokenExpiredError";
+}
+
 router.post("/check-phone", async (req, res) => {
 
   try {
@@ -208,11 +204,12 @@ router.post("/check-phone", async (req, res) => {
     const user =
       await User.findOne({
         phone
-      }).select("_id phone name phoneVerified");
+      });
 
     res.json({
       exists: Boolean(user),
       phone,
+      name: user?.name || "",
       phoneVerified:
         Boolean(user?.phoneVerified)
     });
@@ -230,6 +227,74 @@ router.post("/check-phone", async (req, res) => {
   }
 });
 
+router.post("/otp-login", async (req, res) => {
+
+  try {
+
+    const phone =
+      normalizePhone(
+        req.body.phone
+      );
+
+    const {
+      firebaseIdToken
+    } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        error: "Phone number required"
+      });
+    }
+
+    await verifyFirebasePhoneToken(
+      firebaseIdToken,
+      phone
+    );
+
+    const user =
+      await User.findOne({
+        phone
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Phone number is not registered"
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: "User is blocked"
+      });
+    }
+
+    user.phoneVerified =
+      true;
+
+    await user.save();
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "OTP LOGIN ERROR:",
+      err
+    );
+
+    res.status(
+      firebaseTokenError(err)
+        ? 400
+        : 500
+    ).json({
+      error: err.message
+    });
+  }
+});
+
 router.post("/register", async (req, res) => {
 
   try {
@@ -241,20 +306,12 @@ router.post("/register", async (req, res) => {
 
     const {
       name,
-      password,
-      phoneVerified,
       firebaseIdToken
     } = req.body;
 
-    if (!phone || !name || !password) {
+    if (!phone || !name) {
       return res.status(400).json({
-        error: "Phone, name and password are required"
-      });
-    }
-
-    if (!phoneVerified) {
-      return res.status(400).json({
-        error: "Phone number must be verified before registration"
+        error: "Phone and name are required"
       });
     }
 
@@ -262,12 +319,6 @@ router.post("/register", async (req, res) => {
       firebaseIdToken,
       phone
     );
-
-    if (!validatePassword(password)) {
-      return res.status(400).json({
-        error: "Password must be at least 6 characters"
-      });
-    }
 
     const existingUser =
       await User.findOne({
@@ -280,17 +331,10 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    const passwordHash =
-      await bcrypt.hash(
-        password,
-        SALT_ROUNDS
-      );
-
     const user =
       await User.create({
         phone,
         name: name.trim(),
-        passwordHash,
         phoneVerified: true,
         role: "user",
         weeklyPromptsLeft: 5,
@@ -317,179 +361,11 @@ router.post("/register", async (req, res) => {
       });
     }
 
-    if (
-      err.message?.includes("Firebase") ||
-      err.message?.includes("Verified phone") ||
-      err.name === "JsonWebTokenError" ||
-      err.name === "TokenExpiredError"
-    ) {
-      return res.status(400).json({
-        error: err.message
-      });
-    }
-
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-router.post("/login", async (req, res) => {
-
-  try {
-
-    const phone =
-      normalizePhone(
-        req.body.phone
-      );
-
-    const {
-      password
-    } = req.body;
-
-    if (!phone || !password) {
-      return res.status(400).json({
-        error: "Phone and password are required"
-      });
-    }
-
-    const user =
-      await User.findOne({
-        phone
-      });
-
-    if (!user || !user.passwordHash) {
-      return res.status(401).json({
-        error: "Invalid phone number or password"
-      });
-    }
-
-    if (user.isBlocked) {
-      return res.status(403).json({
-        error: "User is blocked"
-      });
-    }
-
-    const passwordMatches =
-      await bcrypt.compare(
-        password,
-        user.passwordHash
-      );
-
-    if (!passwordMatches) {
-      return res.status(401).json({
-        error: "Invalid phone number or password"
-      });
-    }
-
-    res.json({
-      token: createToken(user),
-      user: publicUser(user)
-    });
-
-  } catch (err) {
-
-    console.log(
-      "LOGIN ERROR:",
-      err
-    );
-
-    res.status(500).json({
-      error: err.message
-    });
-  }
-});
-
-router.post("/forgot-password", async (req, res) => {
-
-  try {
-
-    const phone =
-      normalizePhone(
-        req.body.phone
-      );
-
-    const {
-      password,
-      phoneVerified,
-      firebaseIdToken
-    } = req.body;
-
-    if (!phone || !password) {
-      return res.status(400).json({
-        error: "Phone and new password are required"
-      });
-    }
-
-    if (!phoneVerified) {
-      return res.status(400).json({
-        error: "Phone number must be verified before password reset"
-      });
-    }
-
-    await verifyFirebasePhoneToken(
-      firebaseIdToken,
-      phone
-    );
-
-    if (!validatePassword(password)) {
-      return res.status(400).json({
-        error: "Password must be at least 6 characters"
-      });
-    }
-
-    const user =
-      await User.findOne({
-        phone
-      });
-
-    if (!user) {
-      return res.status(404).json({
-        error: "No account found for this phone number"
-      });
-    }
-
-    if (user.isBlocked) {
-      return res.status(403).json({
-        error: "User is blocked"
-      });
-    }
-
-    user.passwordHash =
-      await bcrypt.hash(
-        password,
-        SALT_ROUNDS
-      );
-
-    user.phoneVerified =
-      true;
-
-    await user.save();
-
-    res.json({
-      success: true,
-      message: "Password updated successfully"
-    });
-
-  } catch (err) {
-
-    console.log(
-      "FORGOT PASSWORD ERROR:",
-      err
-    );
-
-    if (
-      err.message?.includes("Firebase") ||
-      err.message?.includes("Verified phone") ||
-      err.name === "JsonWebTokenError" ||
-      err.name === "TokenExpiredError"
-    ) {
-      return res.status(400).json({
-        error: err.message
-      });
-    }
-
-    res.status(500).json({
+    res.status(
+      firebaseTokenError(err)
+        ? 400
+        : 500
+    ).json({
       error: err.message
     });
   }

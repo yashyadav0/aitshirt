@@ -20,11 +20,6 @@ const userSchema =
       unique: true
     },
 
-    passwordHash: {
-      type: String,
-      default: ""
-    },
-
     phoneVerified: {
       type: Boolean,
       default: false
