@@ -111,6 +111,49 @@ router.post("/check-phone", async (req, res) => {
   }
 });
 
+router.post("/phone-status", async (req, res) => {
+
+  try {
+
+    const phone =
+      normalizePhone(
+        req.body.phone
+      );
+
+    if (!phone) {
+      return res.status(400).json({
+        error: "Phone number required"
+      });
+    }
+
+    const user =
+      await User.findOne({
+        phone
+      });
+
+    res.json({
+      exists: Boolean(user),
+      phone,
+      profileComplete:
+        Boolean(user?.name),
+      name: user?.name || "",
+      phoneVerified:
+        Boolean(user?.phoneVerified)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "PHONE STATUS ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
 router.post("/otp-login", async (req, res) => {
 
   try {
@@ -157,6 +200,61 @@ router.post("/otp-login", async (req, res) => {
 
     console.log(
       "OTP LOGIN ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.post("/firebase-login", async (req, res) => {
+
+  try {
+
+    const phone =
+      normalizePhone(
+        req.body.phone
+      );
+
+    if (!phone) {
+      return res.status(400).json({
+        error: "Phone number required"
+      });
+    }
+
+    const user =
+      await User.findOne({
+        phone
+      });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Phone number is not registered"
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: "User is blocked"
+      });
+    }
+
+    user.phoneVerified =
+      true;
+
+    await user.save();
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "FIREBASE LOGIN ERROR:",
       err
     );
 
@@ -225,6 +323,74 @@ router.post("/register", async (req, res) => {
         error: "Phone number already registered"
       });
     }
+
+    res.status(500).json({
+      error: err.message
+    });
+  }
+});
+
+router.post("/complete-profile", async (req, res) => {
+
+  try {
+
+    const phone =
+      normalizePhone(
+        req.body.phone
+      );
+
+    const {
+      name
+    } = req.body;
+
+    if (!phone || !name) {
+      return res.status(400).json({
+        error: "Phone and name are required"
+      });
+    }
+
+    let user =
+      await User.findOne({
+        phone
+      });
+
+    if (!user) {
+      user =
+        new User({
+          phone,
+          role: "user",
+          weeklyPromptsLeft: 5,
+          extraPrompts: 0,
+          promptCreditBalance: 0,
+          lastPromptReset: new Date()
+        });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        error: "User is blocked"
+      });
+    }
+
+    user.name =
+      name.trim();
+
+    user.phoneVerified =
+      true;
+
+    await user.save();
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.log(
+      "COMPLETE PROFILE ERROR:",
+      err
+    );
 
     res.status(500).json({
       error: err.message
