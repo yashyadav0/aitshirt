@@ -40,7 +40,8 @@ export default function SinglePreview({
 
     <div
       className="
-        mt-10
+        mt-6
+        sm:mt-10
       "
     >
 
@@ -51,7 +52,8 @@ export default function SinglePreview({
         className="
           relative
           overflow-hidden
-          rounded-3xl
+          rounded-2xl
+          sm:rounded-3xl
           bg-[#171717]
           border
           border-[#2f2f2f]

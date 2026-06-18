@@ -838,7 +838,8 @@ const startListening = () => {
           <div
             className="
               fixed
-              top-6
+              top-4
+              sm:top-6
               left-1/2
               -translate-x-1/2
               z-50
@@ -846,11 +847,16 @@ const startListening = () => {
               border
               border-[#2f2f2f]
               text-white
-              px-6
-              py-3
-              rounded-2xl
-              text-sm
+              px-4
+              sm:px-6
+              py-2
+              sm:py-3
+              rounded-xl
+              sm:rounded-2xl
+              text-xs
+              sm:text-sm
               shadow-2xl
+              max-w-[calc(100%-2rem)]
             "
           >
 
@@ -865,6 +871,9 @@ const startListening = () => {
         className="
           mx-auto
           max-w-6xl
+          px-4
+          sm:px-6
+          md:px-0
         "
       >
 
@@ -874,7 +883,7 @@ const startListening = () => {
             duration-500
             ${
               hasGenerated
-                ? "mb-8"
+                ? "mb-6 sm:mb-8"
                 : "flex min-h-[calc(100vh-140px)] flex-col justify-center"
             }
           `}
@@ -892,18 +901,20 @@ const startListening = () => {
             `}
           >
 
-            <p className="mb-3 text-sm font-medium text-cyan-300">
+            <p className="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-cyan-300">
               AI creative studio
             </p>
 
             <h1
               className="
-                text-4xl
+                text-3xl
+                sm:text-4xl
                 font-semibold
                 tracking-tight
                 text-white
-                sm:text-5xl
-                md:text-6xl
+                md:text-5xl
+                lg:text-6xl
+                leading-tight
               "
             >
               Imagine Your Style...
@@ -912,11 +923,15 @@ const startListening = () => {
             <p
               className="
                 mx-auto
-                mt-4
+                mt-3
+                sm:mt-4
                 max-w-2xl
-                text-base
-                leading-7
+                text-sm
+                sm:text-base
+                leading-6
+                sm:leading-7
                 text-zinc-400
+                md:text-lg
               "
             >
               Describe an idea, generate artwork, then apply it to premium apparel mockups.
@@ -924,8 +939,10 @@ const startListening = () => {
 
             <div
               className="
-                mt-8
-                rounded-[28px]
+                mt-6
+                sm:mt-8
+                rounded-2xl
+                sm:rounded-[28px]
                 border
                 border-[#2f2f2f]
                 bg-[#171717]

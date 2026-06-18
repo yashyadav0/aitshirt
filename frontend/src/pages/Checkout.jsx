@@ -192,14 +192,16 @@ export default function Checkout() {
 
   return (
 
-    <main className="min-h-screen bg-[#0b0b0b] px-4 py-20 text-white md:p-8">
+    <main className="min-h-screen bg-[#0b0b0b] px-4 py-20 sm:px-6 text-white md:p-8">
 
       <h1
         className="
-          text-3xl
+          text-2xl
+          sm:text-3xl
           font-semibold
           tracking-tight
-          mb-8
+          mb-6
+          sm:mb-8
         "
       >
         Checkout
@@ -212,7 +214,10 @@ export default function Checkout() {
         className="
           flex
           flex-col
-          gap-4
+          gap-3
+          sm:gap-4
+          mb-6
+          sm:mb-8
         "
       >
 
@@ -228,10 +233,13 @@ export default function Checkout() {
                   bg-[#171717]
                   border
                   border-[#2f2f2f]
-                  p-4
-                  rounded-3xl
+                  p-3
+                  sm:p-4
+                  rounded-2xl
+                  sm:rounded-3xl
                   flex
-                  gap-4
+                  gap-3
+                  sm:gap-4
                   items-center
                 "
               >
@@ -247,16 +255,20 @@ export default function Checkout() {
                   alt="cart"
 
                   className="
-                    w-24
-                    h-24
+                    w-16
+                    sm:w-24
+                    h-16
+                    sm:h-24
                     object-cover
-                    rounded-xl
+                    rounded-lg
+                    sm:rounded-xl
+                    flex-shrink-0
                   "
                 />
 
-                <div>
+                <div className="flex-1 min-w-0">
 
-                  <p className="font-bold">
+                  <p className="font-bold text-sm sm:text-base truncate">
 
                     {
                       item.prompt
@@ -266,7 +278,7 @@ export default function Checkout() {
 
                   </p>
 
-                  <p className="text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-400">
 
                     Quantity:
                     {" "}
@@ -276,7 +288,7 @@ export default function Checkout() {
 
                   </p>
 
-                  <p className="text-cyan-400 font-bold">
+                  <p className="text-cyan-400 font-bold text-sm sm:text-base">
 
                     ₹
                     {
@@ -299,20 +311,25 @@ export default function Checkout() {
 
       <div
         className="
-          mt-10
+          mt-6
+          sm:mt-10
           bg-[#171717]
           border
           border-[#2f2f2f]
-          p-6
-          rounded-3xl
+          p-4
+          sm:p-6
+          rounded-2xl
+          sm:rounded-3xl
         "
       >
 
         <h2
           className="
-            text-2xl
+            text-xl
+            sm:text-2xl
             font-semibold
-            mb-6
+            mb-4
+            sm:mb-6
           "
         >
           Payment
@@ -324,7 +341,10 @@ export default function Checkout() {
         <div
           className="
             flex
-            gap-3
+            flex-col
+            sm:flex-row
+            gap-2
+            sm:gap-3
             mb-6
           "
         >
@@ -348,10 +368,17 @@ export default function Checkout() {
               bg-[#101010]
               border
               border-[#333]
-              rounded-2xl
-              px-4
-              py-3
+              rounded-xl
+              sm:rounded-2xl
+              px-3
+              sm:px-4
+              py-2
+              sm:py-3
               outline-none
+              text-sm
+              sm:text-base
+              focus:border-cyan-500
+              transition
             "
           />
 
@@ -365,9 +392,19 @@ export default function Checkout() {
             className="
               bg-cyan-400
               text-black
-              px-5
-              rounded-2xl
+              px-4
+              sm:px-5
+              py-2
+              sm:py-3
+              rounded-xl
+              sm:rounded-2xl
               font-semibold
+              text-sm
+              sm:text-base
+              hover:bg-cyan-300
+              transition
+              flex-shrink-0
+              min-h-10
             "
           >
 
@@ -386,6 +423,8 @@ export default function Checkout() {
             flex-col
             gap-2
             mb-6
+            text-sm
+            sm:text-base
           "
         >
 

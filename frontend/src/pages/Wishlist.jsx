@@ -212,16 +212,19 @@ export default function Wishlist() {
         text-white
         px-4
         py-20
+        sm:px-6
         md:p-8
       "
     >
 
       <h1
         className="
-          text-3xl
+          text-2xl
+          sm:text-3xl
           font-semibold
           tracking-tight
-          mb-8
+          mb-6
+          sm:mb-8
         "
       >
 
@@ -234,7 +237,8 @@ export default function Wishlist() {
         className="
           flex
           flex-col
-          gap-6
+          gap-4
+          sm:gap-6
         "
       >
 

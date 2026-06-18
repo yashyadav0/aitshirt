@@ -22,10 +22,13 @@ export default function SingleControls({
 
     <div
       className="
-        mt-5
+        mt-4
+        sm:mt-5
         bg-[#171717]
-        rounded-2xl
-        p-4
+        rounded-xl
+        sm:rounded-2xl
+        p-3
+        sm:p-4
         border
         border-[#2f2f2f]
       "
@@ -37,8 +40,11 @@ export default function SingleControls({
         className="
           flex
           justify-center
-          gap-3
-          mb-3
+          gap-2
+          sm:gap-3
+          mb-2
+          sm:mb-3
+          flex-wrap
         "
       >
 
@@ -57,12 +63,15 @@ export default function SingleControls({
               }
 
               className={`
-                w-12
-                h-12
+                w-10
+                sm:w-12
+                h-10
+                sm:h-12
                 rounded-full
                 border
                 border-[#3f3f46]
                 transition-all
+                flex-shrink-0
 
                 ${
                   selectedColor === color
@@ -77,6 +86,7 @@ export default function SingleControls({
                 backgroundColor:
                   color
               }}
+              aria-label={`Select ${color}`}
             />
 
           ))
@@ -103,10 +113,13 @@ export default function SingleControls({
 
         className="
           w-full
-          min-h-12
-          rounded-2xl
+          min-h-10
+          sm:min-h-12
+          rounded-xl
+          sm:rounded-2xl
           bg-[#202020]
-          text-sm
+          text-xs
+          sm:text-sm
           font-medium
           text-zinc-200
           transition

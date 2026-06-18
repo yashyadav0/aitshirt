@@ -324,16 +324,19 @@ export default function Cart() {
         text-white
         px-4
         py-20
+        sm:px-6
         md:p-8
       "
     >
 
       <h1
         className="
-          text-3xl
+          text-2xl
+          sm:text-3xl
           font-semibold
           tracking-tight
-          mb-10
+          mb-8
+          sm:mb-10
         "
       >
 
@@ -402,18 +405,22 @@ export default function Cart() {
 
                           <div
                             className="
-                              p-5
+                              p-4
+                              sm:p-5
                               flex
                               justify-between
-                              items-center
+                              items-start
+                              sm:items-center
+                              gap-2
                             "
                           >
 
-                            <div>
+                            <div className="flex-1 min-w-0">
 
                               <div
                                 className="
-                                  text-2xl
+                                  text-xl
+                                  sm:text-2xl
                                   font-black
                                 "
                               >
@@ -424,6 +431,8 @@ export default function Cart() {
 
                               <div
                                 className="
+                                  text-sm
+                                  sm:text-base
                                   text-gray-400
                                 "
                               >
@@ -445,10 +454,16 @@ export default function Cart() {
 
                               className="
                                 text-red-500
+                                flex-shrink-0
+                                p-2
+                                hover:bg-red-500/10
+                                rounded-lg
+                                transition
                               "
+                              aria-label="Remove item"
                             >
 
-                              <Trash2 />
+                              <Trash2 size={20} />
 
                             </button>
 
@@ -596,125 +611,154 @@ export default function Cart() {
 
                           <div
                             className="
-                              p-5
-                              flex
-                              justify-between
-                              items-center
-                            "
-                          >
+                             p-4
+                             sm:p-5
+                             flex
+                             justify-between
+                             items-start
+                             sm:items-center
+                             gap-2
+                           "
+                         >
 
-                            <div>
+                           <div className="flex-1 min-w-0">
 
-                              <div
-                                className="
-                                  text-2xl
-                                  font-black
-                                "
-                              >
+                             <div
+                               className="
+                                 text-xl
+                                 sm:text-2xl
+                                 font-black
+                               "
+                             >
 
-                                Single Design
+                               Single Design
 
-                              </div>
+                             </div>
 
-                              <div
-                                className="
-                                  text-gray-400
-                                "
-                              >
+                             <div
+                               className="
+                                 text-sm
+                                 sm:text-base
+                                 text-gray-400
+                               "
+                             >
 
-                                ₹699
+                               ₹699
 
-                              </div>
+                             </div>
 
-                            </div>
+                           </div>
 
 
-                            <button
+                           <button
 
-                              onClick={() =>
-                                removeItem(
-                                  item._id
-                                )
-                              }
+                             onClick={() =>
+                               removeItem(
+                                 item._id
+                               )
+                             }
 
+                             className="
+                               text-red-500
+                               flex-shrink-0
+                               p-2
+                               hover:bg-red-500/10
+                               rounded-lg
+                               transition
+                             "
+                             aria-label="Remove item"
+                           >
+
+                             <Trash2 size={20} />
+
+                           </button>
+
+                         </div>
+
+
+                         {/* QUANTITY */}
+
+                         <div
+                           className="
+                             px-4
+                             sm:px-5
+                             pb-4
+                             flex
+                             items-center
+                             gap-2
+                             sm:gap-4
+                           "
+                         >
+
+                           <button
+
+                             onClick={() =>
+                               updateQuantity(
+                                 item._id,
+                                 item.quantity - 1
+                               )
+                             }
+
+                             className="
+                               bg-[#232326]
+                               p-2
+                               sm:p-3
+                               rounded-lg
+                               sm:rounded-xl
+                               hover:bg-[#333]
+                               transition
+                               flex-shrink-0
+                             "
+                             aria-label="Decrease quantity"
+                           >
+
+                             <Minus size={18} />
+
+                           </button>
+
+
+                           <div
                               className="
-                                text-red-500
-                              "
-                            >
+                               text-lg
+                               sm:text-xl
+                               font-bold
+                               flex-1
+                               text-center
+                             "
+                           >
 
-                              <Trash2 />
+                             {item.quantity}
 
-                            </button>
-
-                          </div>
-
-
-                          {/* QUANTITY */}
-
-                          <div
-                            className="
-                              px-5
-                              pb-4
-                              flex
-                              items-center
-                              gap-4
-                            "
-                          >
-
-                            <button
-
-                              onClick={() =>
-                                updateQuantity(
-                                  item._id,
-                                  item.quantity - 1
-                                )
-                              }
-
-                              className="
-                                bg-[#232326]
-                                p-2
-                                rounded-xl
-                              "
-                            >
-
-                              <Minus size={18} />
-
-                            </button>
+                           </div>
 
 
-                            <div
-                              className="
-                                text-xl
-                                font-bold
-                              "
-                            >
+                           <button
 
-                              {item.quantity}
+                             onClick={() =>
+                               updateQuantity(
+                                 item._id,
+                                 item.quantity + 1
+                               )
+                             }
 
-                            </div>
+                             className="
+                               bg-[#232326]
+                               p-2
+                               sm:p-3
+                               rounded-lg
+                               sm:rounded-xl
+                               hover:bg-[#333]
+                               transition
+                               flex-shrink-0
+                             "
+                             aria-label="Increase quantity"
+                           >
 
+                             <Plus size={18} />
 
-                            <button
+                           </button>
 
-                              onClick={() =>
-                                updateQuantity(
-                                  item._id,
-                                  item.quantity + 1
-                                )
-                              }
-
-                              className="
-                                bg-[#232326]
-                                p-2
-                                rounded-xl
-                              "
-                            >
-
-                              <Plus size={18} />
-
-                            </button>
-
-                          </div>
+                         </div>
 
 
                           <div
@@ -759,19 +803,23 @@ export default function Cart() {
             <div
               className="
                 mt-5
+                mb-20
                 sticky
                 bottom-4
                 z-20
                 bg-cyan-400
                 text-black
-                rounded-3xl
-                p-5
+                rounded-2xl
+                sm:rounded-3xl
+                p-4
+                sm:p-5
               "
             >
 
               <div
                 className="
-                  text-2xl
+                  text-xl
+                  sm:text-2xl
                   font-semibold
                 "
               >
@@ -792,17 +840,22 @@ export default function Cart() {
                 bg-[#171717]
                 border
                 border-[#2f2f2f]
-                rounded-3xl
-                p-6
+                rounded-2xl
+                sm:rounded-3xl
+                p-4
+                sm:p-6
                 flex
                 flex-col
-                gap-4
+                gap-3
+                sm:gap-4
+                mb-8
               "
             >
 
               <h2
                 className="
-                  text-2xl
+                  text-xl
+                  sm:text-2xl
                   font-semibold
                   mb-2
                 "
@@ -837,9 +890,15 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -868,9 +927,15 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -897,11 +962,18 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
                   resize-none
-                  min-h-[120px]
+                  min-h-[100px]
+                  sm:min-h-[120px]
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -930,9 +1002,15 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -961,9 +1039,15 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -992,9 +1076,15 @@ export default function Cart() {
                   bg-[#101010]
                   border
                   border-[#2f2f35]
-                  rounded-2xl
-                  p-4
+                  rounded-xl
+                  sm:rounded-2xl
+                  p-3
+                  sm:p-4
                   outline-none
+                  text-sm
+                  sm:text-base
+                  focus:border-cyan-500
+                  transition
                 "
               />
 
@@ -1010,16 +1100,22 @@ export default function Cart() {
                 }
 
                 className="
-                  mt-4
+                  mt-2
+                  sm:mt-4
                   bg-cyan-400
                   hover:bg-cyan-300
                   transition
-                  py-5
-                  rounded-2xl
+                  py-4
+                  sm:py-5
+                  rounded-xl
+                  sm:rounded-2xl
                   text-sm
                   font-semibold
                   text-black
                   disabled:opacity-50
+                  disabled:cursor-not-allowed
+                  w-full
+                  min-h-12
                 "
               >
 

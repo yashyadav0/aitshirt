@@ -475,7 +475,8 @@ export default function SingleActions({
 
       <div
         className="
-          mt-6
+          mt-4
+          sm:mt-6
         "
       >
 
@@ -483,7 +484,10 @@ export default function SingleActions({
           className="
             text-white
             font-semibold
-            mb-3
+            mb-2
+            sm:mb-3
+            text-sm
+            sm:text-base
           "
         >
 
@@ -495,7 +499,8 @@ export default function SingleActions({
         <div
           className="
             flex
-            gap-3
+            gap-2
+            sm:gap-3
           "
         >
 
@@ -515,10 +520,15 @@ export default function SingleActions({
 
                   className={`
                     flex-1
-                    py-3
-                    rounded-[18px]
+                    py-2
+                    sm:py-3
+                    rounded-lg
+                    sm:rounded-[18px]
                     border
                     transition-all
+                    text-sm
+                    sm:text-base
+                    font-medium
 
                     ${
                       selectedSize === size
@@ -532,6 +542,7 @@ export default function SingleActions({
                         : `
                           border-white/20
                           text-white
+                          hover:border-white/40
                         `
                     }
                   `}

@@ -156,6 +156,7 @@ export default function History() {
         text-white
         px-4
         py-20
+        sm:px-6
         md:p-8
       "
     >
@@ -164,18 +165,22 @@ export default function History() {
         className="
           flex
           items-center
-          gap-4
-          mb-10
+          gap-2
+          sm:gap-4
+          mb-8
+          sm:mb-10
         "
       >
 
         <HistoryIcon
-          size={50}
+          size={30}
+          className="sm:w-12 sm:h-12"
         />
 
         <h1
           className="
-            text-3xl
+            text-2xl
+            sm:text-3xl
             font-semibold
             tracking-tight
           "
@@ -192,7 +197,8 @@ export default function History() {
         className="
           flex
           flex-col
-          gap-8
+          gap-4
+          sm:gap-8
         "
       >
 
