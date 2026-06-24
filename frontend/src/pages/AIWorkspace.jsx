@@ -625,12 +625,8 @@ const startListening = () => {
 
             {
               headers: {
-
                 Authorization:
-                  `Bearer ${token}`,
-
-                "Content-Type":
-                  "multipart/form-data"
+                  `Bearer ${token}`
               }
             }
           );
@@ -727,19 +723,15 @@ const startListening = () => {
 
                 "/upload",
 
-                uploadFormData,
+            uploadFormData,
 
-                {
-                  headers: {
-
-                    Authorization:
-                      `Bearer ${token}`,
-
-                    "Content-Type":
-                      "multipart/form-data"
-                  }
-                }
-              );
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
 
 
             setGeneratedImage(
@@ -823,19 +815,15 @@ const startListening = () => {
 
                 "/upload",
 
-                hisUploadForm,
+            hisUploadForm,
 
-                {
-                  headers: {
-
-                    Authorization:
-                      `Bearer ${token}`,
-
-                    "Content-Type":
-                      "multipart/form-data"
-                  }
-                }
-              );
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
 
 
             setGeneratedHisImage(
@@ -896,19 +884,15 @@ const startListening = () => {
 
                 "/upload",
 
-                herUploadForm,
+            herUploadForm,
 
-                {
-                  headers: {
-
-                    Authorization:
-                      `Bearer ${token}`,
-
-                    "Content-Type":
-                      "multipart/form-data"
-                  }
-                }
-              );
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
 
 
             setGeneratedHerImage(

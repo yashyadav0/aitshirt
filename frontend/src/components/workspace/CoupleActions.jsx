@@ -227,19 +227,15 @@ export default function CoupleActions({
 
           "/upload",
 
-          formData,
+            formData,
 
-          {
-            headers: {
-
-              Authorization:
-                `Bearer ${token}`,
-
-              "Content-Type":
-                "multipart/form-data"
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
             }
-          }
-        );
+          );
 
 
       return res.data.imageUrl;
