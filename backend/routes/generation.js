@@ -415,9 +415,7 @@ async function generateImage(
       || err.message
     );
 
-    throw new Error(
-      "Gemini image generation failed"
-    );
+    return null;
   }
 }
 
@@ -534,6 +532,69 @@ async function splitImage(
 
     throw err;
   }
+}
+
+
+// =====================================
+// FALLBACK IMAGES
+// =====================================
+
+async function svgToPngDataUri(svg) {
+  const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
+  return `data:image/png;base64,${buffer.toString("base64")}`;
+}
+
+function escapeSvgText(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+async function createFallbackSingleImage(preferences, prompt) {
+  const color = preferences.selectedColor || preferences.color || "white";
+  const productLabel =
+    preferences.productType === "hoodie" ? "HOODIE" : "T-SHIRT";
+  const bg = color === "black" ? "#111111" : "#f3f3f3";
+  const fg = color === "black" ? "#f5f5f5" : "#111111";
+  const accent = color === "red" ? "#dc2626" : "#14b8a6";
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" fill="${bg}"/>
+      <rect x="96" y="96" width="832" height="832" rx="48" fill="${accent}" opacity="0.12"/>
+      <text x="512" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="${fg}">${productLabel}</text>
+      <text x="512" y="470" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
+      <text x="512" y="610" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 80)}</text>
+      <circle cx="512" cy="760" r="140" fill="${accent}" opacity="0.18"/>
+      <path d="M420 760c28-32 56-48 92-48s64 16 92 48" fill="none" stroke="${fg}" stroke-width="16" stroke-linecap="round"/>
+    </svg>
+  `;
+
+  return svgToPngDataUri(svg);
+}
+
+async function createFallbackCoupleImage(preferences, prompt) {
+  const color = preferences.selectedColor || preferences.color || "white";
+  const bg = color === "black" ? "#101010" : "#f6f6f6";
+  const fg = color === "black" ? "#f5f5f5" : "#111111";
+  const accent = color === "red" ? "#dc2626" : "#14b8a6";
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024" viewBox="0 0 2048 1024">
+      <rect width="2048" height="1024" fill="${bg}"/>
+      <rect x="64" y="64" width="1920" height="896" rx="48" fill="${accent}" opacity="0.12"/>
+      <rect x="128" y="128" width="864" height="768" rx="36" fill="${accent}" opacity="0.08"/>
+      <rect x="1056" y="128" width="864" height="768" rx="36" fill="${accent}" opacity="0.16"/>
+      <text x="560" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="84" font-weight="700" fill="${fg}">LEFT</text>
+      <text x="560" y="460" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
+      <text x="560" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 54)}</text>
+      <text x="1488" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="84" font-weight="700" fill="${fg}">RIGHT</text>
+      <text x="1488" y="460" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
+      <text x="1488" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 54)}</text>
+    </svg>
+  `;
+
+  return svgToPngDataUri(svg);
 }
 
 
@@ -688,9 +749,12 @@ IMPORTANT:
 
 
         const imageUrl =
-          await generateImage(
+          (await generateImage(
             finalPrompt,
             imageParts
+          )) || await createFallbackSingleImage(
+            preferences,
+            prompt
           );
 
 
@@ -765,9 +829,12 @@ console.log(
 
 
 const combinedImage =
-  await generateImage(
+  (await generateImage(
     finalPrompt,
     imageParts
+  )) || await createFallbackCoupleImage(
+    preferences,
+    prompt
   );
 
 
