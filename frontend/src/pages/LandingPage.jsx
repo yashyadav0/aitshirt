@@ -59,14 +59,14 @@ export default function LandingPage() {
         </button>
       </nav>
 
-      <section className="mx-auto grid max-w-6xl gap-8 sm:gap-10 px-4 pb-12 sm:pb-16 pt-10 sm:pt-14 sm:px-6 md:grid-cols-[1fr_0.9fr] md:px-8 md:pt-24">
+      <section className="mx-auto grid max-w-6xl gap-8 sm:gap-10 px-4 pb-12 sm:pb-16 pt-10 sm:pt-14 sm:px-6 md:grid-cols-[1fr_0.9fr] lg:grid-cols-[1fr_1fr] md:px-8 md:pt-24">
 
         <div className="flex flex-col justify-center">
           <p className="mb-3 sm:mb-4 text-xs sm:text-sm font-medium text-cyan-300">
             AI apparel studio
           </p>
 
-          <h1 className="max-w-3xl text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-semibold tracking-tight leading-tight">
             Create AI Apparel Designs Instantly
           </h1>
 
@@ -117,7 +117,7 @@ export default function LandingPage() {
                   hover:border-cyan-500/50
                   ${
                     index === 1
-                      ? "mt-6 sm:mt-10"
+                      ? "mt-6 sm:mt-10 md:mt-8 lg:mt-12"
                       : ""
                   }
                 `}

@@ -372,8 +372,9 @@ export default function Checkout() {
               sm:rounded-2xl
               px-3
               sm:px-4
-              py-2
-              sm:py-3
+              py-3
+              sm:py-4
+              min-h-12
               outline-none
               text-sm
               sm:text-base
@@ -394,8 +395,9 @@ export default function Checkout() {
               text-black
               px-4
               sm:px-5
-              py-2
-              sm:py-3
+              py-3
+              sm:py-4
+              min-h-12
               rounded-xl
               sm:rounded-2xl
               font-semibold
@@ -404,7 +406,6 @@ export default function Checkout() {
               hover:bg-cyan-300
               transition
               flex-shrink-0
-              min-h-10
             "
           >
 
@@ -503,6 +504,7 @@ export default function Checkout() {
             text-black
             px-6
             py-4
+            min-h-12
             rounded-2xl
             font-semibold
             w-full

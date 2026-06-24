@@ -16,6 +16,10 @@ const Generation =
 const authMiddleware =
   require("../middleware/authMiddleware");
 
+const {
+  buildPreferenceEnrichedPrompt
+} = require("../config/designPreferences");
+
 
 const router =
   express.Router();
@@ -554,9 +558,26 @@ router.post(
 
         generationMode,
 
+        designType,
+
+        productType = "tshirt",
+
+        color = "white",
+
         prompt,
 
       } = req.body;
+
+      const activeMode =
+        designType
+        || generationMode
+        || "single";
+
+      const preferences = {
+        productType,
+        designType: activeMode,
+        color
+      };
 
 
       let imageParts = [];
@@ -595,7 +616,7 @@ router.post(
       // =====================================
 
       if (
-        generationMode === "single"
+        activeMode === "single"
       ) {
 
         console.log(
@@ -603,9 +624,16 @@ router.post(
         );
 
 
+        const preferencePrompt =
+          buildPreferenceEnrichedPrompt(
+            prompt,
+            preferences
+          );
+
+
         const enhancedPrompt =
           await enhanceSinglePrompt(
-            prompt
+            preferencePrompt
           );
 
 
@@ -625,6 +653,7 @@ IMPORTANT:
 - transparent background
 - apparel graphic only
 - premium streetwear aesthetic
+- optimized for ${color} ${productType}
 - no mockup
 - no tshirt
 - no watermark
@@ -655,7 +684,9 @@ IMPORTANT:
 
           success: true,
 
-          imageUrl
+          imageUrl,
+
+          preferences
         });
       }
 
@@ -671,7 +702,10 @@ console.log(
 
 const enhancedPrompt =
   await enhanceCouplePrompt(
-    prompt
+    buildPreferenceEnrichedPrompt(
+      prompt,
+      preferences
+    )
   );
 
 
@@ -748,7 +782,9 @@ return res.json({
     leftImage,
 
   herImage:
-    rightImage
+    rightImage,
+
+  preferences
 });
 
     } catch (err) {

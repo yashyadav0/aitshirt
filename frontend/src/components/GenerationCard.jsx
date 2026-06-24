@@ -124,7 +124,8 @@ export default function GenerationCard({
           bg-[#2a2a2a]
           rounded-3xl
           overflow-hidden
-          w-[320px]
+          w-full
+          max-w-sm
           border
           border-zinc-800
           hover:border-purple-500

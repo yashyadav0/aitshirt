@@ -187,7 +187,11 @@ export default function AdminProducts() {
         min-h-screen
         bg-black
         text-white
-        p-6
+        p-4
+        pt-20
+        sm:pt-24
+        sm:p-6
+        md:p-8
       "
     >
 

@@ -247,7 +247,11 @@ export default function AdminOrders() {
         min-h-screen
         bg-black
         text-white
-        p-5
+        p-4
+        pt-20
+        sm:pt-24
+        sm:p-6
+        md:p-8
       "
     >
 

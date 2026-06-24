@@ -32,6 +32,21 @@ const generationSchema =
           "tshirt"
       },
 
+      designType: {
+
+        type:
+          String,
+
+        default:
+          "single"
+      },
+
+      color: {
+
+        type:
+          String
+      },
+
       shirtColor:
         String,
 

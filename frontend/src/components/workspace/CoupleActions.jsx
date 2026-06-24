@@ -28,6 +28,8 @@ export default function CoupleActions({
   getMockup,
   productType,
 
+  generationPreferences,
+
   setSuccessMessage,
 
   confirmedDesign,
@@ -323,7 +325,13 @@ export default function CoupleActions({
 
           isCouple: true,
 
-          productType,
+          productType:
+            generationPreferences?.productType
+            || productType,
+
+          designType:
+            generationPreferences?.designType
+            || "couple",
 
           // FINAL MOCKUPS
 
@@ -346,6 +354,10 @@ export default function CoupleActions({
           couplePrompt,
 
           // INFO
+
+          color:
+            generationPreferences?.color
+            || hisColor,
 
           hisColor,
           herColor,
@@ -614,7 +626,7 @@ export default function CoupleActions({
                     )
                   }
                   className={`
-                    min-h-11
+                    min-h-12
                     rounded-xl
                     text-sm
                     font-medium
@@ -658,7 +670,7 @@ export default function CoupleActions({
                     )
                   }
                   className={`
-                    min-h-11
+                    min-h-12
                     rounded-xl
                     text-sm
                     font-medium

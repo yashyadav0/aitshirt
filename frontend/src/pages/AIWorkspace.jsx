@@ -14,8 +14,14 @@ import {
   removeBackground
 } from "@imgly/background-removal";
 
-import GenerationModeToggle
-from "../components/GenerationModeToggle";
+import DesignPreferences
+from "../components/workspace/DesignPreferences";
+
+import PreferenceChips
+from "../components/workspace/PreferenceChips";
+
+import useDesignPreferences
+from "../hooks/useDesignPreferences";
 
 import GenerationLoader
 from "../components/workspace/GenerationLoader";
@@ -199,6 +205,17 @@ export default function AIWorkspace() {
       fallbackPresets
     );
 
+  const {
+    preferences,
+    setProductType: setPrefProductType,
+    setDesignType: setPrefDesignType,
+    setColor: setPrefColor
+  } = useDesignPreferences();
+
+  const [activeGenerationPreferences,
+    setActiveGenerationPreferences] =
+    useState(null);
+
 
   // =====================================
   // COUPLE STATES
@@ -271,6 +288,30 @@ export default function AIWorkspace() {
 
   }, []);
 
+  useEffect(() => {
+
+    setProductType(
+      preferences.productType
+    );
+
+    setGenerationMode(
+      preferences.designType
+    );
+
+    setSelectedColor(
+      preferences.color
+    );
+
+    setHisColor(
+      preferences.color
+    );
+
+    setHerColor(
+      preferences.color
+    );
+
+  }, [preferences]);
+
   const applyPreset =
     (preset) => {
 
@@ -287,23 +328,11 @@ export default function AIWorkspace() {
       }
     };
 
-  const selectProductType =
-    (type) => {
+  const handlePreferenceDesignTypeChange =
+    (designType) => {
 
-      setProductType(
-        type
-      );
-
-      setSelectedColor(
-        "white"
-      );
-
-      setHisColor(
-        "white"
-      );
-
-      setHerColor(
-        "white"
+      setGenerationMode(
+        designType
       );
     };
 
@@ -422,7 +451,16 @@ const startListening = () => {
   recognition.start();
 };
   const handleGenerate =
-    async () => {
+    async (
+      overridePreferences = null
+    ) => {
+
+      const generationPrefs =
+        overridePreferences
+        || preferences;
+
+      const activeMode =
+        generationPrefs.designType;
 
       try {
 
@@ -440,7 +478,7 @@ const startListening = () => {
 
 
         if (
-          generationMode === "single"
+          activeMode === "single"
         ) {
 
           setGenerationStep(
@@ -461,7 +499,22 @@ const startListening = () => {
 
         formData.append(
           "generationMode",
-          generationMode
+          activeMode
+        );
+
+        formData.append(
+          "productType",
+          generationPrefs.productType
+        );
+
+        formData.append(
+          "designType",
+          generationPrefs.designType
+        );
+
+        formData.append(
+          "color",
+          generationPrefs.color
         );
 
 
@@ -470,7 +523,7 @@ const startListening = () => {
         // =====================================
 
         if (
-          generationMode === "single"
+          activeMode === "single"
         ) {
 
           formData.append(
@@ -533,12 +586,33 @@ const startListening = () => {
           );
 
 
+        setActiveGenerationPreferences(
+          generationPrefs
+        );
+
+        setProductType(
+          generationPrefs.productType
+        );
+
+        setSelectedColor(
+          generationPrefs.color
+        );
+
+        setHisColor(
+          generationPrefs.color
+        );
+
+        setHerColor(
+          generationPrefs.color
+        );
+
+
         // =====================================
         // SINGLE
         // =====================================
 
         if (
-          generationMode === "single"
+          activeMode === "single"
         ) {
 
           setGenerationStep(
@@ -814,6 +888,20 @@ const startListening = () => {
       }
     };
 
+  const handleRegenerate =
+    () => {
+
+      if (
+        !activeGenerationPreferences
+      ) {
+        return;
+      }
+
+      handleGenerate(
+        activeGenerationPreferences
+      );
+    };
+
 
   return (
 
@@ -952,6 +1040,18 @@ const startListening = () => {
               "
             >
 
+              <div className="px-2 pb-2">
+                <DesignPreferences
+                  preferences={preferences}
+                  setProductType={setPrefProductType}
+                  setDesignType={setPrefDesignType}
+                  setColor={setPrefColor}
+                  onDesignTypeChange={
+                    handlePreferenceDesignTypeChange
+                  }
+                />
+              </div>
+
               <ReferenceUploader
                 referenceImages={
                   referenceImages
@@ -1065,17 +1165,6 @@ const startListening = () => {
               }
             </div>
 
-            <div className="mt-5">
-              <GenerationModeToggle
-                generationMode={
-                  generationMode
-                }
-                setGenerationMode={
-                  setGenerationMode
-                }
-              />
-            </div>
-
             {
               loading && (
                 <GenerationLoader
@@ -1091,81 +1180,19 @@ const startListening = () => {
         </header>
 
         {
-          hasGenerated && (
-      <div
-  className="
-    flex
-    gap-1
-    mb-4
-    rounded-2xl
-    bg-[#171717]
-    border
-    border-[#2f2f2f]
-    p-1
-  "
->
-
-  <button
-
-    onClick={() =>
-      selectProductType(
-        "tshirt"
-      )
-    }
-
-    className={`
-      flex-1
-      py-3
-      rounded-xl
-      text-sm
-      font-medium
-      transition-all
-
-      ${
-        productType === "tshirt"
-          ? "bg-[#2f2f2f] text-white"
-          : "text-zinc-400 hover:text-white"
-      }
-    `}
-  >
-
-    T-Shirt
-
-  </button>
-
-  <button
-
-    onClick={() =>
-      selectProductType(
-        "hoodie"
-      )
-    }
-
-    className={`
-      flex-1
-      py-3
-      rounded-xl
-      text-sm
-      font-medium
-      transition-all
-
-      ${
-        productType === "hoodie"
-          ? "bg-[#2f2f2f] text-white"
-          : "text-zinc-400 hover:text-white"
-      }
-    `}
-  >
-
-    Hoodie
-
-  </button>
-
-</div>
+          hasGenerated
+          && activeGenerationPreferences && (
+            <PreferenceChips
+              preferences={
+                activeGenerationPreferences
+              }
+              onRegenerate={
+                handleRegenerate
+              }
+              loading={loading}
+            />
           )
         }
-
-
 
 
         {/* SINGLE */}
@@ -1291,6 +1318,10 @@ const startListening = () => {
 
                 productType={
                   productType
+                }
+
+                generationPreferences={
+                  activeGenerationPreferences
                 }
               />
 
@@ -1458,6 +1489,10 @@ const startListening = () => {
 
                 setIsConfirmed={
                   setIsConfirmed
+                }
+
+                generationPreferences={
+                  activeGenerationPreferences
                 }
               />
 

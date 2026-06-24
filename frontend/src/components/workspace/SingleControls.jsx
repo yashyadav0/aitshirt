@@ -63,9 +63,9 @@ export default function SingleControls({
               }
 
               className={`
-                w-10
+                min-w-11
+                min-h-11
                 sm:w-12
-                h-10
                 sm:h-12
                 rounded-full
                 border
@@ -113,8 +113,7 @@ export default function SingleControls({
 
         className="
           w-full
-          min-h-10
-          sm:min-h-12
+          min-h-12
           rounded-xl
           sm:rounded-2xl
           bg-[#202020]

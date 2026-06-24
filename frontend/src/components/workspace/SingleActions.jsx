@@ -32,6 +32,8 @@ export default function SingleActions({
   getMockup,
   productType,
 
+  generationPreferences,
+
   setSuccessMessage
 
 }) {
@@ -271,6 +273,14 @@ export default function SingleActions({
           generationMode:
             "single",
 
+          productType:
+            generationPreferences?.productType
+            || productType,
+
+          designType:
+            generationPreferences?.designType
+            || "single",
+
           designImage:
             finalMockupImage,
 
@@ -280,7 +290,12 @@ export default function SingleActions({
           prompt,
 
           color:
-            selectedColor,
+            generationPreferences?.color
+            || selectedColor,
+
+          shirtColor:
+            generationPreferences?.color
+            || selectedColor,
 
           size:
             selectedSize,
@@ -520,6 +535,7 @@ export default function SingleActions({
 
                   className={`
                     flex-1
+                    min-h-12
                     py-2
                     sm:py-3
                     rounded-lg

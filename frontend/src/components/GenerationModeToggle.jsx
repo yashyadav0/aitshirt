@@ -32,6 +32,7 @@ export default function GenerationModeToggle({
         className={`
 
           flex-1
+          min-h-12
           py-3
           rounded-xl
           text-sm
@@ -65,6 +66,7 @@ export default function GenerationModeToggle({
         className={`
 
           flex-1
+          min-h-12
           py-3
           rounded-xl
           text-sm
