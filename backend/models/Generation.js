@@ -47,6 +47,12 @@ const generationSchema =
           String
       },
 
+      selectedColor: {
+
+        type:
+          String
+      },
+
       preferences: {
 
         productType: {
@@ -68,6 +74,15 @@ const generationSchema =
         },
 
         color: {
+
+          type:
+            String,
+
+          default:
+            "white"
+        },
+
+        selectedColor: {
 
           type:
             String,

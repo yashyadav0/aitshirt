@@ -1,7 +1,10 @@
+import { getColorsForProductType } from "../../config/designPreferences";
+
 export default function SingleControls({
 
   selectedColor,
   setSelectedColor,
+  setPreferenceColor,
 
   selectedSide,
   setSelectedSide,
@@ -10,13 +13,7 @@ export default function SingleControls({
 
 }) {
 
-  const colors =
-
-    productType === "hoodie"
-
-      ? ["black", "white", "blue"]
-
-      : ["black", "white", "red"];
+  const colors = getColorsForProductType(productType);
 
   return (
 
@@ -56,11 +53,10 @@ export default function SingleControls({
 
               key={color}
 
-              onClick={() =>
-                setSelectedColor(
-                  color
-                )
-              }
+            onClick={() => {
+                setSelectedColor(color.id);
+                setPreferenceColor?.(color.id);
+              }}
 
               className={`
                 min-w-11
@@ -74,7 +70,7 @@ export default function SingleControls({
                 flex-shrink-0
 
                 ${
-                  selectedColor === color
+                selectedColor === color.id
 
                     ? "ring-2 ring-white scale-105"
 
@@ -84,9 +80,9 @@ export default function SingleControls({
 
               style={{
                 backgroundColor:
-                  color
+                  color.hex
               }}
-              aria-label={`Select ${color}`}
+              aria-label={`Select ${color.label}`}
             />
 
           ))

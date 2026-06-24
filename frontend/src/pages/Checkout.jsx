@@ -10,6 +10,13 @@ import {
 
 import API from "../api";
 
+const getCartPreviewImage = (item) =>
+  item.designImage ||
+  item.hisDesignImage ||
+  item.herDesignImage ||
+  item.imageUrl ||
+  "";
+
 
 export default function Checkout() {
 
@@ -244,27 +251,35 @@ export default function Checkout() {
                 "
               >
 
-                <img
-
-                  src={
-                    item.imageUrl
-                    || item.designImage
-                    || item.hisDesignImage
-                  }
-
-                  alt="cart"
-
-                  className="
-                    w-16
-                    sm:w-24
-                    h-16
-                    sm:h-24
-                    object-cover
-                    rounded-lg
-                    sm:rounded-xl
-                    flex-shrink-0
-                  "
-                />
+                {item.isCouple ? (
+                  <div className="grid w-16 h-16 sm:w-24 sm:h-24 grid-cols-2 gap-1 overflow-hidden rounded-lg sm:rounded-xl flex-shrink-0">
+                    <img
+                      src={item.hisDesignImage || getCartPreviewImage(item)}
+                      alt="his cart preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <img
+                      src={item.herDesignImage || item.hisDesignImage || getCartPreviewImage(item)}
+                      alt="her cart preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <img
+                    src={getCartPreviewImage(item)}
+                    alt="cart"
+                    className="
+                      w-16
+                      sm:w-24
+                      h-16
+                      sm:h-24
+                      object-cover
+                      rounded-lg
+                      sm:rounded-xl
+                      flex-shrink-0
+                    "
+                  />
+                )}
 
                 <div className="flex-1 min-w-0">
 
@@ -297,6 +312,12 @@ export default function Checkout() {
                     }
 
                   </p>
+
+                  {(item.selectedColor || item.color || item.hisColor || item.herColor) && (
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                      Color: {item.selectedColor || item.color || item.hisColor || item.herColor}
+                    </p>
+                  )}
 
                 </div>
 

@@ -277,6 +277,7 @@ export default function SingleActions({
             generationPreferences || {
               productType,
               designType: "single",
+              selectedColor,
               color: selectedColor
             },
 
@@ -296,12 +297,19 @@ export default function SingleActions({
 
           prompt,
 
+          selectedColor:
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
+            || selectedColor,
+
           color:
-            generationPreferences?.color
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
             || selectedColor,
 
           shirtColor:
-            generationPreferences?.color
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
             || selectedColor,
 
           size:
@@ -391,6 +399,9 @@ export default function SingleActions({
             color:
               confirmedDesign.color,
 
+            selectedColor:
+              confirmedDesign.selectedColor,
+
             size:
               confirmedDesign.size,
 
@@ -457,6 +468,9 @@ export default function SingleActions({
 
             color:
               confirmedDesign.color,
+
+            selectedColor:
+              confirmedDesign.selectedColor,
 
             size:
               confirmedDesign.size,

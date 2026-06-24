@@ -3,8 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   DEFAULT_PREFERENCES,
   STORAGE_KEY,
-  normalizePreferences,
-  getDefaultColorForProduct
+  normalizePreferences
 } from "../config/designPreferences";
 
 function loadStoredPreferences() {
@@ -34,13 +33,7 @@ export default function useDesignPreferences() {
 
   const setProductType = useCallback((productType) => {
     setPreferencesState((prev) => {
-      const next = { ...prev, productType };
-
-      if (!next.color || !normalizePreferences(next).color) {
-        next.color = getDefaultColorForProduct(productType);
-      }
-
-      return normalizePreferences(next);
+      return normalizePreferences({ ...prev, productType });
     });
   }, []);
 
@@ -49,7 +42,7 @@ export default function useDesignPreferences() {
   }, [setPreferences]);
 
   const setColor = useCallback((color) => {
-    setPreferences({ color });
+    setPreferences({ selectedColor: color, color });
   }, [setPreferences]);
 
   return {
@@ -57,6 +50,7 @@ export default function useDesignPreferences() {
     setPreferences,
     setProductType,
     setDesignType,
-    setColor
+    setColor,
+    setSelectedColor: setColor
   };
 }

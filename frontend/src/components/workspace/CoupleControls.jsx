@@ -1,3 +1,5 @@
+import { getColorsForProductType } from "../../config/designPreferences";
+
 export default function CoupleControls({
 
   hisColor,
@@ -16,13 +18,7 @@ export default function CoupleControls({
 
 }) {
 
-  const colors =
-
-    productType === "hoodie"
-
-      ? ["black", "white", "blue"]
-
-      : ["black", "white", "red"];
+  const colors = getColorsForProductType(productType);
 
 
   return (
@@ -78,8 +74,8 @@ export default function CoupleControls({
 
                 key={color}
 
-                onClick={() =>
-                  setHisColor(color)
+            onClick={() =>
+                  setHisColor(color.id)
                 }
 
                 className={`
@@ -91,7 +87,7 @@ export default function CoupleControls({
                   transition-all
 
                   ${
-                    hisColor === color
+                    hisColor === color.id
 
                       ? "ring-2 ring-white scale-105"
 
@@ -101,7 +97,7 @@ export default function CoupleControls({
 
                 style={{
                   backgroundColor:
-                    color
+                    color.hex
                 }}
               />
 
@@ -178,8 +174,8 @@ export default function CoupleControls({
 
                 key={color}
 
-                onClick={() =>
-                  setHerColor(color)
+            onClick={() =>
+                  setHerColor(color.id)
                 }
 
                 className={`
@@ -191,7 +187,7 @@ export default function CoupleControls({
                   transition-all
 
                   ${
-                    herColor === color
+                    herColor === color.id
 
                       ? "ring-2 ring-white scale-105"
 
@@ -201,7 +197,7 @@ export default function CoupleControls({
 
                 style={{
                   backgroundColor:
-                    color
+                    color.hex
                 }}
               />
 

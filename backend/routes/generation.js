@@ -564,6 +564,7 @@ router.post(
         productType = "tshirt",
 
         color = "white",
+        selectedColor,
 
         prompt,
 
@@ -593,7 +594,8 @@ router.post(
         ...parsedPreferences,
         productType,
         designType: activeMode,
-        color
+        selectedColor: selectedColor || color,
+        color: selectedColor || color
       });
 
 
@@ -670,7 +672,7 @@ IMPORTANT:
 - transparent background
 - apparel graphic only
 - premium streetwear aesthetic
-- optimized for ${preferences.color} ${preferences.productType}
+        - optimized for ${preferences.selectedColor} ${preferences.productType}
 - no mockup
 - no tshirt
 - no watermark
@@ -861,8 +863,14 @@ router.post(
             data.designType
             || data.generationMode
             || (data.isCouple ? "couple" : "single"),
+          selectedColor:
+            data.selectedColor
+            || data.color
+            || data.shirtColor
+            || data.hisColor,
           color:
-            data.color
+            data.selectedColor
+            || data.color
             || data.shirtColor
             || data.hisColor
         });
@@ -884,8 +892,12 @@ router.post(
           designType:
             preferences.designType,
 
+          selectedColor:
+            preferences.selectedColor,
+
           color:
             preferences.color
+            || preferences.selectedColor
         });
 
 

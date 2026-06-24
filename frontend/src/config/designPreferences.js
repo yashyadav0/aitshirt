@@ -35,6 +35,7 @@ export const PRODUCT_TYPES = {
 export const DEFAULT_PREFERENCES = {
   productType: "tshirt",
   designType: "single",
+  selectedColor: "white",
   color: "white"
 };
 
@@ -67,21 +68,34 @@ export function normalizePreferences(preferences = {}) {
     ? preferences.designType
     : DEFAULT_PREFERENCES.designType;
 
-  const color = isColorValidForProduct(productType, preferences.color)
-    ? preferences.color
+  const requestedColor =
+    preferences.selectedColor || preferences.color;
+
+  const selectedColor = isColorValidForProduct(
+    productType,
+    requestedColor
+  )
+    ? requestedColor
     : getDefaultColorForProduct(productType);
 
-  return { productType, designType, color };
+  return {
+    productType,
+    designType,
+    selectedColor,
+    color: selectedColor
+  };
 }
 
 export function getPreferenceLabels(preferences) {
   const product = getProductTypeConfig(preferences.productType);
   const design = DESIGN_TYPES[preferences.designType];
-  const color = product.colors.find((c) => c.id === preferences.color);
+  const colorId =
+    preferences.selectedColor || preferences.color;
+  const color = product.colors.find((c) => c.id === colorId);
 
   return {
     productType: product.label,
     designType: design.label,
-    color: color?.label || preferences.color
+    color: color?.label || colorId
   };
 }

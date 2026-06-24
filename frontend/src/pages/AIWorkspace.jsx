@@ -308,22 +308,22 @@ export default function AIWorkspace() {
       preferences.designType
     );
 
+    setSelectedColor(
+      preferences.selectedColor || preferences.color
+    );
+
     if (!hasGenerated) {
 
       setProductType(
         preferences.productType
       );
 
-      setSelectedColor(
-        preferences.color
-      );
-
       setHisColor(
-        preferences.color
+        preferences.selectedColor || preferences.color
       );
 
       setHerColor(
-        preferences.color
+        preferences.selectedColor || preferences.color
       );
     }
 
@@ -405,9 +405,10 @@ export default function AIWorkspace() {
       ? hoodies
       : tshirts;
 
-  return mockups[
-    color
-  ][side];
+  const productMockups =
+    mockups[color] || mockups.white;
+
+  return productMockups[side] || productMockups.front;
 };
 
 
@@ -533,7 +534,12 @@ const startListening = () => {
 
         formData.append(
           "color",
-          generationPrefs.color
+          generationPrefs.selectedColor || generationPrefs.color
+        );
+
+        formData.append(
+          "selectedColor",
+          generationPrefs.selectedColor || generationPrefs.color
         );
 
         formData.append(
@@ -627,15 +633,15 @@ const startListening = () => {
         );
 
         setSelectedColor(
-          responsePreferences.color
+          responsePreferences.selectedColor || responsePreferences.color
         );
 
         setHisColor(
-          responsePreferences.color
+          responsePreferences.selectedColor || responsePreferences.color
         );
 
         setHerColor(
-          responsePreferences.color
+          responsePreferences.selectedColor || responsePreferences.color
         );
 
 
@@ -1297,6 +1303,9 @@ const startListening = () => {
                 productType={
                   activeResultProductType
                 }
+                setPreferenceColor={
+                  setPrefColor
+                }
               />
 
 
@@ -1392,13 +1401,13 @@ const startListening = () => {
     getMockup
   }
 
-  hisColor={
-    hisColor
-  }
+              hisColor={
+                hisColor
+              }
 
-  herColor={
-    herColor
-  }
+              herColor={
+                herColor
+              }
 
   hisSide={
     hisSide

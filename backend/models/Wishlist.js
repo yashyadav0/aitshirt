@@ -34,6 +34,9 @@ const wishlistSchema =
     color:
       String,
 
+    selectedColor:
+      String,
+
     size:
       String,
 

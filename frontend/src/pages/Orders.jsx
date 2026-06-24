@@ -13,6 +13,13 @@ import {
   showError
 } from "../utils/toast";
 
+const getOrderPreviewImage = (order) =>
+  order.items?.[0]?.designImage ||
+  order.items?.[0]?.hisDesignImage ||
+  order.items?.[0]?.herDesignImage ||
+  order.imageUrl ||
+  "";
+
 
 export default function Orders() {
 
@@ -202,28 +209,43 @@ export default function Orders() {
               >
 
                 {/* Image */}
-                <div
-                  className="
-                    aspect-square
-                    bg-zinc-950
-                    overflow-hidden
-                  "
-                >
-
-                  <img
-
-                    src={order.imageUrl}
-
-                    alt="order"
-
+                {order.items?.[0]?.isCouple ? (
+                  <div className="grid aspect-square grid-cols-2 gap-1 bg-zinc-950 overflow-hidden">
+                    <img
+                      src={order.items?.[0]?.hisDesignImage || getOrderPreviewImage(order)}
+                      alt="his order preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <img
+                      src={order.items?.[0]?.herDesignImage || order.items?.[0]?.hisDesignImage || getOrderPreviewImage(order)}
+                      alt="her order preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div
                     className="
-                      w-full
-                      h-full
-                      object-cover
+                      aspect-square
+                      bg-zinc-950
+                      overflow-hidden
                     "
-                  />
+                  >
 
-                </div>
+                    <img
+
+                      src={getOrderPreviewImage(order)}
+
+                      alt="order"
+
+                      className="
+                        w-full
+                        h-full
+                        object-cover
+                      "
+                    />
+
+                  </div>
+                )}
 
 
                 {/* Content */}
@@ -246,9 +268,15 @@ export default function Orders() {
                     "
                   >
 
-                    {order.prompt}
+                    {order.prompt || order.couplePrompt || "Generated apparel design"}
 
                   </p>
+
+                  {(order.selectedColor || order.color || order.items?.[0]?.selectedColor || order.items?.[0]?.color) && (
+                    <p className="mb-4 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                      Color: {order.selectedColor || order.color || order.items?.[0]?.selectedColor || order.items?.[0]?.color}
+                    </p>
+                  )}
 
 
                   {/* Status Row */}

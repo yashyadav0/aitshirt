@@ -26,6 +26,7 @@ const DESIGN_TYPES = {
 const DEFAULT_PREFERENCES = {
   productType: "tshirt",
   designType: "single",
+  selectedColor: "white",
   color: "white"
 };
 
@@ -50,15 +51,19 @@ function normalizePreferences(preferences = {}) {
     ? preferences.designType
     : DEFAULT_PREFERENCES.designType;
 
+  const requestedColor =
+    preferences.selectedColor || preferences.color;
+
   const productColors = getProductLabels(productType).colors;
-  const color = productColors.includes(preferences.color)
-    ? preferences.color
+  const selectedColor = productColors.includes(requestedColor)
+    ? requestedColor
     : getDefaultColorForProduct(productType);
 
   return {
     productType,
     designType,
-    color
+    selectedColor,
+    color: selectedColor
   };
 }
 
@@ -72,11 +77,11 @@ function buildPreferenceEnrichedPrompt(
   const {
     productType,
     designType,
-    color
+    selectedColor
   } = normalizedPreferences;
 
   const product = getProductLabels(productType);
-  const colorLabel = getColorLabel(color);
+  const colorLabel = getColorLabel(selectedColor);
   const trimmedPrompt = String(userPrompt || "").trim();
 
   if (designType === "couple") {

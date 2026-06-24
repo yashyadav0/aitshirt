@@ -49,6 +49,9 @@ const cartSchema =
       color:
         String,
 
+      selectedColor:
+        String,
+
       size:
         String,
 

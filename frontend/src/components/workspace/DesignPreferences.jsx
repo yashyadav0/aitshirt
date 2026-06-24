@@ -63,6 +63,8 @@ export default function DesignPreferences({
   const productOptions = Object.values(PRODUCT_TYPES);
   const designOptions = Object.values(DESIGN_TYPES);
   const colorOptions = getColorsForProductType(preferences.productType);
+  const selectedColor =
+    preferences.selectedColor || preferences.color;
 
   const handleDesignTypeChange = (designType) => {
     setDesignType(designType);
@@ -176,7 +178,7 @@ export default function DesignPreferences({
 
             <div>
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
-                Apparel Color
+                Color Preference
               </p>
               <div className="flex flex-wrap gap-3">
                 {colorOptions.map((color) => (
@@ -192,8 +194,8 @@ export default function DesignPreferences({
                       gap-2
                     "
                     aria-label={`Select ${color.label}`}
-                    aria-pressed={preferences.color === color.id}
-                  >
+                    aria-pressed={selectedColor === color.id}
+                    >
                     <span
                       className={`
                         relative
@@ -205,7 +207,7 @@ export default function DesignPreferences({
                         duration-200
                         group-hover:scale-105
                         ${
-                          preferences.color === color.id
+                          selectedColor === color.id
                             ? "border-white ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-[#141414]"
                             : "border-[#3f3f46] group-hover:border-zinc-400"
                         }
@@ -217,7 +219,7 @@ export default function DesignPreferences({
                         text-xs
                         transition-colors
                         ${
-                          preferences.color === color.id
+                          selectedColor === color.id
                             ? "text-white"
                             : "text-zinc-500 group-hover:text-zinc-300"
                         }

@@ -33,10 +33,7 @@ const orderSchema =
     totalPrice: {
 
       type:
-        Number,
-
-      required:
-        true
+        Number
     },
 
 
@@ -55,6 +52,9 @@ const orderSchema =
     // =====================================
 
     color:
+      String,
+
+    selectedColor:
       String,
 
     size:
@@ -138,7 +138,37 @@ const orderSchema =
       Number,
 
     herScale:
-      Number
+      Number,
+
+    items: {
+
+      type:
+        [mongoose.Schema.Types.Mixed],
+
+      default:
+        []
+    },
+
+    shippingAddress: {
+
+      type:
+        mongoose.Schema.Types.Mixed
+    },
+
+    finalAmount:
+      {
+        type: Number,
+        required: true
+      },
+
+    paymentStatus:
+      String,
+
+    paymentId:
+      String,
+
+    orderStatus:
+      String
 
   }, {
 

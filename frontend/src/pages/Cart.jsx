@@ -441,6 +441,12 @@ export default function Cart() {
 
                               </div>
 
+                              {(item.selectedColor || item.color || item.hisColor || item.herColor) && (
+                                <div className="mt-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                                  Color: {item.selectedColor || item.color || item.hisColor || item.herColor}
+                                </div>
+                              )}
+
                             </div>
 
 
@@ -646,6 +652,12 @@ export default function Cart() {
                                ₹699
 
                              </div>
+
+                             {(item.selectedColor || item.color) && (
+                               <div className="mt-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                                 Color: {item.selectedColor || item.color}
+                               </div>
+                             )}
 
                            </div>
 

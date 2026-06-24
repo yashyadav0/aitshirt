@@ -332,6 +332,7 @@ export default function CoupleActions({
             generationPreferences || {
               productType,
               designType: "couple",
+              selectedColor: hisColor,
               color: hisColor
             },
 
@@ -365,8 +366,14 @@ export default function CoupleActions({
 
           // INFO
 
+          selectedColor:
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
+            || hisColor,
+
           color:
-            generationPreferences?.color
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
             || hisColor,
 
           hisColor,
@@ -463,6 +470,9 @@ export default function CoupleActions({
             productType:
               confirmedDesign.productType,
 
+            selectedColor:
+              confirmedDesign.selectedColor,
+
             hisColor:
               confirmedDesign.hisColor,
 
@@ -551,6 +561,9 @@ export default function CoupleActions({
 
             productType:
               confirmedDesign.productType,
+
+            selectedColor:
+              confirmedDesign.selectedColor,
 
             hisColor:
               confirmedDesign.hisColor,
