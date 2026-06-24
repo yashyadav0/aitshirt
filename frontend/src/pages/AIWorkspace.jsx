@@ -221,7 +221,13 @@ export default function AIWorkspace() {
     useState(null);
 
   const resolvedPreferences =
-    normalizePreferences(preferences);
+    normalizePreferences({
+      ...preferences,
+      productType,
+      designType: generationMode,
+      selectedColor,
+      color: selectedColor
+    });
   const selectedPreferenceColor =
     resolvedPreferences.selectedColor;
   const selectedPreferenceProductType =
@@ -270,10 +276,10 @@ export default function AIWorkspace() {
       : 48;
 
   const activeResultMode =
-    resolvedPreferences.designType;
+    generationMode;
 
   const activeResultProductType =
-    resolvedPreferences.productType;
+    productType;
 
   useEffect(() => {
 
@@ -482,7 +488,13 @@ const startListening = () => {
       const generationPrefs =
         normalizePreferences(
           overridePreferences
-          || preferences
+          || {
+            ...preferences,
+            productType,
+            designType: generationMode,
+            selectedColor,
+            color: selectedColor
+          }
         );
 
       const activeMode =
