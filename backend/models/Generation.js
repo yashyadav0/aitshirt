@@ -47,7 +47,40 @@ const generationSchema =
           String
       },
 
+      preferences: {
+
+        productType: {
+
+          type:
+            String,
+
+          default:
+            "tshirt"
+        },
+
+        designType: {
+
+          type:
+            String,
+
+          default:
+            "single"
+        },
+
+        color: {
+
+          type:
+            String,
+
+          default:
+            "white"
+        }
+      },
+
       shirtColor:
+        String,
+
+      size:
         String,
 
       side:
@@ -56,10 +89,16 @@ const generationSchema =
       prompt:
         String,
 
+      generationMode:
+        String,
+
       designScale:
         Number,
 
       designImage:
+        String,
+
+      transparentDesign:
         String,
 
 
@@ -83,6 +122,12 @@ const generationSchema =
       herDesign:
         String,
 
+      hisDesignImage:
+        String,
+
+      herDesignImage:
+        String,
+
 
       hisPrompt:
         String,
@@ -91,6 +136,9 @@ const generationSchema =
         String,
 
       sharedPrompt:
+        String,
+
+      couplePrompt:
         String,
 
 

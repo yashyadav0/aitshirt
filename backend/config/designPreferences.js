@@ -1,11 +1,13 @@
 const PRODUCT_TYPES = {
   tshirt: {
     label: "t-shirt",
-    pluralLabel: "t-shirts"
+    pluralLabel: "t-shirts",
+    colors: ["white", "black", "red"]
   },
   hoodie: {
     label: "hoodie",
-    pluralLabel: "hoodies"
+    pluralLabel: "hoodies",
+    colors: ["black", "white", "blue"]
   }
 };
 
@@ -16,6 +18,17 @@ const COLOR_LABELS = {
   blue: "navy blue"
 };
 
+const DESIGN_TYPES = {
+  single: true,
+  couple: true
+};
+
+const DEFAULT_PREFERENCES = {
+  productType: "tshirt",
+  designType: "single",
+  color: "white"
+};
+
 function getColorLabel(color) {
   return COLOR_LABELS[color] || color;
 }
@@ -24,15 +37,43 @@ function getProductLabels(productType) {
   return PRODUCT_TYPES[productType] || PRODUCT_TYPES.tshirt;
 }
 
+function getDefaultColorForProduct(productType) {
+  return getProductLabels(productType).colors[0] || DEFAULT_PREFERENCES.color;
+}
+
+function normalizePreferences(preferences = {}) {
+  const productType = PRODUCT_TYPES[preferences.productType]
+    ? preferences.productType
+    : DEFAULT_PREFERENCES.productType;
+
+  const designType = DESIGN_TYPES[preferences.designType]
+    ? preferences.designType
+    : DEFAULT_PREFERENCES.designType;
+
+  const productColors = getProductLabels(productType).colors;
+  const color = productColors.includes(preferences.color)
+    ? preferences.color
+    : getDefaultColorForProduct(productType);
+
+  return {
+    productType,
+    designType,
+    color
+  };
+}
+
 function buildPreferenceEnrichedPrompt(
   userPrompt,
   preferences = {}
 ) {
+  const normalizedPreferences =
+    normalizePreferences(preferences);
+
   const {
-    productType = "tshirt",
-    designType = "single",
-    color = "white"
-  } = preferences;
+    productType,
+    designType,
+    color
+  } = normalizedPreferences;
 
   const product = getProductLabels(productType);
   const colorLabel = getColorLabel(color);
@@ -49,7 +90,7 @@ function buildPreferenceEnrichedPrompt(
   }
 
   return [
-    `Create a high-quality print-ready apparel graphic featuring ${trimmedPrompt}.`,
+    `Create a high-quality print-ready t-shirt graphic featuring ${trimmedPrompt}.`,
     `Optimized for a ${colorLabel} ${product.label}.`,
     "Single apparel design.",
     "Transparent background.",
@@ -59,7 +100,9 @@ function buildPreferenceEnrichedPrompt(
 }
 
 module.exports = {
+  DEFAULT_PREFERENCES,
   buildPreferenceEnrichedPrompt,
   getColorLabel,
-  getProductLabels
+  getProductLabels,
+  normalizePreferences
 };

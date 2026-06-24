@@ -23,6 +23,10 @@ from "../components/workspace/PreferenceChips";
 import useDesignPreferences
 from "../hooks/useDesignPreferences";
 
+import {
+  normalizePreferences
+} from "../config/designPreferences";
+
 import GenerationLoader
 from "../components/workspace/GenerationLoader";
 
@@ -252,9 +256,19 @@ export default function AIWorkspace() {
     );
 
   const productDesignScale =
-    productType === "hoodie"
+    (
+      activeGenerationPreferences?.productType
+      || productType
+    ) === "hoodie"
       ? 55
       : 48;
+
+  const activeResultMode =
+    activeGenerationPreferences?.designType;
+
+  const activeResultProductType =
+    activeGenerationPreferences?.productType
+    || productType;
 
   useEffect(() => {
 
@@ -290,27 +304,30 @@ export default function AIWorkspace() {
 
   useEffect(() => {
 
-    setProductType(
-      preferences.productType
-    );
-
     setGenerationMode(
       preferences.designType
     );
 
-    setSelectedColor(
-      preferences.color
-    );
+    if (!hasGenerated) {
 
-    setHisColor(
-      preferences.color
-    );
+      setProductType(
+        preferences.productType
+      );
 
-    setHerColor(
-      preferences.color
-    );
+      setSelectedColor(
+        preferences.color
+      );
 
-  }, [preferences]);
+      setHisColor(
+        preferences.color
+      );
+
+      setHerColor(
+        preferences.color
+      );
+    }
+
+  }, [preferences, hasGenerated]);
 
   const applyPreset =
     (preset) => {
@@ -456,8 +473,10 @@ const startListening = () => {
     ) => {
 
       const generationPrefs =
-        overridePreferences
-        || preferences;
+        normalizePreferences(
+          overridePreferences
+          || preferences
+        );
 
       const activeMode =
         generationPrefs.designType;
@@ -515,6 +534,13 @@ const startListening = () => {
         formData.append(
           "color",
           generationPrefs.color
+        );
+
+        formData.append(
+          "preferences",
+          JSON.stringify(
+            generationPrefs
+          )
         );
 
 
@@ -586,24 +612,30 @@ const startListening = () => {
           );
 
 
+        const responsePreferences =
+          normalizePreferences(
+            res.data.preferences
+            || generationPrefs
+          );
+
         setActiveGenerationPreferences(
-          generationPrefs
+          responsePreferences
         );
 
         setProductType(
-          generationPrefs.productType
+          responsePreferences.productType
         );
 
         setSelectedColor(
-          generationPrefs.color
+          responsePreferences.color
         );
 
         setHisColor(
-          generationPrefs.color
+          responsePreferences.color
         );
 
         setHerColor(
-          generationPrefs.color
+          responsePreferences.color
         );
 
 
@@ -1040,6 +1072,15 @@ const startListening = () => {
               "
             >
 
+              <ReferenceUploader
+                referenceImages={
+                  referenceImages
+                }
+                setReferenceImages={
+                  setReferenceImages
+                }
+              />
+
               <div className="px-2 pb-2">
                 <DesignPreferences
                   preferences={preferences}
@@ -1051,15 +1092,6 @@ const startListening = () => {
                   }
                 />
               </div>
-
-              <ReferenceUploader
-                referenceImages={
-                  referenceImages
-                }
-                setReferenceImages={
-                  setReferenceImages
-                }
-              />
 
               <div className="px-2">
                 {
@@ -1198,7 +1230,7 @@ const startListening = () => {
         {/* SINGLE */}
 
         {
-          generationMode === "single"
+          activeResultMode === "single"
           &&
           generatedImage
           && (
@@ -1220,7 +1252,7 @@ const startListening = () => {
                   }
 
                 productType={
-                   productType
+                   activeResultProductType
                 }
 
                 selectedColor={
@@ -1263,7 +1295,7 @@ const startListening = () => {
                   setDesignScale
                 }
                 productType={
-                  productType
+                  activeResultProductType
                 }
               />
 
@@ -1317,7 +1349,7 @@ const startListening = () => {
                 }
 
                 productType={
-                  productType
+                  activeResultProductType
                 }
 
                 generationPreferences={
@@ -1333,7 +1365,7 @@ const startListening = () => {
         {/* COUPLE */}
 
         {
-          generationMode === "couple"
+          activeResultMode === "couple"
           &&
           generatedHisImage
           &&
@@ -1345,7 +1377,7 @@ const startListening = () => {
               <CouplePreview
 
   productType={
-    productType
+    activeResultProductType
   }
 
   generatedHisImage={
@@ -1384,7 +1416,7 @@ const startListening = () => {
               <CoupleControls
 
                 productType={
-                  productType
+                  activeResultProductType
                 }
 
 
@@ -1438,7 +1470,7 @@ const startListening = () => {
                 }
 
                 productType={
-                  productType
+                  activeResultProductType
                 }
 
                 couplePrompt={

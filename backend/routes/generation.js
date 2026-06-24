@@ -17,7 +17,8 @@ const authMiddleware =
   require("../middleware/authMiddleware");
 
 const {
-  buildPreferenceEnrichedPrompt
+  buildPreferenceEnrichedPrompt,
+  normalizePreferences
 } = require("../config/designPreferences");
 
 
@@ -566,6 +567,8 @@ router.post(
 
         prompt,
 
+        preferences: rawPreferences
+
       } = req.body;
 
       const activeMode =
@@ -573,11 +576,25 @@ router.post(
         || generationMode
         || "single";
 
-      const preferences = {
+      let parsedPreferences = {};
+
+      if (rawPreferences) {
+        try {
+          parsedPreferences =
+            typeof rawPreferences === "string"
+              ? JSON.parse(rawPreferences)
+              : rawPreferences;
+        } catch {
+          parsedPreferences = {};
+        }
+      }
+
+      const preferences = normalizePreferences({
+        ...parsedPreferences,
         productType,
         designType: activeMode,
         color
-      };
+      });
 
 
       let imageParts = [];
@@ -653,7 +670,7 @@ IMPORTANT:
 - transparent background
 - apparel graphic only
 - premium streetwear aesthetic
-- optimized for ${color} ${productType}
+- optimized for ${preferences.color} ${preferences.productType}
 - no mockup
 - no tshirt
 - no watermark
@@ -686,7 +703,10 @@ IMPORTANT:
 
           imageUrl,
 
-          preferences
+          preferences,
+
+          enrichedPrompt:
+            enhancedPrompt
         });
       }
 
@@ -784,7 +804,10 @@ return res.json({
   herImage:
     rightImage,
 
-  preferences
+  preferences,
+
+  enrichedPrompt:
+    enhancedPrompt
 });
 
     } catch (err) {
@@ -829,6 +852,21 @@ router.post(
       const data =
         req.body;
 
+      const preferences =
+        normalizePreferences({
+          ...(data.preferences || {}),
+          productType:
+            data.productType,
+          designType:
+            data.designType
+            || data.generationMode
+            || (data.isCouple ? "couple" : "single"),
+          color:
+            data.color
+            || data.shirtColor
+            || data.hisColor
+        });
+
 
       const generation =
         new Generation({
@@ -836,7 +874,18 @@ router.post(
           userId:
             req.user.id,
 
-          ...data
+          ...data,
+
+          preferences,
+
+          productType:
+            preferences.productType,
+
+          designType:
+            preferences.designType,
+
+          color:
+            preferences.color
         });
 
 

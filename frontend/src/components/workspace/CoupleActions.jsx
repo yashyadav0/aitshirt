@@ -325,6 +325,16 @@ export default function CoupleActions({
 
           isCouple: true,
 
+          generationMode:
+            "couple",
+
+          preferences:
+            generationPreferences || {
+              productType,
+              designType: "couple",
+              color: hisColor
+            },
+
           productType:
             generationPreferences?.productType
             || productType,

@@ -273,6 +273,13 @@ export default function SingleActions({
           generationMode:
             "single",
 
+          preferences:
+            generationPreferences || {
+              productType,
+              designType: "single",
+              color: selectedColor
+            },
+
           productType:
             generationPreferences?.productType
             || productType,
