@@ -220,6 +220,15 @@ export default function AIWorkspace() {
     setActiveGenerationPreferences] =
     useState(null);
 
+  const resolvedPreferences =
+    normalizePreferences(preferences);
+  const selectedPreferenceColor =
+    resolvedPreferences.selectedColor;
+  const selectedPreferenceProductType =
+    resolvedPreferences.productType;
+  const selectedPreferenceDesignType =
+    resolvedPreferences.designType;
+
 
   // =====================================
   // COUPLE STATES
@@ -256,19 +265,15 @@ export default function AIWorkspace() {
     );
 
   const productDesignScale =
-    (
-      activeGenerationPreferences?.productType
-      || productType
-    ) === "hoodie"
+    productType === "hoodie"
       ? 55
       : 48;
 
   const activeResultMode =
-    activeGenerationPreferences?.designType;
+    resolvedPreferences.designType;
 
   const activeResultProductType =
-    activeGenerationPreferences?.productType
-    || productType;
+    resolvedPreferences.productType;
 
   useEffect(() => {
 
@@ -305,29 +310,30 @@ export default function AIWorkspace() {
   useEffect(() => {
 
     setGenerationMode(
-      preferences.designType
+      selectedPreferenceDesignType
     );
 
     setSelectedColor(
-      preferences.selectedColor || preferences.color
+      selectedPreferenceColor
     );
 
-    if (!hasGenerated) {
+    setProductType(
+      selectedPreferenceProductType
+    );
 
-      setProductType(
-        preferences.productType
-      );
+    setHisColor(
+      selectedPreferenceColor
+    );
 
-      setHisColor(
-        preferences.selectedColor || preferences.color
-      );
+    setHerColor(
+      selectedPreferenceColor
+    );
 
-      setHerColor(
-        preferences.selectedColor || preferences.color
-      );
-    }
-
-  }, [preferences, hasGenerated]);
+  }, [
+    selectedPreferenceDesignType,
+    selectedPreferenceProductType,
+    selectedPreferenceColor
+  ]);
 
   const applyPreset =
     (preset) => {
@@ -359,9 +365,9 @@ export default function AIWorkspace() {
   // =====================================
 
   const getMockup = (
-  productType,
-  color,
-  side
+    productType,
+    color,
+    side
   ) => {
 
   const tshirts = {
@@ -409,7 +415,7 @@ export default function AIWorkspace() {
     mockups[color] || mockups.white;
 
   return productMockups[side] || productMockups.front;
-};
+  };
 
 
   // =====================================
@@ -928,16 +934,7 @@ const startListening = () => {
 
   const handleRegenerate =
     () => {
-
-      if (
-        !activeGenerationPreferences
-      ) {
-        return;
-      }
-
-      handleGenerate(
-        activeGenerationPreferences
-      );
+      handleGenerate();
     };
 
 
@@ -1219,10 +1216,10 @@ const startListening = () => {
 
         {
           hasGenerated
-          && activeGenerationPreferences && (
+          && resolvedPreferences && (
             <PreferenceChips
               preferences={
-                activeGenerationPreferences
+                resolvedPreferences
               }
               onRegenerate={
                 handleRegenerate
@@ -1262,7 +1259,7 @@ const startListening = () => {
                 }
 
                 selectedColor={
-                  selectedColor
+                  resolvedPreferences.selectedColor
                 }
 
                 selectedSide={
@@ -1278,7 +1275,7 @@ const startListening = () => {
               <SingleControls
 
                 selectedColor={
-                  selectedColor
+                  resolvedPreferences.selectedColor
                 }
 
                 setSelectedColor={
@@ -1301,7 +1298,7 @@ const startListening = () => {
                   setDesignScale
                 }
                 productType={
-                  activeResultProductType
+                  resolvedPreferences.productType
                 }
                 setPreferenceColor={
                   setPrefColor
@@ -1320,7 +1317,7 @@ const startListening = () => {
                 }
 
                 selectedColor={
-                  selectedColor
+                  resolvedPreferences.selectedColor
                 }
 
                 selectedSide={
@@ -1358,11 +1355,11 @@ const startListening = () => {
                 }
 
                 productType={
-                  activeResultProductType
+                  resolvedPreferences.productType
                 }
 
                 generationPreferences={
-                  activeGenerationPreferences
+                  resolvedPreferences
                 }
               />
 
@@ -1373,8 +1370,8 @@ const startListening = () => {
 
         {/* COUPLE */}
 
-        {
-          activeResultMode === "couple"
+  {
+    activeResultMode === "couple"
           &&
           generatedHisImage
           &&
@@ -1386,7 +1383,7 @@ const startListening = () => {
               <CouplePreview
 
   productType={
-    activeResultProductType
+    resolvedPreferences.productType
   }
 
   generatedHisImage={
@@ -1401,13 +1398,13 @@ const startListening = () => {
     getMockup
   }
 
-              hisColor={
-                hisColor
-              }
+  hisColor={
+    hisColor
+  }
 
-              herColor={
-                herColor
-              }
+  herColor={
+    herColor
+  }
 
   hisSide={
     hisSide
@@ -1424,8 +1421,8 @@ const startListening = () => {
 
               <CoupleControls
 
-                productType={
-                  activeResultProductType
+  productType={
+                  resolvedPreferences.productType
                 }
 
 
@@ -1433,7 +1430,7 @@ const startListening = () => {
                   hisColor
                 }
 
-                setHisColor={
+  setHisColor={
                   setHisColor 
                 }
 
@@ -1478,8 +1475,8 @@ const startListening = () => {
                   getMockup
                 }
 
-                productType={
-                  activeResultProductType
+  productType={
+                  resolvedPreferences.productType
                 }
 
                 couplePrompt={
@@ -1532,8 +1529,8 @@ const startListening = () => {
                   setIsConfirmed
                 }
 
-                generationPreferences={
-                  activeGenerationPreferences
+  generationPreferences={
+                  resolvedPreferences
                 }
               />
 
