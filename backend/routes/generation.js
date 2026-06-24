@@ -574,6 +574,127 @@ async function createFallbackSingleImage(preferences, prompt) {
   return svgToPngDataUri(svg);
 }
 
+async function createReferenceFallbackSingle(files, preferences, prompt) {
+  if (!files || files.length === 0) {
+    return createFallbackSingleImage(preferences, prompt);
+  }
+
+  const color = preferences.selectedColor || preferences.color || "white";
+  const bg =
+    color === "black"
+      ? "#111111"
+      : color === "red"
+        ? "#fef2f2"
+        : "#f4f4f5";
+  const accent = color === "black" ? "#e5e7eb" : "#0f172a";
+
+  const base = sharp({
+    create: {
+      width: 1024,
+      height: 1024,
+      channels: 4,
+      background: bg
+    }
+  });
+
+  const imageBuffer = files[0].buffer;
+  const uploaded = await sharp(imageBuffer)
+    .resize({
+      width: 760,
+      height: 760,
+      fit: "contain",
+      background: {
+        r: 0,
+        g: 0,
+        b: 0,
+        alpha: 0
+      }
+    })
+    .png()
+    .toBuffer();
+
+  const overlay = Buffer.from(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+      <rect x="70" y="70" width="884" height="884" rx="48" fill="none" stroke="${accent}" stroke-width="10" opacity="0.18"/>
+      <text x="512" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">REFERENCE IMAGE</text>
+    </svg>
+  `);
+
+  return base
+    .composite([
+      { input: uploaded, top: 132, left: 132 },
+      { input: overlay, top: 0, left: 0 }
+    ])
+    .png()
+    .toBuffer()
+    .then((buffer) => `data:image/png;base64,${buffer.toString("base64")}`);
+}
+
+async function createReferenceFallbackCouple(files, preferences, prompt) {
+  if (!files || files.length === 0) {
+    return createFallbackCoupleImage(preferences, prompt);
+  }
+
+  const color = preferences.selectedColor || preferences.color || "white";
+  const bg =
+    color === "black"
+      ? "#101010"
+      : color === "red"
+        ? "#fef2f2"
+        : "#f6f6f6";
+  const accent = color === "black" ? "#e5e7eb" : "#0f172a";
+
+  const leftSource = files[0].buffer;
+  const rightSource = files[1]?.buffer || files[0].buffer;
+
+  const left = await sharp(leftSource)
+    .resize({
+      width: 820,
+      height: 760,
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    })
+    .png()
+    .toBuffer();
+
+  const right = await sharp(rightSource)
+    .resize({
+      width: 820,
+      height: 760,
+      fit: "contain",
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    })
+    .png()
+    .toBuffer();
+
+  return sharp({
+    create: {
+      width: 2048,
+      height: 1024,
+      channels: 4,
+      background: bg
+    }
+  })
+    .composite([
+      {
+        input: Buffer.from(`
+          <svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024" viewBox="0 0 2048 1024">
+            <rect x="64" y="64" width="1920" height="896" rx="48" fill="none" stroke="${accent}" stroke-width="10" opacity="0.14"/>
+            <text x="512" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">LEFT REFERENCE</text>
+            <text x="1536" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">RIGHT REFERENCE</text>
+          </svg>
+        `),
+        top: 0,
+        left: 0
+      },
+      { input: left, top: 128, left: 112 },
+      { input: right, top: 128, left: 1112 }
+    ])
+    .png()
+    .toBuffer()
+    .then((buffer) => `data:image/png;base64,${buffer.toString("base64")}`);
+}
+
 async function createFallbackCoupleImage(preferences, prompt) {
   const color = preferences.selectedColor || preferences.color || "white";
   const bg = color === "black" ? "#101010" : "#f6f6f6";
@@ -742,20 +863,37 @@ IMPORTANT:
 
 `;
 
+        const referenceInstruction =
+          imageParts.length > 0
+            ? "\n- use the uploaded reference image as the primary visual source and keep its subject/style recognizable\n"
+            : "";
+
+        const finalSinglePrompt =
+          `${finalPrompt}${referenceInstruction}`;
+
 
         console.log(
           "GENERATING SINGLE DESIGN..."
         );
 
 
+        const fallbackSingleImage =
+          req.files && req.files.length > 0
+            ? await createReferenceFallbackSingle(
+                req.files,
+                preferences,
+                prompt
+              )
+            : await createFallbackSingleImage(
+                preferences,
+                prompt
+              );
+
         const imageUrl =
           (await generateImage(
-            finalPrompt,
+            finalSinglePrompt,
             imageParts
-          )) || await createFallbackSingleImage(
-            preferences,
-            prompt
-          );
+          )) || fallbackSingleImage;
 
 
         console.log(
@@ -822,20 +960,37 @@ IMPORTANT:
 
 `;
 
+const referenceInstruction =
+  imageParts.length > 0
+    ? "\n- use the uploaded reference image(s) as the main source and preserve the uploaded composition/style where possible\n"
+    : "";
+
+const finalCouplePrompt =
+  `${finalPrompt}${referenceInstruction}`;
+
 
 console.log(
   "GENERATING COUPLE DESIGN..."
 );
 
 
+const fallbackCoupleImage =
+  req.files && req.files.length > 0
+    ? await createReferenceFallbackCouple(
+        req.files,
+        preferences,
+        prompt
+      )
+    : await createFallbackCoupleImage(
+        preferences,
+        prompt
+      );
+
 const combinedImage =
   (await generateImage(
-    finalPrompt,
+    finalCouplePrompt,
     imageParts
-  )) || await createFallbackCoupleImage(
-    preferences,
-    prompt
-  );
+  )) || fallbackCoupleImage;
 
 
 console.log(
