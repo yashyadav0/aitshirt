@@ -7,11 +7,12 @@ export default function SinglePreview({
   productType,
 
   selectedColor,
-  selectedSide
+  selectedSide,
+  isLoading = false
 
 }) {
 
-  if (!generatedImage)
+  if (!generatedImage && !isLoading)
     return null;
 
   const designStyles = {
@@ -60,53 +61,37 @@ export default function SinglePreview({
         "
       >
 
-        <img
+        {isLoading && !generatedImage ? (
+          <div className="aspect-square w-full animate-pulse bg-[#202020]" />
+        ) : (
+          <>
+            <img
+              src={
+                getMockup(
+                  productType,
+                  selectedColor,
+                  selectedSide
+                )
+              }
+              alt="mockup"
+              className="w-full block"
+            />
 
-          src={
-            getMockup(
-              productType,
-              selectedColor,
-              selectedSide
-            )
-          }
-
-          alt="mockup"
-
-          className="
-            w-full
-            block
-          "
-        />
-
-        <img
-
-          src={generatedImage}
-
-          alt="design"
-
-          style={{
-
-            position:
-              "absolute",
-
-            top:
-              currentStyle.top,
-
-            left: "50%",
-
-            transform:
-              "translate(-50%, -50%)",
-
-            width:
-              currentStyle.width,
-
-            objectFit:
-              "contain",
-
-            pointerEvents:
-              "none"
-          }}
-        />
+            <img
+              src={generatedImage}
+              alt="design"
+              style={{
+                position: "absolute",
+                top: currentStyle.top,
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: currentStyle.width,
+                objectFit: "contain",
+                pointerEvents: "none"
+              }}
+            />
+          </>
+        )}
 
       </div>
 

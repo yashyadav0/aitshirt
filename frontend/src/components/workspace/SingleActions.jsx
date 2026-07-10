@@ -45,6 +45,9 @@ export default function SingleActions({
   const [selectedSize,
     setSelectedSize] =
       useState("M");
+  const [isProcessing,
+    setIsProcessing] =
+    useState(false);
 
 
   const sizes = [
@@ -82,7 +85,12 @@ export default function SingleActions({
   const handleConfirmDesign =
     async () => {
 
+      if (isProcessing || isConfirmed) {
+        return;
+      }
+
       try {
+        setIsProcessing(true);
 
         const token =
           localStorage.getItem(
@@ -355,6 +363,8 @@ export default function SingleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -367,6 +377,12 @@ export default function SingleActions({
     async () => {
 
       try {
+
+        if (!isConfirmed || isProcessing) {
+          return;
+        }
+
+        setIsProcessing(true);
 
         const token =
           localStorage.getItem(
@@ -428,6 +444,8 @@ export default function SingleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -440,6 +458,12 @@ export default function SingleActions({
     async () => {
 
       try {
+
+        if (!isConfirmed || isProcessing) {
+          return;
+        }
+
+        setIsProcessing(true);
 
         const token =
           localStorage.getItem(
@@ -495,6 +519,8 @@ export default function SingleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -602,7 +628,7 @@ export default function SingleActions({
         }
 
         disabled={
-          isConfirmed
+          isConfirmed || isProcessing
         }
 
         className="
@@ -649,9 +675,9 @@ export default function SingleActions({
             handleAddToCart
           }
 
-          disabled={
-            !isConfirmed
-          }
+        disabled={
+          !isConfirmed || isProcessing
+        }
 
           className="
             flex-1
@@ -677,8 +703,8 @@ export default function SingleActions({
           }
 
           disabled={
-            !isConfirmed
-          }
+          !isConfirmed || isProcessing
+        }
 
           className="
             w-20

@@ -52,6 +52,18 @@ const wishlistSchema =
     designScale:
       Number,
 
+    frontDesignImage:
+      String,
+
+    backDesignImage:
+      String,
+
+    frontTransparentDesign:
+      String,
+
+    backTransparentDesign:
+      String,
+
 
     // =====================================
     // COUPLE DESIGN

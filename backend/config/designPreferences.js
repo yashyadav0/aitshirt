@@ -20,6 +20,7 @@ const COLOR_LABELS = {
 
 const DESIGN_TYPES = {
   single: true,
+  double: true,
   couple: true
 };
 
@@ -91,6 +92,17 @@ function buildPreferenceEnrichedPrompt(
       "Designs should complement each other while remaining unique.",
       "Transparent background.",
       "Professional apparel print style."
+    ].join(" ");
+  }
+
+  if (designType === "double") {
+    return [
+      `Create a high-quality print-ready apparel graphic featuring ${trimmedPrompt}.`,
+      `Optimized for a ${colorLabel} ${product.label}.`,
+      "Generate one front-side design and one back-side design for the same apparel item.",
+      "Transparent background.",
+      "Professional DTG print style.",
+      "Center chest placement."
     ].join(" ");
   }
 

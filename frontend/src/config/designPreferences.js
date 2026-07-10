@@ -1,8 +1,13 @@
 export const DESIGN_TYPES = {
   single: {
     id: "single",
-    label: "Single Design",
-    description: "One design generated"
+    label: "Single Side",
+    description: "One front design for one apparel item"
+  },
+  double: {
+    id: "double",
+    label: "Double Side",
+    description: "Front and back designs for one apparel item"
   },
   couple: {
     id: "couple",

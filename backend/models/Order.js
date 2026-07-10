@@ -72,6 +72,18 @@ const orderSchema =
     transparentDesign:
       String,
 
+    frontDesignImage:
+      String,
+
+    backDesignImage:
+      String,
+
+    frontTransparentDesign:
+      String,
+
+    backTransparentDesign:
+      String,
+
     prompt:
       String,
 

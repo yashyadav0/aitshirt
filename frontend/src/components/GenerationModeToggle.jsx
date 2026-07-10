@@ -50,7 +50,40 @@ export default function GenerationModeToggle({
         `}
       >
 
-        Single Design
+        Single Side
+
+      </button>
+
+      <button
+
+        onClick={() =>
+          setGenerationMode(
+            "double"
+          )
+        }
+
+        className={`
+
+          flex-1
+          min-h-12
+          py-3
+          rounded-xl
+          text-sm
+          font-medium
+          transition-all
+
+          ${
+            generationMode === "double"
+
+            ? "bg-[#2f2f2f] text-white"
+
+            : "text-zinc-400 hover:text-white"
+          }
+
+        `}
+      >
+
+        Double Side
 
       </button>
 

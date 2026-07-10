@@ -10,7 +10,8 @@ export default function CouplePreview({
   herColor,
 
   hisSide,
-  herSide
+  herSide,
+  isLoading = false
 
 }) {
 
@@ -66,50 +67,33 @@ export default function CouplePreview({
           "
         >
 
-          <img
+          {isLoading && !generatedHisImage ? (
+            <div className="h-full w-full animate-pulse bg-[#202020]" />
+          ) : (
+            <>
+              <img
+                src={
+                  getMockup(
+                    productType,
+                    hisColor,
+                    hisSide
+                  )
+                }
+                alt="his mockup"
+                className="w-full h-full object-cover"
+              />
 
-            src={
-              getMockup(
-                productType,
-                hisColor,
-                hisSide
-              )
-            }
-
-            alt="his mockup"
-
-            className="
-              w-full
-              h-full
-              object-cover
-            "
-          />
-
-          <img
-
-            src={
-              generatedHisImage
-            }
-
-            alt="his design"
-
-            className="
-              absolute
-              left-1/2
-              -translate-x-1/2
-              -translate-y-1/2
-              object-contain
-            "
-
-            style={{
-
-              top:
-                currentStyle.top,
-
-              width:
-                currentStyle.width
-            }}
-          />
+              <img
+                src={generatedHisImage}
+                alt="his design"
+                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
+                style={{
+                  top: currentStyle.top,
+                  width: currentStyle.width
+                }}
+              />
+            </>
+          )}
 
         </div>
 
@@ -136,50 +120,33 @@ export default function CouplePreview({
           "
         >
 
-          <img
+          {isLoading && !generatedHerImage ? (
+            <div className="h-full w-full animate-pulse bg-[#202020]" />
+          ) : (
+            <>
+              <img
+                src={
+                  getMockup(
+                    productType,
+                    herColor,
+                    herSide
+                  )
+                }
+                alt="her mockup"
+                className="w-full h-full object-cover"
+              />
 
-            src={
-              getMockup(
-                productType,
-                herColor,
-                herSide
-              )
-            }
-
-            alt="her mockup"
-
-            className="
-              w-full
-              h-full
-              object-cover
-            "
-          />
-
-          <img
-
-            src={
-              generatedHerImage
-            }
-
-            alt="her design"
-
-            className="
-              absolute
-              left-1/2
-              -translate-x-1/2
-              -translate-y-1/2
-              object-contain
-            "
-
-            style={{
-
-              top:
-                currentStyle.top,
-
-              width:
-                currentStyle.width
-            }}
-          />
+              <img
+                src={generatedHerImage}
+                alt="her design"
+                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
+                style={{
+                  top: currentStyle.top,
+                  width: currentStyle.width
+                }}
+              />
+            </>
+          )}
 
         </div>
 

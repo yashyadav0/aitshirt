@@ -397,7 +397,109 @@ export default function Cart() {
                   >
 
                     {
-                      item.isCouple
+                      item.designType === "double"
+                      || item.frontDesignImage
+                      || item.backDesignImage
+
+                      ? (
+
+                        <>
+
+                          <div
+                            className="
+                              p-4
+                              sm:p-5
+                              flex
+                              justify-between
+                              items-start
+                              sm:items-center
+                              gap-2
+                            "
+                          >
+
+                            <div className="flex-1 min-w-0">
+
+                              <div
+                                className="
+                                  text-xl
+                                  sm:text-2xl
+                                  font-black
+                                "
+                              >
+
+                                Double Side
+
+                              </div>
+
+                              <div
+                                className="
+                                  text-sm
+                                  sm:text-base
+                                  text-gray-400
+                                "
+                              >
+
+                                â‚¹699
+
+                              </div>
+
+                              {(item.selectedColor || item.color) && (
+                                <div className="mt-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                                  Color: {item.selectedColor || item.color}
+                                </div>
+                              )}
+
+                            </div>
+
+
+                            <button
+
+                              onClick={() =>
+                                removeItem(
+                                  item._id
+                                )
+                              }
+
+                              className="
+                                text-red-500
+                                flex-shrink-0
+                                p-2
+                                hover:bg-red-500/10
+                                rounded-lg
+                                transition
+                              "
+                              aria-label="Remove item"
+                            >
+
+                              <Trash2 size={20} />
+
+                            </button>
+
+                          </div>
+
+
+                          <div className="grid grid-cols-2 gap-2 px-5 pb-4">
+                            <div className="aspect-square overflow-hidden rounded-2xl bg-[#232326]">
+                              <img
+                                src={item.frontDesignImage || item.designImage}
+                                alt="front design"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                            <div className="aspect-square overflow-hidden rounded-2xl bg-[#232326]">
+                              <img
+                                src={item.backDesignImage || item.frontDesignImage || item.designImage}
+                                alt="back design"
+                                className="h-full w-full object-cover"
+                              />
+                            </div>
+                          </div>
+
+                        </>
+
+                      )
+
+                      : item.isCouple
 
                       ? (
 

@@ -7,11 +7,15 @@ export default function GenerateButton({
 
     <button
 
+      type="button"
+
       onClick={
         handleGenerate
       }
 
       disabled={loading}
+
+      aria-busy={loading}
 
       className="
         min-h-12

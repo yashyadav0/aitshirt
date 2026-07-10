@@ -14,6 +14,8 @@ import {
 } from "../utils/toast";
 
 const getOrderPreviewImage = (order) =>
+  order.items?.[0]?.frontDesignImage ||
+  order.items?.[0]?.backDesignImage ||
   order.items?.[0]?.designImage ||
   order.items?.[0]?.hisDesignImage ||
   order.items?.[0]?.herDesignImage ||
@@ -209,7 +211,20 @@ export default function Orders() {
               >
 
                 {/* Image */}
-                {order.items?.[0]?.isCouple ? (
+                {(order.items?.[0]?.designType === "double" || order.items?.[0]?.frontDesignImage || order.items?.[0]?.backDesignImage) ? (
+                  <div className="grid aspect-square grid-cols-2 gap-1 bg-zinc-950 overflow-hidden">
+                    <img
+                      src={order.items?.[0]?.frontDesignImage || getOrderPreviewImage(order)}
+                      alt="front order preview"
+                      className="h-full w-full object-cover"
+                    />
+                    <img
+                      src={order.items?.[0]?.backDesignImage || order.items?.[0]?.frontDesignImage || getOrderPreviewImage(order)}
+                      alt="back order preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : order.items?.[0]?.isCouple ? (
                   <div className="grid aspect-square grid-cols-2 gap-1 bg-zinc-950 overflow-hidden">
                     <img
                       src={order.items?.[0]?.hisDesignImage || getOrderPreviewImage(order)}

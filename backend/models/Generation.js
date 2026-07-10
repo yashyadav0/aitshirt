@@ -116,6 +116,18 @@ const generationSchema =
       transparentDesign:
         String,
 
+      frontDesignImage:
+        String,
+
+      backDesignImage:
+        String,
+
+      frontTransparentDesign:
+        String,
+
+      backTransparentDesign:
+        String,
+
 
       // =====================================
       // COUPLE DESIGN

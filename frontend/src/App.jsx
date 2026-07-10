@@ -1,4 +1,10 @@
 import {
+  Suspense,
+  lazy,
+  useEffect
+} from "react";
+
+import {
   BrowserRouter,
   Navigate,
   Route,
@@ -8,47 +14,11 @@ import {
 import AIWorkspace
   from "./pages/AIWorkspace";
 
-import Cart
-  from "./pages/Cart";
-
-import Wishlist
-  from "./pages/Wishlist";
-
-import Orders
-  from "./pages/Orders";
-
-import Checkout
-  from "./pages/Checkout";
-
 import Login
   from "./pages/Login";
 
 import LandingPage
   from "./pages/LandingPage";
-
-import History
-  from "./pages/History";
-
-import Settings
-  from "./pages/Settings";
-
-import AdminDashboard
-  from "./pages/AdminDashboard";
-
-import AdminUsers
-  from "./pages/AdminUsers";
-
-import AdminOrders
-  from "./pages/AdminOrders";
-
-import AdminProducts
-  from "./pages/AdminProducts";
-
-import AdminCoupons
-  from "./pages/AdminCoupons";
-
-import AdminPresets
-  from "./pages/AdminPresets";
 
 import Sidebar
   from "./components/Sidebar";
@@ -59,7 +29,38 @@ import AdminRoute
 import ProtectedRoute
   from "./components/ProtectedRoute";
 
+const Cart = lazy(() => import("./pages/Cart"));
+const Wishlist = lazy(() => import("./pages/Wishlist"));
+const Orders = lazy(() => import("./pages/Orders"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const History = lazy(() => import("./pages/History"));
+const Settings = lazy(() => import("./pages/Settings"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
+const AdminOrders = lazy(() => import("./pages/AdminOrders"));
+const AdminProducts = lazy(() => import("./pages/AdminProducts"));
+const AdminCoupons = lazy(() => import("./pages/AdminCoupons"));
+const AdminPresets = lazy(() => import("./pages/AdminPresets"));
+
 function AppShell() {
+
+  useEffect(() => {
+    // Prefetch non-critical routes after the shell is mounted.
+    const prefetch = () => {
+      import("./pages/Orders");
+      import("./pages/Checkout");
+      import("./pages/Settings");
+      import("./pages/History");
+    };
+
+    if ("requestIdleCallback" in window) {
+      const handle = window.requestIdleCallback(prefetch);
+      return () => window.cancelIdleCallback(handle);
+    }
+
+    const timer = window.setTimeout(prefetch, 1000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   return (
     <ProtectedRoute>
@@ -67,11 +68,16 @@ function AppShell() {
         <Sidebar />
 
         <div className="min-w-0 flex-1 md:pl-[280px]">
-          <Routes>
-            <Route
-              path="/workspace"
-              element={<AIWorkspace />}
-            />
+          <Suspense fallback={
+            <main className="flex min-h-[60vh] items-center justify-center text-sm text-zinc-400">
+              Loading page...
+            </main>
+          }>
+            <Routes>
+              <Route
+                path="/workspace"
+                element={<AIWorkspace />}
+              />
 
             <Route
               path="/history"
@@ -166,7 +172,8 @@ function AppShell() {
               path="*"
               element={<Navigate to="/workspace" replace />}
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </div>
       </div>
     </ProtectedRoute>

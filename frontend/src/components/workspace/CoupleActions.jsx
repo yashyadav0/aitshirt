@@ -30,6 +30,8 @@ export default function CoupleActions({
 
   generationPreferences,
 
+  designVariant = "couple",
+
   setSuccessMessage,
 
   confirmedDesign,
@@ -40,6 +42,9 @@ export default function CoupleActions({
 
 }) {
 
+  const isDouble =
+    designVariant === "double";
+
   const [hisSize,
     setHisSize] =
     useState("M");
@@ -47,6 +52,13 @@ export default function CoupleActions({
   const [herSize,
     setHerSize] =
     useState("M");
+
+  const [selectedSize,
+    setSelectedSize] =
+    useState("M");
+  const [isProcessing,
+    setIsProcessing] =
+    useState(false);
 
   const sizes = [
     "S",
@@ -251,6 +263,124 @@ export default function CoupleActions({
 
       try {
 
+        if (isConfirmed || isProcessing) {
+          return;
+        }
+
+        setIsProcessing(true);
+
+        if (isDouble) {
+
+          const token =
+            localStorage.getItem(
+              "token"
+            );
+
+          const frontBlob =
+            await createFinalMockup(
+              getMockup(
+                productType,
+                hisColor,
+                "front"
+              ),
+              generatedHisImage,
+              hisScale,
+              "front"
+            );
+
+          const frontFinalImage =
+            await uploadImage(
+              frontBlob,
+              token
+            );
+
+          const backBlob =
+            await createFinalMockup(
+              getMockup(
+                productType,
+                herColor,
+                "back"
+              ),
+              generatedHerImage,
+              herScale,
+              "back"
+            );
+
+          const backFinalImage =
+            await uploadImage(
+              backBlob,
+              token
+            );
+
+          const designData = {
+            isCouple: false,
+            generationMode: "double",
+            preferences:
+              generationPreferences || {
+                productType,
+                designType: "double",
+                selectedColor: hisColor,
+                color: hisColor
+              },
+            productType:
+              generationPreferences?.productType
+              || productType,
+            designType:
+              generationPreferences?.designType
+              || "double",
+            designImage:
+              frontFinalImage,
+            frontDesignImage:
+              frontFinalImage,
+            backDesignImage:
+              backFinalImage,
+            frontTransparentDesign:
+              generatedHisImage,
+            backTransparentDesign:
+              generatedHerImage,
+            prompt:
+              couplePrompt,
+            selectedColor:
+              generationPreferences?.selectedColor
+              || generationPreferences?.color
+              || hisColor,
+            color:
+              generationPreferences?.selectedColor
+              || generationPreferences?.color
+              || hisColor,
+            size:
+              selectedSize,
+            side:
+              "front",
+            designScale:
+              hisScale,
+            isConfirmed: true
+          };
+
+          await API.post(
+            "/generation/save",
+            designData,
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
+
+          setConfirmedDesign(
+            designData
+          );
+
+          setIsConfirmed(true);
+
+          showToast(
+            "Double Side Confirmed"
+          );
+
+          return;
+        }
+
         const token =
           localStorage.getItem(
             "token"
@@ -321,8 +451,8 @@ export default function CoupleActions({
 
           isCouple: true,
 
-          generationMode:
-            "couple",
+            generationMode:
+              "couple",
 
           preferences:
             generationPreferences || {
@@ -421,6 +551,8 @@ export default function CoupleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -434,11 +566,62 @@ export default function CoupleActions({
 
       try {
 
+        if (!isConfirmed || isProcessing) {
+          return;
+        }
+
+        setIsProcessing(true);
+
         const token =
           localStorage.getItem(
             "token"
           );
 
+        if (isDouble) {
+          await API.post(
+            "/cart/add",
+            {
+              isCouple: false,
+              generationMode: "double",
+              productType,
+              designType: "double",
+              designImage:
+                confirmedDesign.frontDesignImage
+                || confirmedDesign.designImage,
+              frontDesignImage:
+                confirmedDesign.frontDesignImage
+                || confirmedDesign.designImage,
+              backDesignImage:
+                confirmedDesign.backDesignImage,
+              frontTransparentDesign:
+                confirmedDesign.frontTransparentDesign,
+              backTransparentDesign:
+                confirmedDesign.backTransparentDesign,
+              prompt:
+                confirmedDesign.prompt,
+              color:
+                confirmedDesign.color,
+              selectedColor:
+                confirmedDesign.selectedColor,
+              size:
+                confirmedDesign.size,
+              side:
+                confirmedDesign.side,
+              designScale:
+                confirmedDesign.designScale,
+              price: 699
+            },
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
+
+          showToast("Added To Cart");
+          return;
+        }
 
         await API.post(
 
@@ -513,6 +696,8 @@ export default function CoupleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -526,11 +711,61 @@ export default function CoupleActions({
 
       try {
 
+        if (!isConfirmed || isProcessing) {
+          return;
+        }
+
+        setIsProcessing(true);
+
         const token =
           localStorage.getItem(
             "token"
           );
 
+        if (isDouble) {
+          await API.post(
+            "/wishlist/add",
+            {
+              isCouple: false,
+              generationMode: "double",
+              productType,
+              designType: "double",
+              designImage:
+                confirmedDesign.frontDesignImage
+                || confirmedDesign.designImage,
+              frontDesignImage:
+                confirmedDesign.frontDesignImage
+                || confirmedDesign.designImage,
+              backDesignImage:
+                confirmedDesign.backDesignImage,
+              frontTransparentDesign:
+                confirmedDesign.frontTransparentDesign,
+              backTransparentDesign:
+                confirmedDesign.backTransparentDesign,
+              prompt:
+                confirmedDesign.prompt,
+              color:
+                confirmedDesign.color,
+              selectedColor:
+                confirmedDesign.selectedColor,
+              size:
+                confirmedDesign.size,
+              side:
+                confirmedDesign.side,
+              designScale:
+                confirmedDesign.designScale
+            },
+            {
+              headers: {
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          );
+
+          showToast("Added To Wishlist");
+          return;
+        }
 
         await API.post(
 
@@ -603,6 +838,8 @@ export default function CoupleActions({
       } catch (err) {
 
         console.log(err);
+      } finally {
+        setIsProcessing(false);
       }
     };
 
@@ -612,37 +849,32 @@ export default function CoupleActions({
     <>
 
       <div
-        className="
-          mt-6
-          grid
-          gap-3
-          sm:grid-cols-2
-        "
+        className={
+          isDouble
+            ? "mt-6"
+            : "mt-6 grid gap-3 sm:grid-cols-2"
+        }
       >
+        {isDouble ? (
+          <div
+            className="
+              rounded-2xl
+              border
+              border-[#2f2f2f]
+              bg-[#171717]
+              p-4
+            "
+          >
+            <p className="mb-3 text-sm font-medium text-zinc-200">
+              Size
+            </p>
 
-        <div
-          className="
-            rounded-2xl
-            border
-            border-[#2f2f2f]
-            bg-[#171717]
-            p-4
-          "
-        >
-          <p className="mb-3 text-sm font-medium text-zinc-200">
-            His Size
-          </p>
-
-          <div className="grid grid-cols-3 gap-2">
-            {
-              sizes.map((size) => (
-
+            <div className="grid grid-cols-3 gap-2">
+              {sizes.map((size) => (
                 <button
                   key={size}
                   onClick={() =>
-                    setHisSize(
-                      size
-                    )
+                    setSelectedSize(size)
                   }
                   className={`
                     min-h-12
@@ -651,7 +883,7 @@ export default function CoupleActions({
                     font-medium
                     transition
                     ${
-                      hisSize === size
+                      selectedSize === size
                         ? "bg-cyan-400 text-black"
                         : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
                     }
@@ -659,55 +891,90 @@ export default function CoupleActions({
                 >
                   {size}
                 </button>
-              ))
-            }
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <div
+              className="
+                rounded-2xl
+                border
+                border-[#2f2f2f]
+                bg-[#171717]
+                p-4
+              "
+            >
+              <p className="mb-3 text-sm font-medium text-zinc-200">
+                His Size
+              </p>
 
-        <div
-          className="
-            rounded-2xl
-            border
-            border-[#2f2f2f]
-            bg-[#171717]
-            p-4
-          "
-        >
-          <p className="mb-3 text-sm font-medium text-zinc-200">
-            Her Size
-          </p>
-
-          <div className="grid grid-cols-3 gap-2">
-            {
-              sizes.map((size) => (
-
-                <button
-                  key={size}
-                  onClick={() =>
-                    setHerSize(
-                      size
-                    )
-                  }
-                  className={`
-                    min-h-12
-                    rounded-xl
-                    text-sm
-                    font-medium
-                    transition
-                    ${
-                      herSize === size
-                        ? "bg-cyan-400 text-black"
-                        : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+              <div className="grid grid-cols-3 gap-2">
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() =>
+                      setHisSize(size)
                     }
-                  `}
-                >
-                  {size}
-                </button>
-              ))
-            }
-          </div>
-        </div>
+                    className={`
+                      min-h-12
+                      rounded-xl
+                      text-sm
+                      font-medium
+                      transition
+                      ${
+                        hisSize === size
+                          ? "bg-cyan-400 text-black"
+                          : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                      }
+                    `}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            <div
+              className="
+                rounded-2xl
+                border
+                border-[#2f2f2f]
+                bg-[#171717]
+                p-4
+              "
+            >
+              <p className="mb-3 text-sm font-medium text-zinc-200">
+                Her Size
+              </p>
+
+              <div className="grid grid-cols-3 gap-2">
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() =>
+                      setHerSize(size)
+                    }
+                    className={`
+                      min-h-12
+                      rounded-xl
+                      text-sm
+                      font-medium
+                      transition
+                      ${
+                        herSize === size
+                          ? "bg-cyan-400 text-black"
+                          : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                      }
+                    `}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* CONFIRM */}
@@ -719,7 +986,7 @@ export default function CoupleActions({
         }
 
         disabled={
-          isConfirmed
+          isConfirmed || isProcessing
         }
 
         className="
@@ -742,7 +1009,9 @@ export default function CoupleActions({
 
           ? "Design Confirmed"
 
-          : "Confirm Couple Design"
+          : isDouble
+            ? "Confirm Double Side"
+            : "Confirm Couple Design"
         }
 
       </button>
@@ -766,9 +1035,9 @@ export default function CoupleActions({
             handleAddToCart
           }
 
-          disabled={
-            !isConfirmed
-          }
+        disabled={
+          !isConfirmed || isProcessing
+        }
 
           className="
             flex-1
@@ -793,9 +1062,9 @@ export default function CoupleActions({
             handleWishlist
           }
 
-          disabled={
-            !isConfirmed
-          }
+        disabled={
+          !isConfirmed || isProcessing
+        }
 
           className="
             w-20

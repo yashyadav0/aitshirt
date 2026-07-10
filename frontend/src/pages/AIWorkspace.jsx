@@ -1,7 +1,8 @@
 import React, {
   useState,
   useRef,
-  useEffect
+  useEffect,
+  useMemo
 } from "react";
 
 import {
@@ -9,6 +10,10 @@ import {
 } from "lucide-react";
 
 import API from "../api";
+
+import {
+  showError
+} from "../utils/toast";
 
 import {
   removeBackground
@@ -171,6 +176,9 @@ export default function AIWorkspace() {
   const [successMessage,
     setSuccessMessage] =
     useState("");
+  const [errorMessage,
+    setErrorMessage] =
+    useState("");
   const [isListening,
     setIsListening] =
     useState(false);
@@ -221,13 +229,7 @@ export default function AIWorkspace() {
     useState(null);
 
   const resolvedPreferences =
-    normalizePreferences({
-      ...preferences,
-      productType,
-      designType: generationMode,
-      selectedColor,
-      color: selectedColor
-    });
+    normalizePreferences(preferences);
   const selectedPreferenceColor =
     resolvedPreferences.selectedColor;
   const selectedPreferenceProductType =
@@ -260,6 +262,16 @@ export default function AIWorkspace() {
 
   const mockupRef =
     useRef(null);
+  const recognitionRef =
+    useRef(null);
+  const isListeningRef =
+    useRef(false);
+  const generationLockRef =
+    useRef(false);
+  const generationAbortRef =
+    useRef(null);
+  const generationRequestIdRef =
+    useRef(0);
 
   const hasGenerated =
     Boolean(
@@ -267,7 +279,8 @@ export default function AIWorkspace() {
       (
         generatedHisImage &&
         generatedHerImage
-      )
+      ) ||
+      referenceImages.length > 0
     );
 
   const productDesignScale =
@@ -276,10 +289,10 @@ export default function AIWorkspace() {
       : 48;
 
   const activeResultMode =
-    generationMode;
+    resolvedPreferences.designType;
 
   const activeResultProductType =
-    productType;
+    resolvedPreferences.productType;
 
   useEffect(() => {
 
@@ -341,11 +354,94 @@ export default function AIWorkspace() {
     selectedPreferenceColor
   ]);
 
+  const referencePreviewUrls =
+    useMemo(
+      () =>
+        referenceImages.map(
+          (file) =>
+            URL.createObjectURL(
+              file
+            )
+        ),
+      [referenceImages]
+    );
+
+  useEffect(() => {
+    return () => {
+      referencePreviewUrls.forEach((url) =>
+        URL.revokeObjectURL(url)
+      );
+    };
+  }, [referencePreviewUrls]);
+
+  const primaryReferencePreview =
+    referencePreviewUrls[0] || "";
+  const secondaryReferencePreview =
+    referencePreviewUrls[1] ||
+    referencePreviewUrls[0] ||
+    "";
+  const singleDisplayImage =
+    generatedImage || primaryReferencePreview;
+  const firstDualDisplayImage =
+    generatedHisImage || primaryReferencePreview;
+  const secondDualDisplayImage =
+    generatedHerImage ||
+    secondaryReferencePreview ||
+    primaryReferencePreview;
+
+  const buildGenerationCacheKey =
+    (generationPrefs, singlePromptText, couplePromptText) => {
+      const promptText =
+        generationPrefs.designType === "couple"
+          ? couplePromptText
+          : singlePromptText;
+
+      const referenceKey =
+        referenceImages
+          .map(
+            (file) =>
+              `${file.name}:${file.size}:${file.lastModified}`
+          )
+          .join("|");
+
+      return JSON.stringify({
+        productType: generationPrefs.productType,
+        designType: generationPrefs.designType,
+        selectedColor: generationPrefs.selectedColor,
+        prompt: promptText,
+        references: referenceKey
+      });
+    };
+
+  const readGenerationCache = (cacheKey) => {
+    try {
+      const cached = sessionStorage.getItem(
+        `aiwork:${cacheKey}`
+      );
+
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const writeGenerationCache = (cacheKey, value) => {
+    try {
+      sessionStorage.setItem(
+        `aiwork:${cacheKey}`,
+        JSON.stringify(value)
+      );
+    } catch {
+      // Ignore cache write failures.
+    }
+  };
+
   const applyPreset =
     (preset) => {
 
       if (
-        generationMode === "single"
+        generationMode === "single" ||
+        generationMode === "double"
       ) {
         setPrompt(
           preset.prompt
@@ -424,9 +520,9 @@ export default function AIWorkspace() {
   };
 
 
-  // =====================================
-  // GENERATE
-  // =====================================
+// =====================================
+// GENERATE
+// =====================================
 const startListening = () => {
 
   const SpeechRecognition =
@@ -442,39 +538,91 @@ const startListening = () => {
     return;
   }
 
+  if (isListening && recognitionRef.current) {
+    isListeningRef.current = false;
+    recognitionRef.current.stop();
+    return;
+  }
+
   const recognition =
     new SpeechRecognition();
 
+  recognitionRef.current =
+    recognition;
+
   recognition.lang = "en-IN";
 
-  recognition.continuous = false;
+  recognition.continuous = true;
 
-  recognition.interimResults = false;
+  recognition.interimResults = true;
 
   recognition.onstart = () => {
 
+    isListeningRef.current = true;
     setIsListening(true);
   };
 
   recognition.onend = () => {
 
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
+    }
+
     setIsListening(false);
+
+    if (isListeningRef.current) {
+      window.setTimeout(() => {
+        if (isListeningRef.current) {
+          startListening();
+        }
+      }, 350);
+    }
   };
 
   recognition.onresult = (event) => {
 
     const transcript =
-      event.results[0][0].transcript;
+      Array.from(event.results)
+        .slice(event.resultIndex)
+        .filter((result) => result.isFinal)
+        .map((result) => result[0].transcript)
+        .join(" ")
+        .trim();
+
+    if (!transcript) {
+      return;
+    }
 
     if (
-      generationMode === "single"
+      generationMode === "single" ||
+      generationMode === "double"
     ) {
 
-      setPrompt(transcript);
+      setPrompt((prev) => {
+        const base = prev.trim();
+        const next = transcript.trim();
+        if (!base) return next;
+        if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
+        return `${base} ${next}`.trim();
+      });
 
     } else {
 
-      setCouplePrompt(transcript);
+      setCouplePrompt((prev) => {
+        const base = prev.trim();
+        const next = transcript.trim();
+        if (!base) return next;
+        if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
+        return `${base} ${next}`.trim();
+      });
+    }
+  };
+
+  recognition.onerror = () => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    if (recognitionRef.current === recognition) {
+      recognitionRef.current = null;
     }
   };
 
@@ -485,23 +633,90 @@ const startListening = () => {
       overridePreferences = null
     ) => {
 
+      if (generationLockRef.current) {
+        return;
+      }
+
       const generationPrefs =
         normalizePreferences(
           overridePreferences
-          || {
-            ...preferences,
-            productType,
-            designType: generationMode,
-            selectedColor,
-            color: selectedColor
-          }
+          || preferences
         );
 
       const activeMode =
         generationPrefs.designType;
+      const cacheKey =
+        buildGenerationCacheKey(
+          generationPrefs,
+          prompt,
+          couplePrompt
+        );
+      const cachedGeneration =
+        readGenerationCache(
+          cacheKey
+        );
+
+      if (cachedGeneration) {
+        setErrorMessage("");
+        setLoading(false);
+        setGenerationStep("");
+
+        setActiveGenerationPreferences(
+          normalizePreferences(
+            cachedGeneration.preferences
+            || generationPrefs
+          )
+        );
+
+        setProductType(
+          cachedGeneration.preferences?.productType
+          || generationPrefs.productType
+        );
+
+        setSelectedColor(
+          cachedGeneration.preferences?.selectedColor
+          || generationPrefs.selectedColor
+        );
+
+        setHisColor(
+          cachedGeneration.preferences?.selectedColor
+          || generationPrefs.selectedColor
+        );
+
+        setHerColor(
+          cachedGeneration.preferences?.selectedColor
+          || generationPrefs.selectedColor
+        );
+
+        setGeneratedImage(
+          cachedGeneration.generatedImage || ""
+        );
+        setGeneratedHisImage(
+          cachedGeneration.generatedHisImage || ""
+        );
+        setGeneratedHerImage(
+          cachedGeneration.generatedHerImage || ""
+        );
+        return;
+      }
+
+      generationLockRef.current = true;
+      generationRequestIdRef.current += 1;
+      const requestId =
+        generationRequestIdRef.current;
+      const abortController =
+        new AbortController();
+
+      if (generationAbortRef.current) {
+        generationAbortRef.current.abort();
+      }
+
+      generationAbortRef.current =
+        abortController;
 
       try {
 
+        setErrorMessage("");
         setLoading(true);
 
         setGeneratedImage("");
@@ -515,19 +730,12 @@ const startListening = () => {
         setIsConfirmed(false);
 
 
-        if (
-          activeMode === "single"
-        ) {
-
-          setGenerationStep(
-            "Enhancing prompt..."
-          );
-
+        if (activeMode === "single") {
+          setGenerationStep("Enhancing prompt...");
+        } else if (activeMode === "double") {
+          setGenerationStep("Enhancing double prompt...");
         } else {
-
-          setGenerationStep(
-            "Enhancing couple prompt..."
-          );
+          setGenerationStep("Enhancing couple prompt...");
         }
 
 
@@ -572,26 +780,10 @@ const startListening = () => {
         // SINGLE
         // =====================================
 
-        if (
-          activeMode === "single"
-        ) {
-
-          formData.append(
-            "prompt",
-            prompt
-          );
-        }
-
-        // =====================================
-        // COUPLE
-        // =====================================
-
-        else {
-
-          formData.append(
-            "prompt",
-            couplePrompt
-          );
+        if (activeMode === "single" || activeMode === "double") {
+          formData.append("prompt", prompt);
+        } else {
+          formData.append("prompt", couplePrompt);
         }
 
 
@@ -627,9 +819,15 @@ const startListening = () => {
               headers: {
                 Authorization:
                   `Bearer ${token}`
-              }
+              },
+              signal:
+                abortController.signal
             }
           );
+
+        if (requestId !== generationRequestIdRef.current) {
+          return;
+        }
 
 
         const responsePreferences =
@@ -658,14 +856,17 @@ const startListening = () => {
           responsePreferences.selectedColor || responsePreferences.color
         );
 
+        if (activeMode === "double") {
+          setHisSide("front");
+          setHerSide("back");
+        }
+
 
         // =====================================
         // SINGLE
         // =====================================
 
-        if (
-          activeMode === "single"
-        ) {
+        if (activeMode === "single") {
 
           setGenerationStep(
             "Removing background..."
@@ -734,8 +935,20 @@ const startListening = () => {
           );
 
 
+            const finalSingleImage =
+              uploadRes.data.imageUrl;
+
             setGeneratedImage(
-              uploadRes.data.imageUrl
+              finalSingleImage
+            );
+
+            writeGenerationCache(
+              cacheKey,
+              {
+                preferences: responsePreferences,
+                generatedImage:
+                  finalSingleImage
+              }
             );
 
           } catch (bgErr) {
@@ -747,33 +960,41 @@ const startListening = () => {
             setGeneratedImage(
               res.data.imageUrl
             );
+
+            writeGenerationCache(
+              cacheKey,
+              {
+                preferences: responsePreferences,
+                generatedImage:
+                  res.data.imageUrl
+              }
+            );
           }
 
 
           setGenerationStep("");
-        }
+        } else {
 
+          const firstDesignLabel =
+            activeMode === "double" ? "front" : "his";
 
-        // =====================================
-        // COUPLE
-        // =====================================
-
-        else {
+          const secondDesignLabel =
+            activeMode === "double" ? "back" : "her";
 
           try {
 
             // =====================================
-            // HIS DESIGN
+            // FIRST DESIGN
             // =====================================
 
             setGenerationStep(
-              "Removing his background..."
+              `Removing ${firstDesignLabel} background...`
             );
 
 
             const hisBlob =
               await fetch(
-                res.data.hisImage
+                res.data.frontImage || res.data.hisImage
               ).then((r) =>
                 r.blob()
               );
@@ -826,23 +1047,26 @@ const startListening = () => {
           );
 
 
+            const finalHisImage =
+              hisUploadRes.data.imageUrl;
+
             setGeneratedHisImage(
-              hisUploadRes.data.imageUrl
+              finalHisImage
             );
 
 
             // =====================================
-            // HER DESIGN
+            // SECOND DESIGN
             // =====================================
 
             setGenerationStep(
-              "Removing her background..."
+              `Removing ${secondDesignLabel} background...`
             );
 
 
             const herBlob =
               await fetch(
-                res.data.herImage
+                res.data.backImage || res.data.herImage
               ).then((r) =>
                 r.blob()
               );
@@ -895,8 +1119,22 @@ const startListening = () => {
           );
 
 
+            const finalHerImage =
+              herUploadRes.data.imageUrl;
+
             setGeneratedHerImage(
-              herUploadRes.data.imageUrl
+              finalHerImage
+            );
+
+            writeGenerationCache(
+              cacheKey,
+              {
+                preferences: responsePreferences,
+                generatedHisImage:
+                  finalHisImage,
+                generatedHerImage:
+                  finalHerImage
+              }
             );
 
 
@@ -907,11 +1145,22 @@ const startListening = () => {
             console.log(bgErr);
 
             setGeneratedHisImage(
-              res.data.hisImage
+              res.data.frontImage || res.data.hisImage
             );
 
             setGeneratedHerImage(
-              res.data.herImage
+              res.data.backImage || res.data.herImage
+            );
+
+            writeGenerationCache(
+              cacheKey,
+              {
+                preferences: responsePreferences,
+                generatedHisImage:
+                  res.data.frontImage || res.data.hisImage,
+                generatedHerImage:
+                  res.data.backImage || res.data.herImage
+              }
             );
 
             setGenerationStep("");
@@ -920,10 +1169,30 @@ const startListening = () => {
 
       } catch (err) {
 
+        if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
+          return;
+        }
+
+        const apiMessage =
+          err.response?.data?.error ||
+          err.response?.data?.message ||
+          err.message ||
+          "Generation failed";
+
         console.log(err);
+
+        setErrorMessage(apiMessage);
+        showError(apiMessage);
 
       } finally {
 
+        if (
+          generationAbortRef.current === abortController
+        ) {
+          generationAbortRef.current = null;
+        }
+
+        generationLockRef.current = false;
         setLoading(false);
       }
     };
@@ -981,6 +1250,44 @@ const startListening = () => {
 
             {successMessage}
 
+          </div>
+        )
+      }
+
+      {
+        errorMessage && (
+
+          <div
+            className="
+              fixed
+              top-4
+              sm:top-6
+              right-4
+              z-50
+              max-w-[calc(100%-2rem)]
+              rounded-2xl
+              border
+              border-red-500/30
+              bg-[#171717]
+              px-4
+              py-3
+              text-sm
+              text-red-200
+              shadow-2xl
+            "
+          >
+            <div className="flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                {errorMessage}
+              </span>
+              <button
+                type="button"
+                onClick={handleRegenerate}
+                className="rounded-xl border border-red-500/30 px-3 py-1 text-xs font-medium text-red-100 transition hover:bg-red-500/10"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )
       }
@@ -1094,7 +1401,8 @@ const startListening = () => {
 
               <div className="px-2">
                 {
-                  generationMode === "single"
+                  generationMode === "single" ||
+                  generationMode === "double"
 
                   ? (
 
@@ -1231,16 +1539,15 @@ const startListening = () => {
         {
           activeResultMode === "single"
           &&
-          generatedImage
+          (singleDisplayImage || loading)
           && (
 
             <>
 
               <SinglePreview
 
-                 generatedImage={
-                  generatedImage
-                }
+                 generatedImage={singleDisplayImage}
+                isLoading={loading && !singleDisplayImage}
 
                 mockupRef={
                   mockupRef
@@ -1304,9 +1611,7 @@ const startListening = () => {
 
               <SingleActions
 
-                generatedImage={
-                  generatedImage
-                }
+                generatedImage={singleDisplayImage}
 
                 prompt={
                   prompt
@@ -1364,14 +1669,132 @@ const startListening = () => {
         }
 
 
+        {/* DOUBLE */}
+
+        {
+          activeResultMode === "double"
+          &&
+          (loading || (firstDualDisplayImage && secondDualDisplayImage))
+          && (
+
+            <>
+
+              <CouplePreview
+
+                productType={
+                  resolvedPreferences.productType
+                }
+
+                generatedHisImage={
+                  firstDualDisplayImage
+                }
+
+                generatedHerImage={
+                  secondDualDisplayImage
+                }
+
+                getMockup={
+                  getMockup
+                }
+
+                hisColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                herColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                hisSide="front"
+
+                herSide="back"
+                isLoading={loading && !firstDualDisplayImage && !secondDualDisplayImage}
+              />
+
+              <CoupleActions
+
+                designVariant="double"
+
+                generatedHisImage={
+                  firstDualDisplayImage
+                }
+
+                generatedHerImage={
+                  secondDualDisplayImage
+                }
+
+                getMockup={
+                  getMockup
+                }
+
+                productType={
+                  resolvedPreferences.productType
+                }
+
+                couplePrompt={
+                  prompt
+                }
+
+                hisColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                herColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                hisSide="front"
+
+                herSide="back"
+
+                hisScale={
+                  productDesignScale
+                }
+
+                herScale={
+                  productDesignScale
+                }
+
+                API={API}
+
+                setSuccessMessage={
+                  setSuccessMessage
+                }
+
+                confirmedDesign={
+                  confirmedDesign
+                }
+
+                setConfirmedDesign={
+                  setConfirmedDesign
+                }
+
+                isConfirmed={
+                  isConfirmed
+                }
+
+                setIsConfirmed={
+                  setIsConfirmed
+                }
+
+                generationPreferences={
+                  resolvedPreferences
+                }
+              />
+
+            </>
+          )
+        }
+
+
         {/* COUPLE */}
 
-  {
-    activeResultMode === "couple"
+        {
+          activeResultMode === "couple"
           &&
-          generatedHisImage
+          firstDualDisplayImage
           &&
-          generatedHerImage
+          secondDualDisplayImage
           && (
 
             <>
@@ -1383,11 +1806,15 @@ const startListening = () => {
   }
 
   generatedHisImage={
-    generatedHisImage
+    firstDualDisplayImage
   }
 
   generatedHerImage={
-    generatedHerImage
+    secondDualDisplayImage
+  }
+
+  isLoading={
+    loading && !firstDualDisplayImage && !secondDualDisplayImage
   }
 
   getMockup={
@@ -1460,11 +1887,11 @@ const startListening = () => {
               <CoupleActions
 
                 generatedHisImage={
-                  generatedHisImage
+                  firstDualDisplayImage
                 }
 
                 generatedHerImage={
-                  generatedHerImage
+                  secondDualDisplayImage
                 }
 
                 getMockup={
