@@ -9,8 +9,18 @@ export default function DoubleActions({ frontImage, backImage, frontPrompt, back
     const canvas = document.createElement("canvas"); canvas.width = 800; canvas.height = 800;
     const [mockup, artwork] = await Promise.all([getImage(getMockup(productType, color, side)), getImage(design)]);
     const ctx = canvas.getContext("2d"); ctx.drawImage(mockup, -60, -120, 920, 1040);
-    const width = productType === "hoodie" ? 420 : 540; const x = (800 - width) / 2;
-    ctx.drawImage(artwork, x, side === "front" ? 145 : 165, width, width);
+    // Match the preview's fixed oversized print zone and contain the artwork
+    // within it. This keeps final saved mockups proportional and centered.
+    const printArea = productType === "hoodie"
+      ? { x: 144, y: 200, width: 512, height: 464 }
+      : { x: 112, y: 184, width: 576, height: 496 };
+    const imageRatio = artwork.naturalWidth / artwork.naturalHeight || 1;
+    const areaRatio = printArea.width / printArea.height;
+    const drawWidth = imageRatio > areaRatio ? printArea.width : printArea.height * imageRatio;
+    const drawHeight = imageRatio > areaRatio ? printArea.width / imageRatio : printArea.height;
+    const x = printArea.x + (printArea.width - drawWidth) / 2;
+    const y = printArea.y + (printArea.height - drawHeight) / 2;
+    ctx.drawImage(artwork, x, y, drawWidth, drawHeight);
     return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
   };
   const getImage = (src) => new Promise((resolve, reject) => { const image = new Image(); image.crossOrigin = "anonymous"; image.onload = () => resolve(image); image.onerror = reject; image.src = src; });
@@ -21,7 +31,7 @@ export default function DoubleActions({ frontImage, backImage, frontPrompt, back
     try {
       const token = localStorage.getItem("token");
       const [frontDesignImage, backDesignImage] = await Promise.all([uploadBlob(await makeMockup("front", frontImage), token), uploadBlob(await makeMockup("back", backImage), token)]);
-      const design = { isCouple: false, generationMode: "double", preferences: generationPreferences, productType, designType: "double", designImage: frontDesignImage, frontDesignImage, backDesignImage, frontTransparentDesign: frontImage, backTransparentDesign: backImage, prompt: `Front: ${frontPrompt}\nBack: ${backPrompt}`, frontPrompt, backPrompt, color, selectedColor: color, size, side: "front", designScale: productType === "hoodie" ? 55 : 68, isConfirmed: true };
+      const design = { isCouple: false, generationMode: "double", preferences: generationPreferences, productType, designType: "double", designImage: frontDesignImage, frontDesignImage, backDesignImage, frontTransparentDesign: frontImage, backTransparentDesign: backImage, prompt: `Front: ${frontPrompt}\nBack: ${backPrompt}`, frontPrompt, backPrompt, color, selectedColor: color, size, side: "front", designScale: productType === "hoodie" ? 64 : 72, isConfirmed: true };
       await API.post("/generation/save", design, { headers: { Authorization: `Bearer ${token}` } });
       setConfirmedDesign(design); setIsConfirmed(true); toast("Double-sided design confirmed");
     } finally { setIsProcessing(false); }

@@ -425,6 +425,33 @@ export default function AIWorkspace() {
     }
   };
 
+  const preloadGeneratedImage = async (imageUrl) => {
+    if (
+      typeof imageUrl !== "string" ||
+      !imageUrl.trim() ||
+      (!imageUrl.startsWith("data:image/") && !/^https?:\/\//i.test(imageUrl))
+    ) {
+      throw new Error("The image generator returned an invalid artwork URL.");
+    }
+
+    const load = (source) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(source);
+      image.onerror = () => reject(new Error("Generated artwork could not be loaded."));
+      image.src = source;
+    });
+
+    try {
+      return await load(imageUrl);
+    } catch (firstError) {
+      // Retry once. Data URLs are immutable; remote URLs get a cache-busting retry.
+      const retryUrl = imageUrl.startsWith("data:image/")
+        ? imageUrl
+        : `${imageUrl}${imageUrl.includes("?") ? "&" : "?"}retry=${Date.now()}`;
+      return load(retryUrl);
+    }
+  };
+
   const applyPreset =
     (preset) => {
 
@@ -643,10 +670,12 @@ const startListening = () => {
           frontPrompt,
           backPrompt
         );
+      // Always fetch double-sided work afresh. Each side must complete the
+      // validation/preload path before it is shown on a mockup.
       const cachedGeneration =
-        readGenerationCache(
-          cacheKey
-        );
+        activeMode === "double"
+          ? null
+          : readGenerationCache(cacheKey);
 
       if (cachedGeneration) {
         setErrorMessage("");
@@ -854,6 +883,32 @@ const startListening = () => {
         if (activeMode === "double") {
           setHisSide("front");
           setHerSide("back");
+
+          setGenerationStep("Validating front and back artwork...");
+
+          const [validatedFrontImage, validatedBackImage] =
+            await Promise.all([
+              preloadGeneratedImage(res.data.frontImage),
+              preloadGeneratedImage(res.data.backImage)
+            ]);
+
+          if (requestId !== generationRequestIdRef.current) {
+            return;
+          }
+
+          // State is updated only after both images have loaded successfully.
+          // This prevents a mockup render with a broken or not-yet-ready URL.
+          setGeneratedHisImage(validatedFrontImage);
+          setGeneratedHerImage(validatedBackImage);
+
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedHisImage: validatedFrontImage,
+            generatedHerImage: validatedBackImage
+          });
+
+          setGenerationStep("");
+          return;
         }
 
 

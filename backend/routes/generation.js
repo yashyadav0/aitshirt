@@ -233,15 +233,21 @@ Return ONLY the enhanced prompt.
   }
 }
 
-// Double-sided artwork is deliberately enhanced independently from couple designs.
-async function enhanceDoubleSidePrompt(userPrompt, side) {
-  return enhanceSinglePrompt(`
-Create an independent ${side} apparel graphic from this idea: ${userPrompt}
+const DOUBLE_PRINT_QUALITY_BRIEF = `
+Professional premium t-shirt graphic. Large centered composition for a modern
+oversized graphic tee. Print-ready artwork, highly detailed, bold graphic
+design, clean vector-inspired illustration, high contrast, vibrant colors,
+sharp edges, isolated subject, transparent background. Generate only the
+printable artwork; do not generate clothing, hoodies, t-shirts, mannequins,
+mockups, garment flat-lays, people wearing clothing, or a background scene.
+No watermark. No logo-sized chest placement. No split composition.`;
 
-The artwork must be a large, centered, oversized graphic print that fills most
-of the printable area. It must not be a small chest logo, badge, paired design,
-or split composition. Keep it isolated, transparent, print-ready, and without
-a garment mockup, t-shirt, or watermark.`);
+// Double-sided artwork is deliberately enriched independently from couple designs.
+async function enhanceDoubleSidePrompt(userPrompt, side) {
+  return enhanceSinglePrompt(`${DOUBLE_PRINT_QUALITY_BRIEF}
+
+Create the ${side} print independently.
+User creative direction: ${userPrompt}`);
 }
 
 
@@ -827,20 +833,26 @@ IMPORTANT:
           enhanceDoubleSidePrompt(resolvedBackPrompt, "back")
         ]);
 
-        const buildSidePrompt = (enhancedPrompt, side) => `
-${enhancedPrompt}
+        const buildSidePrompt = (userPrompt, enhancedPrompt, side) => `
+${DOUBLE_PRINT_QUALITY_BRIEF}
 
-IMPORTANT:
-- generate only the ${side}-side artwork as one large centered graphic
-- fill most of the printable area like an oversized graphic tee
-- do not create a chest logo, badge, emblem, paired artwork, left/right split, or garment mockup
-- isolated artwork only, transparent background, print-ready, no watermark
-- optimized for a ${preferences.selectedColor} ${preferences.productType}
-${imageParts.length ? "- use the uploaded image only as visual reference; create new original artwork rather than copying or placing the source image\n" : ""}`;
+Generate the ${side} design only. It must fill 60–75% of the printable area as
+a balanced, large centered graphic with clear space below the collar. Preserve
+its natural aspect ratio and use no garment-shaped silhouette.
+
+User prompt: ${userPrompt}
+Refined creative direction: ${enhancedPrompt}
+
+Output requirements: transparent background; isolated artwork; premium DTG
+print-ready graphic only; no clothing; no hoodie; no t-shirt; no mannequin; no
+mockup; no model; no background scene; no watermark; no tiny chest logo; no
+left/right paired layout; no vertically compressed artwork.
+Optimized for a ${preferences.selectedColor} ${preferences.productType}.
+${imageParts.length ? "Use the uploaded image only as visual reference. Create new original artwork; do not copy, paste, or return the source image.\n" : ""}`;
 
         const [frontImage, backImage] = await Promise.all([
-          generateImage(buildSidePrompt(enhancedFrontPrompt, "front"), imageParts),
-          generateImage(buildSidePrompt(enhancedBackPrompt, "back"), imageParts)
+          generateImage(buildSidePrompt(resolvedFrontPrompt, enhancedFrontPrompt, "front"), imageParts),
+          generateImage(buildSidePrompt(resolvedBackPrompt, enhancedBackPrompt, "back"), imageParts)
         ]);
 
         if (!frontImage || !backImage) {
