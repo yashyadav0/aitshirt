@@ -1,8 +1,7 @@
 import React, {
   useState,
   useRef,
-  useEffect,
-  useMemo
+  useEffect
 } from "react";
 
 import {
@@ -47,6 +46,9 @@ from "../components/workspace/SinglePromptBox";
 import CouplePromptBox
 from "../components/workspace/CouplePromptBox";
 
+import DoublePromptBox
+from "../components/workspace/DoublePromptBox";
+
 import SinglePreview
 from "../components/workspace/SinglePreview";
 
@@ -64,6 +66,12 @@ from "../components/workspace/CoupleControls";
 
 import CoupleActions
 from "../components/workspace/CoupleActions";
+
+import DoublePreview
+from "../components/workspace/DoublePreview";
+
+import DoubleActions
+from "../components/workspace/DoubleActions";
 
 
 // ===== FRONT =====
@@ -176,6 +184,14 @@ export default function AIWorkspace() {
   const [successMessage,
     setSuccessMessage] =
     useState("");
+
+  const [frontPrompt,
+    setFrontPrompt] =
+    useState("");
+
+  const [backPrompt,
+    setBackPrompt] =
+    useState("");
   const [errorMessage,
     setErrorMessage] =
     useState("");
@@ -279,8 +295,7 @@ export default function AIWorkspace() {
       (
         generatedHisImage &&
         generatedHerImage
-      ) ||
-      referenceImages.length > 0
+      )
     );
 
   const productDesignScale =
@@ -354,47 +369,21 @@ export default function AIWorkspace() {
     selectedPreferenceColor
   ]);
 
-  const referencePreviewUrls =
-    useMemo(
-      () =>
-        referenceImages.map(
-          (file) =>
-            URL.createObjectURL(
-              file
-            )
-        ),
-      [referenceImages]
-    );
-
-  useEffect(() => {
-    return () => {
-      referencePreviewUrls.forEach((url) =>
-        URL.revokeObjectURL(url)
-      );
-    };
-  }, [referencePreviewUrls]);
-
-  const primaryReferencePreview =
-    referencePreviewUrls[0] || "";
-  const secondaryReferencePreview =
-    referencePreviewUrls[1] ||
-    referencePreviewUrls[0] ||
-    "";
   const singleDisplayImage =
-    generatedImage || primaryReferencePreview;
+    generatedImage;
   const firstDualDisplayImage =
-    generatedHisImage || primaryReferencePreview;
+    generatedHisImage;
   const secondDualDisplayImage =
-    generatedHerImage ||
-    secondaryReferencePreview ||
-    primaryReferencePreview;
+    generatedHerImage;
 
   const buildGenerationCacheKey =
-    (generationPrefs, singlePromptText, couplePromptText) => {
+    (generationPrefs, singlePromptText, couplePromptText, frontPromptText, backPromptText) => {
       const promptText =
         generationPrefs.designType === "couple"
           ? couplePromptText
-          : singlePromptText;
+          : generationPrefs.designType === "double"
+            ? `${frontPromptText}|${backPromptText}`
+            : singlePromptText;
 
       const referenceKey =
         referenceImages
@@ -439,13 +428,13 @@ export default function AIWorkspace() {
   const applyPreset =
     (preset) => {
 
-      if (
-        generationMode === "single" ||
-        generationMode === "double"
-      ) {
+      if (generationMode === "single") {
         setPrompt(
           preset.prompt
         );
+      } else if (generationMode === "double") {
+        setFrontPrompt(preset.prompt);
+        setBackPrompt(preset.prompt);
       } else {
         setCouplePrompt(
           preset.prompt
@@ -593,10 +582,7 @@ const startListening = () => {
       return;
     }
 
-    if (
-      generationMode === "single" ||
-      generationMode === "double"
-    ) {
+    if (generationMode === "single") {
 
       setPrompt((prev) => {
         const base = prev.trim();
@@ -605,6 +591,10 @@ const startListening = () => {
         if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
         return `${base} ${next}`.trim();
       });
+
+    } else if (generationMode === "double") {
+
+      setFrontPrompt((prev) => prev ? `${prev} ${transcript}` : transcript);
 
     } else {
 
@@ -649,7 +639,9 @@ const startListening = () => {
         buildGenerationCacheKey(
           generationPrefs,
           prompt,
-          couplePrompt
+          couplePrompt,
+          frontPrompt,
+          backPrompt
         );
       const cachedGeneration =
         readGenerationCache(
@@ -733,7 +725,7 @@ const startListening = () => {
         if (activeMode === "single") {
           setGenerationStep("Enhancing prompt...");
         } else if (activeMode === "double") {
-          setGenerationStep("Enhancing double prompt...");
+          setGenerationStep("Generating front and back designs...");
         } else {
           setGenerationStep("Enhancing couple prompt...");
         }
@@ -780,8 +772,11 @@ const startListening = () => {
         // SINGLE
         // =====================================
 
-        if (activeMode === "single" || activeMode === "double") {
+        if (activeMode === "single") {
           formData.append("prompt", prompt);
+        } else if (activeMode === "double") {
+          formData.append("frontPrompt", frontPrompt);
+          formData.append("backPrompt", backPrompt);
         } else {
           formData.append("prompt", couplePrompt);
         }
@@ -1401,8 +1396,7 @@ const startListening = () => {
 
               <div className="px-2">
                 {
-                  generationMode === "single" ||
-                  generationMode === "double"
+                  generationMode === "single"
 
                   ? (
 
@@ -1411,6 +1405,15 @@ const startListening = () => {
                       setPrompt={
                         setPrompt
                       }
+                    />
+
+                  ) : generationMode === "double" ? (
+
+                    <DoublePromptBox
+                      frontPrompt={frontPrompt}
+                      setFrontPrompt={setFrontPrompt}
+                      backPrompt={backPrompt}
+                      setBackPrompt={setBackPrompt}
                     />
 
                   ) : (
@@ -1679,107 +1682,30 @@ const startListening = () => {
 
             <>
 
-              <CouplePreview
-
-                productType={
-                  resolvedPreferences.productType
-                }
-
-                generatedHisImage={
-                  firstDualDisplayImage
-                }
-
-                generatedHerImage={
-                  secondDualDisplayImage
-                }
-
-                getMockup={
-                  getMockup
-                }
-
-                hisColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                herColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                hisSide="front"
-
-                herSide="back"
+              <DoublePreview
+                frontImage={firstDualDisplayImage}
+                backImage={secondDualDisplayImage}
+                getMockup={getMockup}
+                productType={resolvedPreferences.productType}
+                color={resolvedPreferences.selectedColor}
                 isLoading={loading && !firstDualDisplayImage && !secondDualDisplayImage}
               />
 
-              <CoupleActions
-
-                designVariant="double"
-
-                generatedHisImage={
-                  firstDualDisplayImage
-                }
-
-                generatedHerImage={
-                  secondDualDisplayImage
-                }
-
-                getMockup={
-                  getMockup
-                }
-
-                productType={
-                  resolvedPreferences.productType
-                }
-
-                couplePrompt={
-                  prompt
-                }
-
-                hisColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                herColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                hisSide="front"
-
-                herSide="back"
-
-                hisScale={
-                  productDesignScale
-                }
-
-                herScale={
-                  productDesignScale
-                }
-
+              <DoubleActions
+                frontImage={firstDualDisplayImage}
+                backImage={secondDualDisplayImage}
+                frontPrompt={frontPrompt}
+                backPrompt={backPrompt}
+                color={resolvedPreferences.selectedColor}
+                productType={resolvedPreferences.productType}
+                getMockup={getMockup}
                 API={API}
-
-                setSuccessMessage={
-                  setSuccessMessage
-                }
-
-                confirmedDesign={
-                  confirmedDesign
-                }
-
-                setConfirmedDesign={
-                  setConfirmedDesign
-                }
-
-                isConfirmed={
-                  isConfirmed
-                }
-
-                setIsConfirmed={
-                  setIsConfirmed
-                }
-
-                generationPreferences={
-                  resolvedPreferences
-                }
+                setSuccessMessage={setSuccessMessage}
+                confirmedDesign={confirmedDesign}
+                setConfirmedDesign={setConfirmedDesign}
+                isConfirmed={isConfirmed}
+                setIsConfirmed={setIsConfirmed}
+                generationPreferences={resolvedPreferences}
               />
 
             </>

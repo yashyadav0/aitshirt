@@ -233,6 +233,17 @@ Return ONLY the enhanced prompt.
   }
 }
 
+// Double-sided artwork is deliberately enhanced independently from couple designs.
+async function enhanceDoubleSidePrompt(userPrompt, side) {
+  return enhanceSinglePrompt(`
+Create an independent ${side} apparel graphic from this idea: ${userPrompt}
+
+The artwork must be a large, centered, oversized graphic print that fills most
+of the printable area. It must not be a small chest logo, badge, paired design,
+or split composition. Keep it isolated, transparent, print-ready, and without
+a garment mockup, t-shirt, or watermark.`);
+}
+
 
 // =====================================
 // IMAGE GENERATION
@@ -574,126 +585,6 @@ async function createFallbackSingleImage(preferences, prompt) {
   return svgToPngDataUri(svg);
 }
 
-async function createReferenceFallbackSingle(files, preferences, prompt) {
-  if (!files || files.length === 0) {
-    return createFallbackSingleImage(preferences, prompt);
-  }
-
-  const color = preferences.selectedColor || preferences.color || "white";
-  const bg =
-    color === "black"
-      ? "#111111"
-      : color === "red"
-        ? "#fef2f2"
-        : "#f4f4f5";
-  const accent = color === "black" ? "#e5e7eb" : "#0f172a";
-
-  const base = sharp({
-    create: {
-      width: 1024,
-      height: 1024,
-      channels: 4,
-      background: bg
-    }
-  });
-
-  const imageBuffer = files[0].buffer;
-  const uploaded = await sharp(imageBuffer)
-    .resize({
-      width: 760,
-      height: 760,
-      fit: "contain",
-      background: {
-        r: 0,
-        g: 0,
-        b: 0,
-        alpha: 0
-      }
-    })
-    .png()
-    .toBuffer();
-
-  const overlay = Buffer.from(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-      <rect x="70" y="70" width="884" height="884" rx="48" fill="none" stroke="${accent}" stroke-width="10" opacity="0.18"/>
-      <text x="512" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">REFERENCE IMAGE</text>
-    </svg>
-  `);
-
-  return base
-    .composite([
-      { input: uploaded, top: 132, left: 132 },
-      { input: overlay, top: 0, left: 0 }
-    ])
-    .png()
-    .toBuffer()
-    .then((buffer) => `data:image/png;base64,${buffer.toString("base64")}`);
-}
-
-async function createReferenceFallbackCouple(files, preferences, prompt) {
-  if (!files || files.length === 0) {
-    return createFallbackCoupleImage(preferences, prompt);
-  }
-
-  const color = preferences.selectedColor || preferences.color || "white";
-  const bg =
-    color === "black"
-      ? "#101010"
-      : color === "red"
-        ? "#fef2f2"
-        : "#f6f6f6";
-  const accent = color === "black" ? "#e5e7eb" : "#0f172a";
-
-  const leftSource = files[0].buffer;
-  const rightSource = files[1]?.buffer || files[0].buffer;
-
-  const left = await sharp(leftSource)
-    .resize({
-      width: 820,
-      height: 760,
-      fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    })
-    .png()
-    .toBuffer();
-
-  const right = await sharp(rightSource)
-    .resize({
-      width: 820,
-      height: 760,
-      fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
-    })
-    .png()
-    .toBuffer();
-
-  return sharp({
-    create: {
-      width: 2048,
-      height: 1024,
-      channels: 4,
-      background: bg
-    }
-  })
-    .composite([
-      {
-        input: Buffer.from(`
-          <svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024" viewBox="0 0 2048 1024">
-            <rect x="64" y="64" width="1920" height="896" rx="48" fill="none" stroke="${accent}" stroke-width="10" opacity="0.14"/>
-            <text x="512" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">LEFT REFERENCE</text>
-            <text x="1536" y="132" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${accent}" opacity="0.7">RIGHT REFERENCE</text>
-          </svg>
-        `),
-        top: 0,
-        left: 0
-      },
-      { input: left, top: 128, left: 112 },
-      { input: right, top: 128, left: 1112 }
-    ])
-    .png()
-    .toBuffer()
-    .then((buffer) => `data:image/png;base64,${buffer.toString("base64")}`);
-}
 
 async function createFallbackCoupleImage(preferences, prompt) {
   const color = preferences.selectedColor || preferences.color || "white";
@@ -718,36 +609,6 @@ async function createFallbackCoupleImage(preferences, prompt) {
   return svgToPngDataUri(svg);
 }
 
-async function createFallbackDoubleImage(preferences, prompt) {
-  const color = preferences.selectedColor || preferences.color || "white";
-  const bg = color === "black" ? "#101010" : "#f6f6f6";
-  const fg = color === "black" ? "#f5f5f5" : "#111111";
-  const accent = color === "red" ? "#dc2626" : "#14b8a6";
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="2048" height="1024" viewBox="0 0 2048 1024">
-      <rect width="2048" height="1024" fill="${bg}"/>
-      <rect x="64" y="64" width="1920" height="896" rx="48" fill="${accent}" opacity="0.12"/>
-      <rect x="128" y="128" width="864" height="768" rx="36" fill="${accent}" opacity="0.08"/>
-      <rect x="1056" y="128" width="864" height="768" rx="36" fill="${accent}" opacity="0.16"/>
-      <text x="560" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="84" font-weight="700" fill="${fg}">FRONT</text>
-      <text x="560" y="460" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
-      <text x="560" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 54)}</text>
-      <text x="1488" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="84" font-weight="700" fill="${fg}">BACK</text>
-      <text x="1488" y="460" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
-      <text x="1488" y="560" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 54)}</text>
-    </svg>
-  `;
-
-  return svgToPngDataUri(svg);
-}
-
-async function createReferenceFallbackDouble(files, preferences, prompt) {
-  if (!files || files.length === 0) {
-    return createFallbackDoubleImage(preferences, prompt);
-  }
-
-  return createReferenceFallbackCouple(files, preferences, prompt);
-}
 
 
 // =====================================
@@ -780,6 +641,8 @@ router.post(
         selectedColor,
 
         prompt,
+        frontPrompt,
+        backPrompt,
 
         preferences: rawPreferences
 
@@ -908,17 +771,12 @@ IMPORTANT:
         );
 
 
-        const fallbackSingleImage =
-          req.files && req.files.length > 0
-            ? await createReferenceFallbackSingle(
-                req.files,
-                preferences,
-                prompt
-              )
-            : await createFallbackSingleImage(
-                preferences,
-                prompt
-              );
+        // An upload is input to the model only. Never return it as a fallback
+        // or put it on a mockup directly.
+        const fallbackSingleImage = await createFallbackSingleImage(
+          preferences,
+          prompt
+        );
 
         const imageUrl =
           (await generateImage(
@@ -953,104 +811,53 @@ IMPORTANT:
         activeMode === "double"
       ) {
 
-        console.log(
-          "ENHANCING DOUBLE PROMPT..."
-        );
+        const resolvedFrontPrompt = String(frontPrompt || prompt || "").trim();
+        const resolvedBackPrompt = String(backPrompt || prompt || "").trim();
 
-        const preferencePrompt =
-          buildPreferenceEnrichedPrompt(
-            prompt,
-            preferences
-          );
+        if (!resolvedFrontPrompt || !resolvedBackPrompt) {
+          return res.status(400).json({
+            error: "Both front and back design prompts are required."
+          });
+        }
 
-        const enhancedPrompt =
-          await enhanceSinglePrompt(
-            preferencePrompt
-          );
+        // Generate each garment side independently: this is not a split image
+        // and does not share couple-design enhancement or rendering logic.
+        const [enhancedFrontPrompt, enhancedBackPrompt] = await Promise.all([
+          enhanceDoubleSidePrompt(resolvedFrontPrompt, "front"),
+          enhanceDoubleSidePrompt(resolvedBackPrompt, "back")
+        ]);
 
-        console.log(
-          "ENHANCED DOUBLE:",
-          enhancedPrompt
-        );
-
-        const finalPrompt = `
-
+        const buildSidePrompt = (enhancedPrompt, side) => `
 ${enhancedPrompt}
 
 IMPORTANT:
+- generate only the ${side}-side artwork as one large centered graphic
+- fill most of the printable area like an oversized graphic tee
+- do not create a chest logo, badge, emblem, paired artwork, left/right split, or garment mockup
+- isolated artwork only, transparent background, print-ready, no watermark
+- optimized for a ${preferences.selectedColor} ${preferences.productType}
+${imageParts.length ? "- use the uploaded image only as visual reference; create new original artwork rather than copying or placing the source image\n" : ""}`;
 
-- generate a front-side design for the left half
-- generate a back-side design for the right half
-- the prompt and visual style should stay consistent between both sides
-- isolated artwork only
-- transparent background
-- apparel graphic only
-- premium streetwear aesthetic
-- optimized for ${preferences.selectedColor} ${preferences.productType}
-- no mockup
-- no tshirt
-- no watermark
-- print-ready
-- make the front and back look like the same design language, adapted to their side
+        const [frontImage, backImage] = await Promise.all([
+          generateImage(buildSidePrompt(enhancedFrontPrompt, "front"), imageParts),
+          generateImage(buildSidePrompt(enhancedBackPrompt, "back"), imageParts)
+        ]);
 
-`;
-
-        const referenceInstruction =
-          imageParts.length > 0
-            ? "\n- use the uploaded reference image as the primary visual source and keep its subject/style recognizable across both sides\n"
-            : "";
-
-        const finalDoublePrompt =
-          `${finalPrompt}${referenceInstruction}`;
-
-        console.log(
-          "GENERATING DOUBLE DESIGN..."
-        );
-
-        const fallbackDoubleImage =
-          req.files && req.files.length > 0
-            ? await createReferenceFallbackDouble(
-                req.files,
-                preferences,
-                prompt
-              )
-            : await createFallbackDoubleImage(
-                preferences,
-                prompt
-              );
-
-        const combinedImage =
-          (await generateImage(
-            finalDoublePrompt,
-            imageParts
-          )) || fallbackDoubleImage;
-
-        console.log(
-          "DOUBLE DESIGN GENERATED"
-        );
-
-        console.log(
-          "SPLITTING DOUBLE IMAGE..."
-        );
-
-        const {
-          leftImage,
-          rightImage
-        } = await splitImage(
-          combinedImage
-        );
-
-        console.log(
-          "DOUBLE IMAGE SPLIT SUCCESS"
-        );
+        if (!frontImage || !backImage) {
+          return res.status(502).json({
+            error: "Could not generate both sides. Please try again."
+          });
+        }
 
         return res.json({
           success: true,
-          frontImage: leftImage,
-          backImage: rightImage,
+          frontImage,
+          backImage,
           preferences,
-          enrichedPrompt:
-            enhancedPrompt
+          enrichedPrompt: {
+            front: enhancedFrontPrompt,
+            back: enhancedBackPrompt
+          }
         });
       }
 
@@ -1114,17 +921,10 @@ console.log(
 );
 
 
-const fallbackCoupleImage =
-  req.files && req.files.length > 0
-    ? await createReferenceFallbackCouple(
-        req.files,
-        preferences,
-        prompt
-      )
-    : await createFallbackCoupleImage(
-        preferences,
-        prompt
-      );
+const fallbackCoupleImage = await createFallbackCoupleImage(
+  preferences,
+  prompt
+);
 
 const combinedImage =
   (await generateImage(

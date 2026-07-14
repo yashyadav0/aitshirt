@@ -99,10 +99,10 @@ function buildPreferenceEnrichedPrompt(
     return [
       `Create a high-quality print-ready apparel graphic featuring ${trimmedPrompt}.`,
       `Optimized for a ${colorLabel} ${product.label}.`,
-      "Generate one front-side design and one back-side design for the same apparel item.",
+      "Create one independent large centered apparel graphic.",
       "Transparent background.",
       "Professional DTG print style.",
-      "Center chest placement."
+      "Oversized centered print placement, never a small chest logo."
     ].join(" ");
   }
 

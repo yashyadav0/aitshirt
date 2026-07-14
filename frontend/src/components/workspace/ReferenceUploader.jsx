@@ -108,7 +108,7 @@ export default function ReferenceUploader({
 
             ? `${referenceImages.length} files selected`
 
-            : "Upload Image"
+            : "Upload Reference Image"
         }
 
       </label>
@@ -160,6 +160,10 @@ export default function ReferenceUploader({
           </div>
         )
       }
+
+      <p className="-mt-2 mb-4 text-xs leading-5 text-zinc-500">
+        Your upload guides the AI; the generated artwork, not the original image, is placed on the apparel.
+      </p>
     </>
   );
 }
