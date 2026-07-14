@@ -425,30 +425,88 @@ export default function AIWorkspace() {
     }
   };
 
-  const preloadGeneratedImage = async (imageUrl) => {
-    if (
-      typeof imageUrl !== "string" ||
-      !imageUrl.trim() ||
-      (!imageUrl.startsWith("data:image/") && !/^https?:\/\//i.test(imageUrl))
-    ) {
-      throw new Error("The image generator returned an invalid artwork URL.");
+  const extractArtworkCandidate = (value, trail = "response", seen = new Set()) => {
+    if (value == null) return null;
+    if (value instanceof Blob || value instanceof ArrayBuffer) return { value, trail };
+
+    if (typeof value === "string") {
+      const source = value.trim();
+      if (/^data:image\//i.test(source) || /^https?:\/\//i.test(source)) {
+        return { value: source, trail };
+      }
+      if (/^[A-Za-z0-9+/\r\n]+={0,2}$/.test(source)) {
+        return { value: `data:image/png;base64,${source.replace(/\s/g, "")}`, trail };
+      }
+      try {
+        return extractArtworkCandidate(JSON.parse(source), `${trail}.json`, seen);
+      } catch {
+        return null;
+      }
     }
 
-    const load = (source) => new Promise((resolve, reject) => {
+    if (typeof value !== "object" || seen.has(value)) return null;
+    seen.add(value);
+
+    const directFields = ["inlineData", "image", "imageUrl", "image_url", "url", "uri", "fileUri", "file_uri", "b64_json", "base64", "data"];
+    for (const field of directFields) {
+      const candidate = extractArtworkCandidate(value[field], `${trail}.${field}`, seen);
+      if (candidate) return candidate;
+    }
+
+    const containers = ["generatedImages", "images", "output", "data", "candidates", "predictions", "content", "parts", "results"];
+    for (const field of containers) {
+      const values = Array.isArray(value[field]) ? value[field] : [value[field]];
+      for (let index = 0; index < values.length; index += 1) {
+        const candidate = extractArtworkCandidate(values[index], `${trail}.${field}[${index}]`, seen);
+        if (candidate) return candidate;
+      }
+    }
+    return null;
+  };
+
+  const preloadGeneratedImage = async (payload, label) => {
+    console.debug(`[double-design] raw ${label} payload`, payload);
+    const candidate = extractArtworkCandidate(payload);
+    console.debug(`[double-design] parsed ${label} candidate`, candidate?.trail || "none");
+
+    if (!candidate) {
+      throw new Error(`No image returned for the ${label} design. The API response did not contain a supported image format.`);
+    }
+
+    let source = candidate.value;
+    if (source instanceof Blob) {
+      if (!source.size) throw new Error(`The ${label} design returned an empty Blob.`);
+      source = URL.createObjectURL(source);
+    } else if (source instanceof ArrayBuffer) {
+      if (!source.byteLength) throw new Error(`The ${label} design returned empty binary data.`);
+      source = URL.createObjectURL(new Blob([source], { type: "image/png" }));
+    }
+
+    console.debug(`[double-design] selected ${label} artwork URL`, typeof source === "string" ? source.slice(0, 96) : source);
+    const validSource = typeof source === "string" && (/^data:image\//i.test(source) || /^https?:\/\//i.test(source) || /^blob:/i.test(source));
+    console.debug(`[double-design] ${label} artwork URL validation`, validSource);
+    if (!validSource) throw new Error(`Unsupported image format returned for the ${label} design.`);
+
+    const load = (url) => new Promise((resolve, reject) => {
       const image = new Image();
-      image.onload = () => resolve(source);
-      image.onerror = () => reject(new Error("Generated artwork could not be loaded."));
-      image.src = source;
+      image.onload = () => resolve(url);
+      image.onerror = () => reject(new Error(`The ${label} artwork URL could not be loaded by the browser.`));
+      image.src = url;
     });
 
     try {
-      return await load(imageUrl);
+      return await load(source);
     } catch (firstError) {
-      // Retry once. Data URLs are immutable; remote URLs get a cache-busting retry.
-      const retryUrl = imageUrl.startsWith("data:image/")
-        ? imageUrl
-        : `${imageUrl}${imageUrl.includes("?") ? "&" : "?"}retry=${Date.now()}`;
-      return load(retryUrl);
+      console.debug(`[double-design] ${label} preload retry`, firstError.message);
+      const retryUrl = /^https?:\/\//i.test(source)
+        ? `${source}${source.includes("?") ? "&" : "?"}retry=${Date.now()}`
+        : source;
+      try {
+        return await load(retryUrl);
+      } catch (retryError) {
+        console.error(`[double-design] ${label} rendering failure`, retryError);
+        throw new Error(`Image failed to load for the ${label} design after retry: ${retryError.message}`);
+      }
     }
   };
 
@@ -849,6 +907,20 @@ const startListening = () => {
             }
           );
 
+        if (activeMode === "double") {
+          console.debug("[double-design] raw API response", res);
+          console.debug("[double-design] parsed API response", res.data);
+          console.debug("[double-design] candidate image URLs", {
+            front: res.data?.frontImage,
+            back: res.data?.backImage,
+            generatedImages: res.data?.generatedImages,
+            images: res.data?.images,
+            output: res.data?.output,
+            candidates: res.data?.candidates,
+            predictions: res.data?.predictions
+          });
+        }
+
         if (requestId !== generationRequestIdRef.current) {
           return;
         }
@@ -888,8 +960,8 @@ const startListening = () => {
 
           const [validatedFrontImage, validatedBackImage] =
             await Promise.all([
-              preloadGeneratedImage(res.data.frontImage),
-              preloadGeneratedImage(res.data.backImage)
+              preloadGeneratedImage(res.data.frontImage ?? res.data, "front"),
+              preloadGeneratedImage(res.data.backImage ?? res.data, "back")
             ]);
 
           if (requestId !== generationRequestIdRef.current) {

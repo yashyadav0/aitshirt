@@ -255,6 +255,69 @@ User creative direction: ${userPrompt}`);
 // IMAGE GENERATION
 // =====================================
 
+const generationDebug = (...args) => {
+  if (process.env.GENERATION_DEBUG !== "false") {
+    console.debug("[generation-debug]", ...args);
+  }
+};
+
+function asImageDataUri(value, mimeType = "image/png") {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const normalized = value.trim();
+  if (/^data:image\//i.test(normalized) || /^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+  if (/^[A-Za-z0-9+/\r\n]+={0,2}$/.test(normalized)) {
+    return `data:${mimeType};base64,${normalized.replace(/\s/g, "")}`;
+  }
+  return null;
+}
+
+function extractGeneratedImage(payload, trail = "response", visited = new Set()) {
+  if (payload == null || typeof payload === "boolean") return null;
+
+  if (typeof payload === "string") {
+    const image = asImageDataUri(payload);
+    if (image) return { image, trail };
+    try {
+      return extractGeneratedImage(JSON.parse(payload), `${trail}.json`, visited);
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof payload !== "object" || visited.has(payload)) return null;
+  visited.add(payload);
+
+  const mimeType = payload.mimeType || payload.mime_type || payload.contentType || "image/png";
+  const directFields = ["inlineData", "image", "b64_json", "base64", "imageBase64", "image_url", "imageUrl", "url", "uri", "fileUri", "file_uri", "data"];
+
+  for (const field of directFields) {
+    const value = payload[field];
+    if (typeof value === "string") {
+      const image = asImageDataUri(value, mimeType);
+      if (image) return { image, trail: `${trail}.${field}` };
+    }
+    if (value && typeof value === "object") {
+      const nested = extractGeneratedImage(value, `${trail}.${field}`, visited);
+      if (nested) return nested;
+    }
+  }
+
+  // These cover Gemini, OpenAI-compatible, prediction, and wrapper responses.
+  const containers = ["generatedImages", "images", "output", "data", "candidates", "predictions", "content", "parts", "results"];
+  for (const field of containers) {
+    const value = payload[field];
+    const entries = Array.isArray(value) ? value : [value];
+    for (let index = 0; index < entries.length; index += 1) {
+      const nested = extractGeneratedImage(entries[index], `${trail}.${field}[${index}]`, visited);
+      if (nested) return nested;
+    }
+  }
+
+  return null;
+}
+
 async function generateImage(
   finalPrompt,
   imageParts = []
@@ -342,95 +405,24 @@ async function generateImage(
       );
 
 
-    console.log(
-      "GEMINI RESPONSE RECEIVED"
-    );
+    generationDebug("raw image API response", response.data);
+    generationDebug("parsed image API response", JSON.stringify(response.data));
 
+    const extracted = extractGeneratedImage(response.data);
+    generationDebug("candidate image extraction", extracted || "none");
 
-    const candidate =
-      response.data
-        ?.candidates?.[0];
-
-
-    if (!candidate) {
-
-      console.log(
-        "NO CANDIDATES"
-      );
-
-      console.log(
-        JSON.stringify(
-          response.data,
-          null,
-          2
-        )
-      );
-
-      throw new Error(
-        "No candidates returned"
-      );
+    if (!extracted?.image) {
+      throw new Error("No supported image format was found in the image API response.");
     }
 
-
-    const parts =
-      candidate
-        ?.content
-        ?.parts || [];
-
-
-    console.log(
-      "PARTS RECEIVED:",
-      parts.length
-    );
-
-
-    const imagePart =
-      parts.find(
-
-        (part) =>
-
-          part.inlineData &&
-          part.inlineData.data
-      );
-
-
-    if (!imagePart) {
-
-      console.log(
-        "NO IMAGE PART FOUND"
-      );
-
-      console.log(
-        JSON.stringify(
-          parts,
-          null,
-          2
-        )
-      );
-
-      throw new Error(
-        "No image generated"
-      );
-    }
-
-
-    console.log(
-      "IMAGE GENERATED SUCCESSFULLY"
-    );
-
-
-    return `data:image/png;base64,${imagePart.inlineData.data}`;
+    generationDebug("selected artwork URL", extracted.image.slice(0, 96), "from", extracted.trail);
+    generationDebug("artwork URL validation", /^data:image\//i.test(extracted.image) || /^https?:\/\//i.test(extracted.image));
+    return extracted.image;
 
   } catch (err) {
 
-    console.log(
-      "IMAGE GENERATION ERROR:"
-    );
-
-    console.log(
-      err.response?.data
-      || err.message
-    );
+    console.log("IMAGE GENERATION ERROR:", err.response?.data || err.message);
+    generationDebug("image parsing failure", err.stack || err.message);
 
     return null;
   }
