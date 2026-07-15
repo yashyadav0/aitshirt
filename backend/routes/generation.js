@@ -582,6 +582,11 @@ async function splitImage(base64Image) {
 
     return {
 
+      width: metadata.width,
+      height: metadata.height,
+      leftWidth,
+      rightWidth,
+
       leftImage:
 `data:image/png;base64,${leftBuffer.toString("base64")}`,
 
@@ -875,8 +880,8 @@ IMPORTANT:
           });
         }
 
-        // Generate each garment side independently: this is not a split image
-        // and does not share couple-design enhancement or rendering logic.
+        // Prompts are independent, but the output uses the established
+        // two-panel generation and split transport from Couple Design.
         const [enhancedFrontPrompt, enhancedBackPrompt] = await Promise.all([
           enhanceDoubleSidePrompt(resolvedFrontPrompt, "front"),
           enhanceDoubleSidePrompt(resolvedBackPrompt, "back")
@@ -899,26 +904,49 @@ left/right paired layout; no vertically compressed artwork.
 Optimized for a ${preferences.selectedColor} ${preferences.productType}.
 ${imageParts.length ? "Use the uploaded image only as visual reference. Create new original artwork; do not copy, paste, or return the source image.\n" : ""}`;
 
-        const sideResults = await Promise.allSettled([
-          generateDoubleSideImage(buildSidePrompt(resolvedFrontPrompt, enhancedFrontPrompt, "front"), imageParts, "front"),
-          generateDoubleSideImage(buildSidePrompt(resolvedBackPrompt, enhancedBackPrompt, "back"), imageParts, "back")
-        ]);
+        const splitPrompt = `
+${DOUBLE_PRINT_QUALITY_BRIEF}
 
-        const [frontResult, backResult] = sideResults;
-        if (frontResult.status !== "fulfilled" || backResult.status !== "fulfilled") {
-          const failures = {
-            front: frontResult.status === "rejected" ? frontResult.reason?.message : null,
-            back: backResult.status === "rejected" ? backResult.reason?.message : null
-          };
-          console.error("DOUBLE DESIGN GENERATION FAILED", failures);
+Create exactly two separate print-ready artwork panels in one wide horizontal canvas. LEFT HALF: FRONT shirt print. RIGHT HALF: BACK shirt print. Keep a clear empty gutter between them. Each panel is a large centered oversized graphic, filling 60-75% of its own panel with balanced space below the collar and no chest-logo placement.
+
+FRONT PANEL (LEFT): ${resolvedFrontPrompt}
+FRONT PANEL (LEFT) refined: ${enhancedFrontPrompt}
+
+BACK PANEL (RIGHT): ${resolvedBackPrompt}
+BACK PANEL (RIGHT) refined: ${enhancedBackPrompt}
+
+Generate only two isolated transparent artwork panels. No clothing, hoodie, t-shirt, mannequin, mockup, model, garment silhouette, watermark, or background scene. The output must be ready to split into front and back DTG prints.
+${imageParts.length ? "Use uploaded images only as visual references; never copy, paste, or return the source image.\n" : ""}`;
+
+        console.log("DOUBLE DESIGN: generating one front/back canvas for split pipeline");
+        const combinedImage = await generateImage(splitPrompt, imageParts);
+        if (!combinedImage) {
           return res.status(502).json({
-            error: "Gemini did not return valid printable artwork for both sides.",
-            details: failures
+            error: "Double-side generation failed at Gemini image creation.",
+            details: { combined: "Gemini returned no image data." }
           });
         }
 
-        const frontArtwork = frontResult.value;
-        const backArtwork = backResult.value;
+        const combinedArtwork = await validateGeneratedArtwork(combinedImage, "combined double-side");
+        console.log("[3] Combined double-side image metadata", {
+          width: combinedArtwork.width,
+          height: combinedArtwork.height,
+          mimeType: combinedArtwork.mimeType
+        });
+
+        const splitArtwork = await splitImage(combinedArtwork.url);
+        const frontArtwork = {
+          url: splitArtwork.leftImage,
+          width: splitArtwork.leftWidth,
+          height: splitArtwork.height,
+          mimeType: "image/png"
+        };
+        const backArtwork = {
+          url: splitArtwork.rightImage,
+          width: splitArtwork.rightWidth,
+          height: splitArtwork.height,
+          mimeType: "image/png"
+        };
         const responsePayload = {
           success: true,
           artwork: {
