@@ -256,7 +256,7 @@ User creative direction: ${userPrompt}`);
 // =====================================
 
 const generationDebug = (...args) => {
-  if (process.env.GENERATION_DEBUG === "true") {
+  if (process.env.GENERATION_DEBUG !== "false") {
     console.debug("[generation-debug]", ...args);
   }
 };
@@ -349,7 +349,12 @@ async function validateGeneratedArtwork(image, label) {
     height: metadata.height
   });
 
-  return image;
+  return {
+    url: image,
+    width: metadata.width,
+    height: metadata.height,
+    mimeType: dataUriMatch[1]
+  };
 }
 
 async function generateDoubleSideImage(prompt, imageParts, side) {
@@ -447,6 +452,8 @@ async function generateImage(
       );
 
 
+    console.log("[1] Gemini response received");
+    console.dir(response.data, { depth: null, maxArrayLength: null });
     generationDebug("raw image API response", response.data);
     generationDebug("parsed image API response", JSON.stringify(response.data));
 
@@ -454,16 +461,26 @@ async function generateImage(
     generationDebug("candidate image extraction", extracted || "none");
 
     if (!extracted?.image) {
-      throw new Error("No supported image format was found in the image API response.");
+      throw new Error(`Gemini response parsing failed at image extraction: no supported image source found. Top-level fields: ${Object.keys(response.data || {}).join(", ") || "none"}.`);
     }
 
     generationDebug("selected artwork URL", extracted.image.slice(0, 96), "from", extracted.trail);
     generationDebug("artwork URL validation", /^data:image\//i.test(extracted.image) || /^https?:\/\//i.test(extracted.image));
+    console.log("[2] Image extracted", {
+      source: extracted.trail,
+      mimeType: extracted.image.match(/^data:(image\/[^;]+)/i)?.[1] || "remote-url",
+      valueLength: extracted.image.length
+    });
     return extracted.image;
 
   } catch (err) {
 
-    console.log("IMAGE GENERATION ERROR:", err.response?.data || err.message);
+    console.error("IMAGE GENERATION ERROR", {
+      stage: "Gemini request / response parsing",
+      message: err.message,
+      received: err.response?.data || null,
+      stack: err.stack
+    });
     generationDebug("image parsing failure", err.stack || err.message);
 
     return null;
@@ -474,9 +491,7 @@ async function generateImage(
 // SPLIT IMAGE
 // =====================================
 
-async function splitImage(
-  base64Image
-) {
+async function splitImage(base64Image) {
 
   try {
 
@@ -492,31 +507,24 @@ async function splitImage(
       );
 
 
-    // =====================================
-    // RESIZE TO SAFE SIZE
-    // =====================================
+    if (!imageBuffer.length) {
+      throw new Error("Split stage received an empty image buffer.");
+    }
 
-    const resizedBuffer =
-      await sharp(imageBuffer)
+    const metadata = await sharp(imageBuffer).metadata();
+    if (!metadata.width || !metadata.height || metadata.width < 2) {
+      throw new Error(`Split stage received invalid image dimensions: ${metadata.width || 0}x${metadata.height || 0}.`);
+    }
 
-        .resize({
-
-          width: 2048,
-
-          height: 1024,
-
-          fit: "contain",
-          background: {
-            r: 0,
-            g: 0,
-            b: 0,
-            alpha: 0
-          }
-        })
-
-        .png()
-
-        .toBuffer();
+    const leftWidth = Math.floor(metadata.width / 2);
+    const rightWidth = metadata.width - leftWidth;
+    console.log("[3] Image metadata", {
+      width: metadata.width,
+      height: metadata.height,
+      format: metadata.format,
+      leftWidth,
+      rightWidth
+    });
 
 
     // =====================================
@@ -524,7 +532,7 @@ async function splitImage(
     // =====================================
 
     const leftBuffer =
-      await sharp(resizedBuffer)
+      await sharp(imageBuffer)
 
         .extract({
 
@@ -532,9 +540,9 @@ async function splitImage(
 
           top: 0,
 
-          width: 1024,
+          width: leftWidth,
 
-          height: 1024
+          height: metadata.height
         })
 
         .png()
@@ -547,23 +555,30 @@ async function splitImage(
     // =====================================
 
     const rightBuffer =
-      await sharp(resizedBuffer)
+      await sharp(imageBuffer)
 
         .extract({
 
-          left: 1024,
+          left: leftWidth,
 
           top: 0,
 
-          width: 1024,
+          width: rightWidth,
 
-          height: 1024
+          height: metadata.height
         })
 
         .png()
 
         .toBuffer();
 
+
+    console.log("[4] Split complete", {
+      width: metadata.width,
+      height: metadata.height,
+      leftBufferSize: leftBuffer.length,
+      rightBufferSize: rightBuffer.length
+    });
 
     return {
 
@@ -902,20 +917,36 @@ ${imageParts.length ? "Use the uploaded image only as visual reference. Create n
           });
         }
 
-        const frontImage = frontResult.value;
-        const backImage = backResult.value;
-
-        return res.json({
+        const frontArtwork = frontResult.value;
+        const backArtwork = backResult.value;
+        const responsePayload = {
           success: true,
-          frontImage,
-          backImage,
+          artwork: {
+            front: frontArtwork,
+            back: backArtwork
+          },
+          // Compatibility fields for the existing frontend renderer.
+          frontImage: frontArtwork.url,
+          backImage: backArtwork.url,
           imageFormat: "data-uri",
           preferences,
           enrichedPrompt: {
             front: enhancedFrontPrompt,
             back: enhancedBackPrompt
           }
+        };
+
+        console.log("[5] Upload/storage", {
+          status: "not required during generation",
+          reason: "Both validated print-ready data URIs are returned directly and stored only when the user confirms the design."
         });
+        console.log("[6] Double-side payload created");
+        console.dir(responsePayload, { depth: 3 });
+        console.log("[7] Double-side payload sent to frontend", {
+          front: { urlPresent: Boolean(frontArtwork.url), width: frontArtwork.width, height: frontArtwork.height },
+          back: { urlPresent: Boolean(backArtwork.url), width: backArtwork.width, height: backArtwork.height }
+        });
+        return res.json(responsePayload);
       }
 
 

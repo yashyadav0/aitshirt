@@ -908,8 +908,8 @@ const startListening = () => {
           );
 
         if (activeMode === "double") {
-          console.debug("[double-design] raw API response", res);
-          console.debug("[double-design] parsed API response", res.data);
+          console.log("[double-design] raw API response", res);
+          console.log("[double-design] parsed API response", res.data);
           console.debug("[double-design] candidate image URLs", {
             front: res.data?.frontImage,
             back: res.data?.backImage,
@@ -920,12 +920,23 @@ const startListening = () => {
             predictions: res.data?.predictions
           });
 
-          if (!res.data?.frontImage || !res.data?.backImage) {
+          const frontArtwork = res.data?.artwork?.front?.url || res.data?.frontImage;
+          const backArtwork = res.data?.artwork?.back?.url || res.data?.backImage;
+          console.log("[double-design] normalized artwork payload", {
+            frontPresent: Boolean(frontArtwork),
+            backPresent: Boolean(backArtwork),
+            artwork: res.data?.artwork || null
+          });
+
+          if (!frontArtwork || !backArtwork) {
             const details = res.data?.details
               ? ` Front: ${res.data.details.front || "not returned"}. Back: ${res.data.details.back || "not returned"}.`
               : "";
             throw new Error(`Double-side API returned no complete artwork payload.${details}`);
           }
+
+          res.data.frontImage = frontArtwork;
+          res.data.backImage = backArtwork;
         }
 
         if (requestId !== generationRequestIdRef.current) {
