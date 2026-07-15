@@ -256,7 +256,7 @@ User creative direction: ${userPrompt}`);
 // =====================================
 
 const generationDebug = (...args) => {
-  if (process.env.GENERATION_DEBUG !== "false") {
+  if (process.env.GENERATION_DEBUG === "true") {
     console.debug("[generation-debug]", ...args);
   }
 };
@@ -316,6 +316,48 @@ function extractGeneratedImage(payload, trail = "response", visited = new Set())
   }
 
   return null;
+}
+
+async function validateGeneratedArtwork(image, label) {
+  if (typeof image !== "string" || !image.trim()) {
+    throw new Error(`${label} generation returned no image data.`);
+  }
+
+  if (/^https?:\/\//i.test(image)) {
+    return image;
+  }
+
+  const dataUriMatch = image.match(/^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i);
+  if (!dataUriMatch) {
+    throw new Error(`${label} generation returned an unsupported image format.`);
+  }
+
+  const buffer = Buffer.from(dataUriMatch[2].replace(/\s/g, ""), "base64");
+  if (!buffer.length) {
+    throw new Error(`${label} generation returned empty image bytes.`);
+  }
+
+  const metadata = await sharp(buffer).metadata();
+  if (!metadata.format || !metadata.width || !metadata.height) {
+    throw new Error(`${label} generation returned bytes that are not a readable image.`);
+  }
+
+  generationDebug(`${label} artwork validated`, {
+    mimeType: dataUriMatch[1],
+    format: metadata.format,
+    width: metadata.width,
+    height: metadata.height
+  });
+
+  return image;
+}
+
+async function generateDoubleSideImage(prompt, imageParts, side) {
+  const image = await generateImage(prompt, imageParts);
+  if (!image) {
+    throw new Error(`${side} image generation returned no image from Gemini.`);
+  }
+  return validateGeneratedArtwork(image, side);
 }
 
 async function generateImage(
@@ -842,21 +884,32 @@ left/right paired layout; no vertically compressed artwork.
 Optimized for a ${preferences.selectedColor} ${preferences.productType}.
 ${imageParts.length ? "Use the uploaded image only as visual reference. Create new original artwork; do not copy, paste, or return the source image.\n" : ""}`;
 
-        const [frontImage, backImage] = await Promise.all([
-          generateImage(buildSidePrompt(resolvedFrontPrompt, enhancedFrontPrompt, "front"), imageParts),
-          generateImage(buildSidePrompt(resolvedBackPrompt, enhancedBackPrompt, "back"), imageParts)
+        const sideResults = await Promise.allSettled([
+          generateDoubleSideImage(buildSidePrompt(resolvedFrontPrompt, enhancedFrontPrompt, "front"), imageParts, "front"),
+          generateDoubleSideImage(buildSidePrompt(resolvedBackPrompt, enhancedBackPrompt, "back"), imageParts, "back")
         ]);
 
-        if (!frontImage || !backImage) {
+        const [frontResult, backResult] = sideResults;
+        if (frontResult.status !== "fulfilled" || backResult.status !== "fulfilled") {
+          const failures = {
+            front: frontResult.status === "rejected" ? frontResult.reason?.message : null,
+            back: backResult.status === "rejected" ? backResult.reason?.message : null
+          };
+          console.error("DOUBLE DESIGN GENERATION FAILED", failures);
           return res.status(502).json({
-            error: "Could not generate both sides. Please try again."
+            error: "Gemini did not return valid printable artwork for both sides.",
+            details: failures
           });
         }
+
+        const frontImage = frontResult.value;
+        const backImage = backResult.value;
 
         return res.json({
           success: true,
           frontImage,
           backImage,
+          imageFormat: "data-uri",
           preferences,
           enrichedPrompt: {
             front: enhancedFrontPrompt,

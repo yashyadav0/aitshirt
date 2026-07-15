@@ -919,6 +919,13 @@ const startListening = () => {
             candidates: res.data?.candidates,
             predictions: res.data?.predictions
           });
+
+          if (!res.data?.frontImage || !res.data?.backImage) {
+            const details = res.data?.details
+              ? ` Front: ${res.data.details.front || "not returned"}. Back: ${res.data.details.back || "not returned"}.`
+              : "";
+            throw new Error(`Double-side API returned no complete artwork payload.${details}`);
+          }
         }
 
         if (requestId !== generationRequestIdRef.current) {
