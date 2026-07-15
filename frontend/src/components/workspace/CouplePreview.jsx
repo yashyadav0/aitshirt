@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 export default function CouplePreview({
 
   generatedHisImage,
@@ -12,20 +14,76 @@ export default function CouplePreview({
   hisSide,
   herSide,
   designVariant = "couple",
-  isLoading = false
+  isLoading = false,
+  onRendered,
+  onRenderError
 
 }) {
+
+  const renderKey = [
+    generatedHisImage,
+    generatedHerImage,
+    hisColor,
+    herColor,
+    hisSide,
+    herSide,
+    productType
+  ].join("|");
+  const [loaded, setLoaded] = useState({
+    key: "",
+    firstMockup: false,
+    firstArtwork: false,
+    secondMockup: false,
+    secondArtwork: false
+  });
+  const reportedRenderKey = useRef("");
+  const rendered = (
+    loaded.key === renderKey
+    && loaded.firstMockup
+    && loaded.firstArtwork
+    && loaded.secondMockup
+    && loaded.secondArtwork
+  );
+
+  useEffect(() => {
+    if (
+      generatedHisImage
+      && generatedHerImage
+      && rendered
+      && reportedRenderKey.current !== renderKey
+    ) {
+      reportedRenderKey.current = renderKey;
+      onRendered?.();
+    }
+  }, [generatedHerImage, generatedHisImage, onRendered, renderKey, rendered]);
+
+  const markLoaded = (part) => {
+    setLoaded((current) => {
+      const next = current.key === renderKey
+        ? current
+        : {
+          key: renderKey,
+          firstMockup: false,
+          firstArtwork: false,
+          secondMockup: false,
+          secondArtwork: false
+        };
+      return { ...next, [part]: true };
+    });
+  };
 
   const designStyles = designVariant === "double" ? {
 
     tshirt: {
       top: "50%",
-      width: "48%"
+      width: "48%",
+      maxHeight: "58%"
     },
 
     hoodie: {
       top: "42%",
-      width: "27%"
+      width: "27%",
+      maxHeight: "30%"
     }
   } : {
 
@@ -93,15 +151,21 @@ export default function CouplePreview({
                 }
                 alt="his mockup"
                 className="w-full h-full object-cover"
+                onLoad={() => markLoaded("firstMockup")}
+                onError={() => onRenderError?.("The first product mockup could not be loaded.")}
               />
 
               <img
                 src={generatedHisImage}
                 alt="his design"
+                onLoad={() => markLoaded("firstArtwork")}
+                onError={() => onRenderError?.("The first generated design could not be rendered on the mockup.")}
                 className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
                 style={{
                   top: currentStyle.top,
-                  width: currentStyle.width
+                  width: currentStyle.width,
+                  maxHeight: currentStyle.maxHeight,
+                  height: "auto"
                 }}
               />
             </>
@@ -146,15 +210,21 @@ export default function CouplePreview({
                 }
                 alt="her mockup"
                 className="w-full h-full object-cover"
+                onLoad={() => markLoaded("secondMockup")}
+                onError={() => onRenderError?.("The second product mockup could not be loaded.")}
               />
 
               <img
                 src={generatedHerImage}
                 alt="her design"
+                onLoad={() => markLoaded("secondArtwork")}
+                onError={() => onRenderError?.("The second generated design could not be rendered on the mockup.")}
                 className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 object-contain"
                 style={{
                   top: currentStyle.top,
-                  width: currentStyle.width
+                  width: currentStyle.width,
+                  maxHeight: currentStyle.maxHeight,
+                  height: "auto"
                 }}
               />
             </>

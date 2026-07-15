@@ -25,6 +25,12 @@ const {
 const router =
   express.Router();
 
+const REFERENCE_IMAGE_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp"
+]);
+
 
 // =====================================
 // MULTER
@@ -42,6 +48,14 @@ const upload =
 
       fileSize:
         5 * 1024 * 1024
+    },
+
+    fileFilter: (req, file, callback) => {
+      if (!REFERENCE_IMAGE_TYPES.has(file.mimetype)) {
+        callback(new Error("Reference images must be PNG, JPG, or WebP files."));
+        return;
+      }
+      callback(null, true);
     }
   });
 
@@ -233,7 +247,7 @@ Return ONLY the enhanced prompt.
   }
 }
 
-const DOUBLE_PRINT_QUALITY_BRIEF = `
+const PRINT_QUALITY_BRIEF = `
 Professional premium t-shirt graphic. Large centered composition for a modern
 oversized graphic tee. Print-ready artwork, highly detailed, bold graphic
 design, clean vector-inspired illustration, high contrast, vibrant colors,
@@ -241,15 +255,6 @@ sharp edges, isolated subject, transparent background. Generate only the
 printable artwork; do not generate clothing, hoodies, t-shirts, mannequins,
 mockups, garment flat-lays, people wearing clothing, or a background scene.
 No watermark. No logo-sized chest placement. No split composition.`;
-
-// Double-sided artwork is deliberately enriched independently from couple designs.
-async function enhanceDoubleSidePrompt(userPrompt, side) {
-  return enhanceSinglePrompt(`${DOUBLE_PRINT_QUALITY_BRIEF}
-
-Create the ${side} print independently.
-User creative direction: ${userPrompt}`);
-}
-
 
 // =====================================
 // IMAGE GENERATION
@@ -323,16 +328,30 @@ async function validateGeneratedArtwork(image, label) {
     throw new Error(`${label} generation returned no image data.`);
   }
 
+  let buffer;
+  let mimeType;
+
   if (/^https?:\/\//i.test(image)) {
-    return image;
+    try {
+      const response = await axios.get(image, {
+        responseType: "arraybuffer",
+        timeout: 30000
+      });
+      buffer = Buffer.from(response.data);
+      mimeType = response.headers["content-type"]?.split(";")[0] || "image/png";
+    } catch (error) {
+      throw new Error(`${label} generation returned an image URL that could not be downloaded: ${error.message}`);
+    }
+  } else {
+    const dataUriMatch = image.match(/^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i);
+    if (!dataUriMatch) {
+      throw new Error(`${label} generation returned an unsupported image format.`);
+    }
+
+    buffer = Buffer.from(dataUriMatch[2].replace(/\s/g, ""), "base64");
+    mimeType = dataUriMatch[1];
   }
 
-  const dataUriMatch = image.match(/^data:(image\/[a-z0-9.+-]+);base64,([A-Za-z0-9+/=\s]+)$/i);
-  if (!dataUriMatch) {
-    throw new Error(`${label} generation returned an unsupported image format.`);
-  }
-
-  const buffer = Buffer.from(dataUriMatch[2].replace(/\s/g, ""), "base64");
   if (!buffer.length) {
     throw new Error(`${label} generation returned empty image bytes.`);
   }
@@ -343,7 +362,7 @@ async function validateGeneratedArtwork(image, label) {
   }
 
   generationDebug(`${label} artwork validated`, {
-    mimeType: dataUriMatch[1],
+    mimeType,
     format: metadata.format,
     width: metadata.width,
     height: metadata.height
@@ -351,18 +370,49 @@ async function validateGeneratedArtwork(image, label) {
 
   return {
     url: image,
+    buffer,
     width: metadata.width,
     height: metadata.height,
-    mimeType: dataUriMatch[1]
+    mimeType
   };
 }
 
-async function generateDoubleSideImage(prompt, imageParts, side) {
-  const image = await generateImage(prompt, imageParts);
-  if (!image) {
-    throw new Error(`${side} image generation returned no image from Gemini.`);
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+function isTransientGenerationError(error) {
+  const status = error.response?.status;
+  return (
+    !status
+    || status === 408
+    || status === 429
+    || status >= 500
+    || ["ECONNABORTED", "ETIMEDOUT", "ECONNRESET"].includes(error.code)
+  );
+}
+
+async function postGeminiWithRetry(url, payload, config) {
+  const maxAttempts = 3;
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await axios.post(url, payload, config);
+    } catch (error) {
+      lastError = error;
+      const retry = attempt < maxAttempts && isTransientGenerationError(error);
+      generationDebug("Gemini request failed", {
+        attempt,
+        retry,
+        status: error.response?.status,
+        code: error.code,
+        message: error.message
+      });
+      if (!retry) break;
+      await wait(600 * attempt);
+    }
   }
-  return validateGeneratedArtwork(image, side);
+
+  throw lastError;
 }
 
 async function generateImage(
@@ -400,7 +450,7 @@ async function generateImage(
     // =====================================
 
     const response =
-      await axios.post(
+      await postGeminiWithRetry(
 
 `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${process.env.GEMINI_API_KEY}`,
 
@@ -442,7 +492,7 @@ async function generateImage(
 
         {
 
-          timeout: 45000,
+          timeout: 75000,
 
           headers: {
             "Content-Type":
@@ -491,20 +541,28 @@ async function generateImage(
 // SPLIT IMAGE
 // =====================================
 
-async function splitImage(base64Image) {
+async function splitImage(imageSource) {
 
   try {
 
-    const imageBuffer =
-      Buffer.from(
-
-        base64Image.replace(
-          /^data:image\/\w+;base64,/,
-          ""
-        ),
-
-        "base64"
-      );
+    let imageBuffer;
+    if (Buffer.isBuffer(imageSource)) {
+      imageBuffer = imageSource;
+    } else if (typeof imageSource === "string" && /^https?:\/\//i.test(imageSource)) {
+      const response = await axios.get(imageSource, {
+        responseType: "arraybuffer",
+        timeout: 30000
+      });
+      imageBuffer = Buffer.from(response.data);
+    } else if (typeof imageSource === "string") {
+      const match = imageSource.match(/^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i);
+      if (!match) {
+        throw new Error("Split stage received an unsupported image source.");
+      }
+      imageBuffer = Buffer.from(match[1].replace(/\s/g, ""), "base64");
+    } else {
+      throw new Error("Split stage received no image data.");
+    }
 
 
     if (!imageBuffer.length) {
@@ -732,6 +790,13 @@ router.post(
         color: selectedColor || color
       });
 
+      if (!String(prompt || "").trim()) {
+        return res.status(400).json({
+          success: false,
+          error: "A design prompt is required before artwork can be generated."
+        });
+      }
+
 
       let imageParts = [];
 
@@ -800,6 +865,8 @@ router.post(
 
 ${enhancedPrompt}
 
+${PRINT_QUALITY_BRIEF}
+
 IMPORTANT:
 
 - isolated artwork only
@@ -809,6 +876,8 @@ IMPORTANT:
         - optimized for ${preferences.selectedColor} ${preferences.productType}
 - no mockup
 - no tshirt
+- no hoodie
+- no mannequin
 - no watermark
 - print-ready
 -Generate an actual image output based on these points
@@ -887,23 +956,6 @@ The front and back belong to the same garment. Keep one artistic style, color
 palette, typography language, and theme. Make the back expand or complement
 the front rather than repeating it exactly.`);
 
-        const buildSidePrompt = (userPrompt, enhancedPrompt, side) => `
-${DOUBLE_PRINT_QUALITY_BRIEF}
-
-Generate the ${side} design only. It must fill 60–75% of the printable area as
-a balanced, large centered graphic with clear space below the collar. Preserve
-its natural aspect ratio and use no garment-shaped silhouette.
-
-User prompt: ${userPrompt}
-Refined creative direction: ${enhancedPrompt}
-
-Output requirements: transparent background; isolated artwork; premium DTG
-print-ready graphic only; no clothing; no hoodie; no t-shirt; no mannequin; no
-mockup; no model; no background scene; no watermark; no tiny chest logo; no
-left/right paired layout; no vertically compressed artwork.
-Optimized for a ${preferences.selectedColor} ${preferences.productType}.
-${imageParts.length ? "Use the uploaded image only as visual reference. Create new original artwork; do not copy, paste, or return the source image.\n" : ""}`;
-
         const splitPrompt = `
 ${enhancedPrompt}
 
@@ -929,7 +981,7 @@ ${imageParts.length ? "- use uploaded images only as visual references; never co
           mimeType: combinedArtwork.mimeType
         });
 
-        const splitArtwork = await splitImage(combinedArtwork.url);
+        const splitArtwork = await splitImage(combinedArtwork.buffer);
         const frontArtwork = {
           url: splitArtwork.leftImage,
           width: splitArtwork.leftWidth,
@@ -1012,6 +1064,8 @@ IMPORTANT:
 - premium streetwear aesthetic
 - no mockup
 - no tshirt
+- no hoodie
+- no mannequin
 - no watermark
 - print-ready
 
@@ -1086,14 +1140,12 @@ return res.json({
 
     } catch (err) {
 
-      console.log(
-        "GENERATION ERROR:"
-      );
-
-      console.log(
-        err.response?.data
-        || err.message
-      );
+      console.error("GENERATION ERROR:", {
+        stage: "generation route",
+        message: err.message,
+        apiResponse: err.response?.data || null,
+        stack: err.stack
+      });
 
 
       return res.status(500)
@@ -1101,8 +1153,8 @@ return res.json({
 
           success: false,
 
-          error:
-            "Generation failed"
+          error: "Generation failed while preparing artwork.",
+          details: err.message
         });
     }
   }

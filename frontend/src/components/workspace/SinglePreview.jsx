@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 export default function SinglePreview({
 
   generatedImage,
@@ -8,9 +10,42 @@ export default function SinglePreview({
 
   selectedColor,
   selectedSide,
-  isLoading = false
+  isLoading = false,
+  onRendered,
+  onRenderError
 
 }) {
+
+  const renderKey = [
+    generatedImage,
+    productType,
+    selectedColor,
+    selectedSide
+  ].join("|");
+  const [loaded, setLoaded] = useState({
+    key: "",
+    mockup: false,
+    artwork: false
+  });
+  const reportedRenderKey = useRef("");
+
+  const rendered = loaded.key === renderKey && loaded.mockup && loaded.artwork;
+
+  useEffect(() => {
+    if (generatedImage && rendered && reportedRenderKey.current !== renderKey) {
+      reportedRenderKey.current = renderKey;
+      onRendered?.();
+    }
+  }, [generatedImage, onRendered, renderKey, rendered]);
+
+  const markLoaded = (part) => {
+    setLoaded((current) => {
+      const next = current.key === renderKey
+        ? current
+        : { key: renderKey, mockup: false, artwork: false };
+      return { ...next, [part]: true };
+    });
+  };
 
   if (!generatedImage && !isLoading)
     return null;
@@ -75,11 +110,15 @@ export default function SinglePreview({
               }
               alt="mockup"
               className="w-full block"
+              onLoad={() => markLoaded("mockup")}
+              onError={() => onRenderError?.("The product mockup could not be loaded.")}
             />
 
             <img
               src={generatedImage}
               alt="design"
+              onLoad={() => markLoaded("artwork")}
+              onError={() => onRenderError?.("The generated design could not be rendered on the mockup.")}
               style={{
                 position: "absolute",
                 top: currentStyle.top,

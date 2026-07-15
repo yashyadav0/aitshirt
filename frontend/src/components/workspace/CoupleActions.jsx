@@ -168,12 +168,29 @@ export default function CoupleActions({
 
       // SIZE
 
-      const designWidth =
+      const requestedDesignWidth =
         390 *
         (scale / 45);
 
+      // Double-side previews and exported mockups must never stretch a
+      // portrait or landscape graphic into a square badge.
+      const aspectRatio =
+        isDouble && designImage.naturalWidth && designImage.naturalHeight
+          ? designImage.naturalWidth / designImage.naturalHeight
+          : 1;
+
+      const requestedDesignHeight =
+        requestedDesignWidth / aspectRatio;
+
       const designHeight =
-        designWidth;
+        isDouble
+          ? Math.min(requestedDesignHeight, 500)
+          : requestedDesignHeight;
+
+      const designWidth =
+        isDouble
+          ? Math.min(requestedDesignWidth, designHeight * aspectRatio)
+          : requestedDesignWidth;
 
 
       // POSITION
@@ -182,9 +199,11 @@ export default function CoupleActions({
         (canvas.width - designWidth) / 2;
 
       const y =
-        side === "front"
-          ? 170
-          : 190;
+        isDouble
+          ? (canvas.height - designHeight) / 2
+          : side === "front"
+            ? 170
+            : 190;
 
 
       // DRAW DESIGN
