@@ -11,11 +11,23 @@ export default function CouplePreview({
 
   hisSide,
   herSide,
+  designVariant = "couple",
   isLoading = false
 
 }) {
 
-  const designStyles = {
+  const designStyles = designVariant === "double" ? {
+
+    tshirt: {
+      top: "50%",
+      width: "48%"
+    },
+
+    hoodie: {
+      top: "42%",
+      width: "27%"
+    }
+  } : {
 
     tshirt: {
 

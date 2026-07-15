@@ -701,8 +701,6 @@ router.post(
         selectedColor,
 
         prompt,
-        frontPrompt,
-        backPrompt,
 
         preferences: rawPreferences
 
@@ -871,21 +869,23 @@ IMPORTANT:
         activeMode === "double"
       ) {
 
-        const resolvedFrontPrompt = String(frontPrompt || prompt || "").trim();
-        const resolvedBackPrompt = String(backPrompt || prompt || "").trim();
+        const sharedPrompt = String(prompt || "").trim();
 
-        if (!resolvedFrontPrompt || !resolvedBackPrompt) {
+        if (!sharedPrompt) {
           return res.status(400).json({
-            error: "Both front and back design prompts are required."
+            error: "A design prompt is required for the double-side set."
           });
         }
 
-        // Prompts are independent, but the output uses the established
-        // two-panel generation and split transport from Couple Design.
-        const [enhancedFrontPrompt, enhancedBackPrompt] = await Promise.all([
-          enhanceDoubleSidePrompt(resolvedFrontPrompt, "front"),
-          enhanceDoubleSidePrompt(resolvedBackPrompt, "back")
-        ]);
+        // Keep the established Couple enhancer and generation transport, with
+        // a garment-specific shared-prompt direction for front and back.
+        const enhancedPrompt = await enhanceCouplePrompt(`
+Create a coordinated premium front-and-back apparel set from this single idea:
+${sharedPrompt}
+
+The front and back belong to the same garment. Keep one artistic style, color
+palette, typography language, and theme. Make the back expand or complement
+the front rather than repeating it exactly.`);
 
         const buildSidePrompt = (userPrompt, enhancedPrompt, side) => `
 ${DOUBLE_PRINT_QUALITY_BRIEF}
@@ -905,27 +905,22 @@ Optimized for a ${preferences.selectedColor} ${preferences.productType}.
 ${imageParts.length ? "Use the uploaded image only as visual reference. Create new original artwork; do not copy, paste, or return the source image.\n" : ""}`;
 
         const splitPrompt = `
-${DOUBLE_PRINT_QUALITY_BRIEF}
+${enhancedPrompt}
 
-Create exactly two separate print-ready artwork panels in one wide horizontal canvas. LEFT HALF: FRONT shirt print. RIGHT HALF: BACK shirt print. Keep a clear empty gutter between them. Each panel is a large centered oversized graphic, filling 60-75% of its own panel with balanced space below the collar and no chest-logo placement.
-
-FRONT PANEL (LEFT): ${resolvedFrontPrompt}
-FRONT PANEL (LEFT) refined: ${enhancedFrontPrompt}
-
-BACK PANEL (RIGHT): ${resolvedBackPrompt}
-BACK PANEL (RIGHT) refined: ${enhancedBackPrompt}
-
-Generate only two isolated transparent artwork panels. No clothing, hoodie, t-shirt, mannequin, mockup, model, garment silhouette, watermark, or background scene. The output must be ready to split into front and back DTG prints.
-${imageParts.length ? "Use uploaded images only as visual references; never copy, paste, or return the source image.\n" : ""}`;
+IMPORTANT:
+- generate a coordinated front design in the LEFT half and a complementary back design in the RIGHT half
+- both designs are for the same garment and must share style, palette, typography, and theme
+- the back artwork may expand the front concept, but must not duplicate it exactly
+- leave a clean vertical gutter between the two panels
+- each panel is an oversized, large centered apparel print, never a chest logo
+- isolated artwork only, transparent background, premium print-ready DTG design
+- no clothing, hoodie, t-shirt, mannequin, mockup, model, watermark, or background scene
+${imageParts.length ? "- use uploaded images only as visual references; never copy, paste, or return the source image\n" : ""}`;
 
         console.log("DOUBLE DESIGN: generating one front/back canvas for split pipeline");
-        const combinedImage = await generateImage(splitPrompt, imageParts);
-        if (!combinedImage) {
-          return res.status(502).json({
-            error: "Double-side generation failed at Gemini image creation.",
-            details: { combined: "Gemini returned no image data." }
-          });
-        }
+        const combinedImage =
+          (await generateImage(splitPrompt, imageParts))
+          || await createFallbackCoupleImage(preferences, sharedPrompt);
 
         const combinedArtwork = await validateGeneratedArtwork(combinedImage, "combined double-side");
         console.log("[3] Combined double-side image metadata", {
@@ -959,8 +954,7 @@ ${imageParts.length ? "Use uploaded images only as visual references; never copy
           imageFormat: "data-uri",
           preferences,
           enrichedPrompt: {
-            front: enhancedFrontPrompt,
-            back: enhancedBackPrompt
+            shared: enhancedPrompt
           }
         };
 
