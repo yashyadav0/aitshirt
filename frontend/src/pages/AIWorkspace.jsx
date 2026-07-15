@@ -41,9 +41,6 @@ from "../components/workspace/ReferenceUploader";
 import SinglePromptBox
 from "../components/workspace/SinglePromptBox";
 
-import CouplePromptBox
-from "../components/workspace/CouplePromptBox";
-
 
 import SinglePreview
 from "../components/workspace/SinglePreview";
@@ -116,10 +113,6 @@ export default function AIWorkspace() {
     setPrompt] =
     useState("");
 
-  const [couplePrompt,
-    setCouplePrompt] =
-    useState("");
-
   const [loading,
     setLoading] =
     useState(false);
@@ -136,14 +129,6 @@ export default function AIWorkspace() {
     setGeneratedHerImage] =
     useState("");
 
-  const [generationMode,
-    setGenerationMode] =
-    useState("single");
-
-  const [productType,
-    setProductType] =
-    useState("tshirt");
-
   const [generationStep,
     setGenerationStep] =
     useState("");
@@ -152,17 +137,9 @@ export default function AIWorkspace() {
     setReferenceImages] =
     useState([]);
 
-  const [,
-    setSelectedColor] =
-    useState("white");
-
   const [selectedSide,
     setSelectedSide] =
     useState("front");
-
-  const [,
-    setDesignScale] =
-    useState(45);
 
   const [confirmedDesign,
     setConfirmedDesign] =
@@ -233,12 +210,14 @@ export default function AIWorkspace() {
 
   const resolvedPreferences =
     normalizePreferences(preferences);
-  const selectedPreferenceColor =
-    resolvedPreferences.selectedColor;
-  const selectedPreferenceProductType =
-    resolvedPreferences.productType;
   const selectedPreferenceDesignType =
     resolvedPreferences.designType;
+
+  // The visible prompt, UI mode, cache key, and API request must all derive
+  // from one source of truth. Keeping a second mode/prompt state let the UI
+  // display text that the generation request could not see.
+  const generationMode =
+    selectedPreferenceDesignType;
 
 
   // =====================================
@@ -286,7 +265,7 @@ export default function AIWorkspace() {
     );
 
   const productDesignScale =
-    productType === "hoodie"
+    resolvedPreferences.productType === "hoodie"
       ? 55
       : 48;
 
@@ -328,34 +307,6 @@ export default function AIWorkspace() {
 
   }, []);
 
-  useEffect(() => {
-
-    setGenerationMode(
-      selectedPreferenceDesignType
-    );
-
-    setSelectedColor(
-      selectedPreferenceColor
-    );
-
-    setProductType(
-      selectedPreferenceProductType
-    );
-
-    setHisColor(
-      selectedPreferenceColor
-    );
-
-    setHerColor(
-      selectedPreferenceColor
-    );
-
-  }, [
-    selectedPreferenceDesignType,
-    selectedPreferenceProductType,
-    selectedPreferenceColor
-  ]);
-
   const singleDisplayImage =
     generatedImage;
   const firstDualDisplayImage =
@@ -383,13 +334,7 @@ export default function AIWorkspace() {
   );
 
   const buildGenerationCacheKey =
-    (generationPrefs, singlePromptText, couplePromptText) => {
-      const promptText =
-        generationPrefs.designType === "couple"
-          ? couplePromptText
-          : generationPrefs.designType === "double"
-            ? singlePromptText
-            : singlePromptText;
+    (generationPrefs, promptText) => {
 
       const referenceKey =
         referenceImages
@@ -433,26 +378,7 @@ export default function AIWorkspace() {
 
   const applyPreset =
     (preset) => {
-
-      if (generationMode === "single") {
-        setPrompt(
-          preset.prompt
-        );
-      } else if (generationMode === "double") {
-        setPrompt(preset.prompt);
-      } else {
-        setCouplePrompt(
-          preset.prompt
-        );
-      }
-    };
-
-  const handlePreferenceDesignTypeChange =
-    (designType) => {
-
-      setGenerationMode(
-        designType
-      );
+      setPrompt(preset.prompt);
     };
 
 
@@ -587,30 +513,13 @@ const startListening = () => {
       return;
     }
 
-    if (generationMode === "single") {
-
-      setPrompt((prev) => {
-        const base = prev.trim();
-        const next = transcript.trim();
-        if (!base) return next;
-        if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
-        return `${base} ${next}`.trim();
-      });
-
-    } else if (generationMode === "double") {
-
-      setPrompt((prev) => prev ? `${prev} ${transcript}` : transcript);
-
-    } else {
-
-      setCouplePrompt((prev) => {
-        const base = prev.trim();
-        const next = transcript.trim();
-        if (!base) return next;
-        if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
-        return `${base} ${next}`.trim();
-      });
-    }
+    setPrompt((previousPrompt) => {
+      const base = previousPrompt.trim();
+      const next = transcript.trim();
+      if (!base) return next;
+      if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
+      return `${base} ${next}`.trim();
+    });
   };
 
   recognition.onerror = () => {
@@ -641,9 +550,7 @@ const startListening = () => {
       const activeMode =
         generationPrefs.designType;
       const activePrompt =
-        activeMode === "couple"
-          ? couplePrompt
-          : prompt;
+        prompt;
 
       if (!activePrompt.trim()) {
         const message = "Describe the artwork you want before generating a design.";
@@ -655,8 +562,7 @@ const startListening = () => {
       const cacheKey =
         buildGenerationCacheKey(
           generationPrefs,
-          prompt,
-          couplePrompt
+          activePrompt
         );
       const cachedGeneration =
         readGenerationCache(cacheKey);
@@ -686,16 +592,6 @@ const startListening = () => {
           sessionStorage.removeItem(`aiwork:${cacheKey}`);
           return handleGenerate(overridePreferences);
         }
-
-        setProductType(
-          cachedGeneration.preferences?.productType
-          || generationPrefs.productType
-        );
-
-        setSelectedColor(
-          cachedGeneration.preferences?.selectedColor
-          || generationPrefs.selectedColor
-        );
 
         setHisColor(
           cachedGeneration.preferences?.selectedColor
@@ -800,13 +696,7 @@ const startListening = () => {
         // SINGLE
         // =====================================
 
-        if (activeMode === "single") {
-          formData.append("prompt", prompt);
-        } else if (activeMode === "double") {
-          formData.append("prompt", prompt);
-        } else {
-          formData.append("prompt", couplePrompt);
-        }
+        formData.append("prompt", activePrompt);
 
 
         // =====================================
@@ -890,14 +780,6 @@ const startListening = () => {
             || generationPrefs
           );
 
-        setProductType(
-          responsePreferences.productType
-        );
-
-        setSelectedColor(
-          responsePreferences.selectedColor || responsePreferences.color
-        );
-
         setHisColor(
           responsePreferences.selectedColor || responsePreferences.color
         );
@@ -950,31 +832,63 @@ const startListening = () => {
             throw new Error(`The generator completed without both ${firstDesignLabel} and ${secondDesignLabel} artworks.`);
           }
 
-          const [firstArtwork, secondArtwork] = await Promise.all([
-            prepareArtwork({
-              source: firstSource,
-              api: API,
-              token,
-              label: `${firstDesignLabel} design`,
-              onStep: setGenerationStep
-            }),
-            prepareArtwork({
-              source: secondSource,
-              api: API,
-              token,
-              label: `${secondDesignLabel} design`,
-              onStep: setGenerationStep
-            })
+          // Rendering is not allowed to wait on background removal or storage.
+          // A valid generated image should appear as soon as the browser has
+          // decoded it; post-processing can safely replace it afterwards.
+          const [readyFirstSource, readySecondSource] = await Promise.all([
+            preloadArtwork(firstSource, { label: `${firstDesignLabel} design` }),
+            preloadArtwork(secondSource, { label: `${secondDesignLabel} design` })
           ]);
 
           if (requestId !== generationRequestIdRef.current) return;
 
-          setGeneratedHisImage(firstArtwork.url);
-          setGeneratedHerImage(secondArtwork.url);
+          let currentFirstSource = readyFirstSource;
+          let currentSecondSource = readySecondSource;
+          setGeneratedHisImage(currentFirstSource);
+          setGeneratedHerImage(currentSecondSource);
           writeGenerationCache(cacheKey, {
             preferences: responsePreferences,
-            generatedHisImage: firstArtwork.url,
-            generatedHerImage: secondArtwork.url
+            generatedHisImage: currentFirstSource,
+            generatedHerImage: currentSecondSource
+          });
+
+          // Background-removal uses a sizeable browser model. Process the
+          // two sides in sequence so one slow model task cannot starve both
+          // previews or keep their initial render from occurring.
+          const firstArtwork = await prepareArtwork({
+            source: readyFirstSource,
+            api: API,
+            token,
+            label: `${firstDesignLabel} design`,
+            onStep: setGenerationStep
+          });
+
+          if (requestId !== generationRequestIdRef.current) return;
+
+          currentFirstSource = firstArtwork.url;
+          setGeneratedHisImage(currentFirstSource);
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedHisImage: currentFirstSource,
+            generatedHerImage: currentSecondSource
+          });
+
+          const secondArtwork = await prepareArtwork({
+            source: readySecondSource,
+            api: API,
+            token,
+            label: `${secondDesignLabel} design`,
+            onStep: setGenerationStep
+          });
+
+          if (requestId !== generationRequestIdRef.current) return;
+
+          currentSecondSource = secondArtwork.url;
+          setGeneratedHerImage(currentSecondSource);
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedHisImage: currentFirstSource,
+            generatedHerImage: currentSecondSource
           });
           setGenerationStep("");
         }
@@ -1210,38 +1124,21 @@ const startListening = () => {
                   setProductType={setPrefProductType}
                   setDesignType={setPrefDesignType}
                   setColor={setPrefColor}
-                  onDesignTypeChange={
-                    handlePreferenceDesignTypeChange
-                  }
                 />
               </div>
 
               <div className="px-2">
-                {
-                  generationMode === "single" ||
-                  generationMode === "double"
-
-                  ? (
-
-                    <SinglePromptBox
-                      prompt={prompt}
-                      setPrompt={
-                        setPrompt
-                      }
-                    />
-
-                  ) : (
-
-                    <CouplePromptBox
-                      couplePrompt={
-                        couplePrompt
-                      }
-                      setCouplePrompt={
-                        setCouplePrompt
-                      }
-                    />
-                  )
-                }
+                <SinglePromptBox
+                  prompt={prompt}
+                  setPrompt={setPrompt}
+                  placeholder={
+                    generationMode === "double"
+                      ? "Describe the shared front-and-back apparel design..."
+                      : generationMode === "couple"
+                        ? "Describe the matching couple apparel designs..."
+                        : "Describe your dream design..."
+                  }
+                />
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -1403,9 +1300,7 @@ const startListening = () => {
                   resolvedPreferences.selectedColor
                 }
 
-                setSelectedColor={
-                  setSelectedColor
-                }
+                setSelectedColor={setPrefColor}
 
                 selectedSide={
                   selectedSide
@@ -1419,9 +1314,6 @@ const startListening = () => {
                   productDesignScale
                 }
 
-                setDesignScale={
-                  setDesignScale
-                }
                 productType={
                   resolvedPreferences.productType
                 }
@@ -1662,7 +1554,7 @@ const startListening = () => {
                 }
 
                 couplePrompt={
-                  couplePrompt
+                  prompt
                 }
 
                 hisColor={

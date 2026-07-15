@@ -12,6 +12,20 @@ export class ArtworkPipelineError extends Error {
 const delay = (milliseconds) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 
+async function withTimeout(work, milliseconds, message) {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      work,
+      new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), milliseconds);
+      })
+    ]);
+  } finally {
+    if (timeoutId) window.clearTimeout(timeoutId);
+  }
+}
+
 const isSupportedSource = (source) =>
   typeof source === "string"
   && (/^data:image\//i.test(source) || /^https?:\/\//i.test(source) || /^blob:/i.test(source));
@@ -85,7 +99,11 @@ export async function prepareArtwork({ source, api, token, label, onStep }) {
   try {
     const sourceBlob = await fetchArtworkBlob(renderSource, label);
     onStep?.(`Removing ${label} background...`);
-    const result = await removeBackground(sourceBlob);
+    const result = await withTimeout(
+      removeBackground(sourceBlob),
+      30000,
+      `Background removal timed out for the ${label}.`
+    );
     const transparentBlob = result instanceof Blob ? result : new Blob([result], { type: "image/png" });
     if (!transparentBlob.size) throw new Error("Background removal returned an empty image.");
 
