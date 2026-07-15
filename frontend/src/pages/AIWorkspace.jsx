@@ -182,9 +182,9 @@ export default function AIWorkspace() {
 
   // Regeneration is intentionally unavailable until the preview reports that
   // its mockup and generated artwork have both painted successfully.
-  const [mockupReady,
-    setMockupReady] =
-    useState(false);
+  const [renderedMockupKey,
+    setRenderedMockupKey] =
+    useState("");
 
   const [isListening,
     setIsListening] =
@@ -297,22 +297,6 @@ export default function AIWorkspace() {
     resolvedPreferences.productType;
 
   useEffect(() => {
-    setMockupReady(false);
-  }, [
-    activeResultMode,
-    activeResultProductType,
-    firstDualDisplayImage,
-    generatedImage,
-    hisColor,
-    hisSide,
-    herColor,
-    herSide,
-    resolvedPreferences.selectedColor,
-    secondDualDisplayImage,
-    selectedSide
-  ]);
-
-  useEffect(() => {
 
     const loadPresets =
       async () => {
@@ -378,6 +362,25 @@ export default function AIWorkspace() {
     generatedHisImage;
   const secondDualDisplayImage =
     generatedHerImage;
+
+  const previewRenderKey = [
+    activeResultMode,
+    activeResultProductType,
+    singleDisplayImage,
+    firstDualDisplayImage,
+    secondDualDisplayImage,
+    hisColor,
+    herColor,
+    hisSide,
+    herSide,
+    resolvedPreferences.selectedColor,
+    selectedSide
+  ].join("|");
+
+  const mockupReady = Boolean(
+    renderedMockupKey
+    && renderedMockupKey === previewRenderKey
+  );
 
   const buildGenerationCacheKey =
     (generationPrefs, singlePromptText, couplePromptText) => {
@@ -659,7 +662,7 @@ const startListening = () => {
         readGenerationCache(cacheKey);
 
       if (cachedGeneration) {
-        setMockupReady(false);
+        setRenderedMockupKey("");
         setErrorMessage("");
         setLoading(false);
         setGenerationStep("");
@@ -734,7 +737,7 @@ const startListening = () => {
 
         setErrorMessage("");
         setLoading(true);
-        setMockupReady(false);
+        setRenderedMockupKey("");
 
         setGeneratedImage("");
 
@@ -1012,7 +1015,7 @@ const startListening = () => {
     };
 
   const handlePreviewRenderError = (message) => {
-    setMockupReady(false);
+    setRenderedMockupKey("");
     setErrorMessage(message);
   };
 
@@ -1389,7 +1392,7 @@ const startListening = () => {
                   productDesignScale
                }
 
-                onRendered={() => setMockupReady(true)}
+                onRendered={() => setRenderedMockupKey(previewRenderKey)}
                 onRenderError={handlePreviewRenderError}
               />
 
@@ -1509,7 +1512,7 @@ const startListening = () => {
                 hisSide="front"
                 herSide="back"
                 isLoading={loading && !firstDualDisplayImage && !secondDualDisplayImage}
-                onRendered={() => setMockupReady(true)}
+                onRendered={() => setRenderedMockupKey(previewRenderKey)}
                 onRenderError={handlePreviewRenderError}
               />
 
@@ -1586,7 +1589,7 @@ const startListening = () => {
     hisSide
   }
 
-  onRendered={() => setMockupReady(true)}
+  onRendered={() => setRenderedMockupKey(previewRenderKey)}
   onRenderError={handlePreviewRenderError}
 
   herSide={
