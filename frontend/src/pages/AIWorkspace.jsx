@@ -60,6 +60,15 @@ from "../components/workspace/CoupleControls";
 import CoupleActions
 from "../components/workspace/CoupleActions";
 
+import DoublePreview
+from "../components/workspace/DoublePreview";
+
+import DoubleControls
+from "../components/workspace/DoubleControls";
+
+import DoubleActions
+from "../components/workspace/DoubleActions";
+
 
 
 // ===== FRONT =====
@@ -129,6 +138,17 @@ export default function AIWorkspace() {
     setGeneratedHerImage] =
     useState("");
 
+  const [generatedFrontImage, setGeneratedFrontImage] = useState("");
+  const [generatedBackImage, setGeneratedBackImage] = useState("");
+  const [generatedFrontPrompt, setGeneratedFrontPrompt] = useState("");
+  const [generatedBackPrompt, setGeneratedBackPrompt] = useState("");
+  const [frontSide, setFrontSide] = useState("front");
+  const [backSide, setBackSide] = useState("back");
+
+  const [productType,
+    setProductType] =
+    useState("tshirt");
+
   const [generationStep,
     setGenerationStep] =
     useState("");
@@ -137,9 +157,17 @@ export default function AIWorkspace() {
     setReferenceImages] =
     useState([]);
 
+  const [,
+    setSelectedColor] =
+    useState("white");
+
   const [selectedSide,
     setSelectedSide] =
     useState("front");
+
+  const [,
+    setDesignScale] =
+    useState(45);
 
   const [confirmedDesign,
     setConfirmedDesign] =
@@ -210,6 +238,10 @@ export default function AIWorkspace() {
 
   const resolvedPreferences =
     normalizePreferences(preferences);
+  const selectedPreferenceColor =
+    resolvedPreferences.selectedColor;
+  const selectedPreferenceProductType =
+    resolvedPreferences.productType;
   const selectedPreferenceDesignType =
     resolvedPreferences.designType;
 
@@ -258,6 +290,7 @@ export default function AIWorkspace() {
   const hasGenerated =
     Boolean(
       generatedImage ||
+      (generatedFrontImage && generatedBackImage) ||
       (
         generatedHisImage &&
         generatedHerImage
@@ -265,7 +298,7 @@ export default function AIWorkspace() {
     );
 
   const productDesignScale =
-    resolvedPreferences.productType === "hoodie"
+    productType === "hoodie"
       ? 55
       : 48;
 
@@ -307,12 +340,34 @@ export default function AIWorkspace() {
 
   }, []);
 
+  useEffect(() => {
+
+    setSelectedColor(
+      selectedPreferenceColor
+    );
+
+    setProductType(
+      selectedPreferenceProductType
+    );
+
+    setHisColor(
+      selectedPreferenceColor
+    );
+
+    setHerColor(
+      selectedPreferenceColor
+    );
+
+  }, [
+    selectedPreferenceDesignType,
+    selectedPreferenceProductType,
+    selectedPreferenceColor
+  ]);
+
   const singleDisplayImage =
     generatedImage;
-  const firstDualDisplayImage =
-    generatedHisImage;
-  const secondDualDisplayImage =
-    generatedHerImage;
+  const firstDualDisplayImage = generatedHisImage;
+  const secondDualDisplayImage = generatedHerImage;
 
   const previewRenderKey = [
     activeResultMode,
@@ -320,6 +375,8 @@ export default function AIWorkspace() {
     singleDisplayImage,
     firstDualDisplayImage,
     secondDualDisplayImage,
+    generatedFrontImage,
+    generatedBackImage,
     hisColor,
     herColor,
     hisSide,
@@ -586,12 +643,26 @@ const startListening = () => {
               ? preloadArtwork(cachedGeneration.generatedHerImage, { label: "cached second artwork" })
               : Promise.resolve("")
           ]);
-          cachedArtwork = { single, first, second };
+          const [front, back] = await Promise.all([
+            cachedGeneration.generatedFrontImage ? preloadArtwork(cachedGeneration.generatedFrontImage, { label: "cached front artwork" }) : Promise.resolve(""),
+            cachedGeneration.generatedBackImage ? preloadArtwork(cachedGeneration.generatedBackImage, { label: "cached back artwork" }) : Promise.resolve("")
+          ]);
+          cachedArtwork = { single, first, second, front, back };
         } catch (cacheError) {
           console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
           sessionStorage.removeItem(`aiwork:${cacheKey}`);
           return handleGenerate(overridePreferences);
         }
+
+        setProductType(
+          cachedGeneration.preferences?.productType
+          || generationPrefs.productType
+        );
+
+        setSelectedColor(
+          cachedGeneration.preferences?.selectedColor
+          || generationPrefs.selectedColor
+        );
 
         setHisColor(
           cachedGeneration.preferences?.selectedColor
@@ -612,6 +683,10 @@ const startListening = () => {
         setGeneratedHerImage(
           cachedArtwork.second
         );
+        setGeneratedFrontImage(cachedArtwork.front);
+        setGeneratedBackImage(cachedArtwork.back);
+        setGeneratedFrontPrompt(cachedGeneration.frontPrompt || prompt);
+        setGeneratedBackPrompt(cachedGeneration.backPrompt || prompt);
         return;
       }
 
@@ -640,6 +715,10 @@ const startListening = () => {
         setGeneratedHisImage("");
 
         setGeneratedHerImage("");
+        setGeneratedFrontImage("");
+        setGeneratedBackImage("");
+        setGeneratedFrontPrompt("");
+        setGeneratedBackPrompt("");
 
         setConfirmedDesign(null);
 
@@ -737,38 +816,6 @@ const startListening = () => {
             }
           );
 
-        if (activeMode === "double") {
-          console.log("[double-design] raw API response", res);
-          console.log("[double-design] parsed API response", res.data);
-          console.debug("[double-design] candidate image URLs", {
-            front: res.data?.frontImage,
-            back: res.data?.backImage,
-            generatedImages: res.data?.generatedImages,
-            images: res.data?.images,
-            output: res.data?.output,
-            candidates: res.data?.candidates,
-            predictions: res.data?.predictions
-          });
-
-          const frontArtwork = res.data?.artwork?.front?.url || res.data?.frontImage;
-          const backArtwork = res.data?.artwork?.back?.url || res.data?.backImage;
-          console.log("[double-design] normalized artwork payload", {
-            frontPresent: Boolean(frontArtwork),
-            backPresent: Boolean(backArtwork),
-            artwork: res.data?.artwork || null
-          });
-
-          if (!frontArtwork || !backArtwork) {
-            const details = res.data?.details
-              ? ` Front: ${res.data.details.front || "not returned"}. Back: ${res.data.details.back || "not returned"}.`
-              : "";
-            throw new Error(`Double-side API returned no complete artwork payload.${details}`);
-          }
-
-          res.data.frontImage = frontArtwork;
-          res.data.backImage = backArtwork;
-        }
-
         if (requestId !== generationRequestIdRef.current) {
           return;
         }
@@ -779,6 +826,14 @@ const startListening = () => {
             res.data.preferences
             || generationPrefs
           );
+
+        setProductType(
+          responsePreferences.productType
+        );
+
+        setSelectedColor(
+          responsePreferences.selectedColor || responsePreferences.color
+        );
 
         setHisColor(
           responsePreferences.selectedColor || responsePreferences.color
@@ -813,20 +868,26 @@ const startListening = () => {
             generatedImage: preparedArtwork.url
           });
           setGenerationStep("");
+        } else if (activeMode === "double") {
+          const [frontImage, backImage] = [res.data?.frontImage, res.data?.backImage];
+          if (!frontImage || !backImage) throw new Error("The generator completed without both front and back artwork.");
+          const [front, back] = await Promise.all([
+            prepareArtwork({ source: frontImage, api: API, token, label: "front design", onStep: setGenerationStep }),
+            prepareArtwork({ source: backImage, api: API, token, label: "back design", onStep: setGenerationStep })
+          ]);
+          if (requestId !== generationRequestIdRef.current) return;
+          setGeneratedFrontImage(front.url);
+          setGeneratedBackImage(back.url);
+          setGeneratedFrontPrompt(res.data.frontPrompt || activePrompt);
+          setGeneratedBackPrompt(res.data.backPrompt || activePrompt);
+          writeGenerationCache(cacheKey, { preferences: responsePreferences, generatedFrontImage: front.url, generatedBackImage: back.url, frontPrompt: res.data.frontPrompt || activePrompt, backPrompt: res.data.backPrompt || activePrompt });
+          setGenerationStep("");
         } else {
 
-          const firstDesignLabel =
-            activeMode === "double" ? "front" : "his";
-
-          const secondDesignLabel =
-            activeMode === "double" ? "back" : "her";
-
-          const firstSource = activeMode === "double"
-            ? res.data?.artwork?.front?.url || res.data?.frontImage
-            : res.data?.hisImage || res.data?.frontImage;
-          const secondSource = activeMode === "double"
-            ? res.data?.artwork?.back?.url || res.data?.backImage
-            : res.data?.herImage || res.data?.backImage;
+          const firstDesignLabel = "his";
+          const secondDesignLabel = "her";
+let firstSource = res.data?.hisImage;
+let secondSource = res.data?.herImage;
 
           if (!firstSource || !secondSource) {
             throw new Error(`The generator completed without both ${firstDesignLabel} and ${secondDesignLabel} artworks.`);
@@ -1300,7 +1361,9 @@ const startListening = () => {
                   resolvedPreferences.selectedColor
                 }
 
-                setSelectedColor={setPrefColor}
+                setSelectedColor={
+                  setSelectedColor
+                }
 
                 selectedSide={
                   selectedSide
@@ -1314,6 +1377,9 @@ const startListening = () => {
                   productDesignScale
                 }
 
+                setDesignScale={
+                  setDesignScale
+                }
                 productType={
                   resolvedPreferences.productType
                 }
@@ -1388,39 +1454,40 @@ const startListening = () => {
         {
           activeResultMode === "double"
           &&
-          (loading || (firstDualDisplayImage && secondDualDisplayImage))
+          (loading || (generatedFrontImage && generatedBackImage))
           && (
 
             <>
 
-              <CouplePreview
-                designVariant="double"
+              <DoublePreview
                 productType={resolvedPreferences.productType}
-                generatedHisImage={firstDualDisplayImage}
-                generatedHerImage={secondDualDisplayImage}
+                frontImage={generatedFrontImage}
+                backImage={generatedBackImage}
                 getMockup={getMockup}
-                hisColor={resolvedPreferences.selectedColor}
-                herColor={resolvedPreferences.selectedColor}
-                hisSide="front"
-                herSide="back"
-                isLoading={loading && !firstDualDisplayImage && !secondDualDisplayImage}
-                onRendered={() => setRenderedMockupKey(previewRenderKey)}
-                onRenderError={handlePreviewRenderError}
+                color={resolvedPreferences.selectedColor}
+                frontSide={frontSide}
+                backSide={backSide}
+                isLoading={loading && !generatedFrontImage && !generatedBackImage}
               />
 
-              <CoupleActions
-                designVariant="double"
-                generatedHisImage={firstDualDisplayImage}
-                generatedHerImage={secondDualDisplayImage}
+              <DoubleControls
+                color={resolvedPreferences.selectedColor}
+                setColor={setPrefColor}
+                productType={resolvedPreferences.productType}
+                frontSide={frontSide}
+                setFrontSide={setFrontSide}
+                backSide={backSide}
+                setBackSide={setBackSide}
+              />
+
+              <DoubleActions
+                frontImage={generatedFrontImage}
+                backImage={generatedBackImage}
                 getMockup={getMockup}
                 productType={resolvedPreferences.productType}
-                couplePrompt={prompt}
-                hisColor={resolvedPreferences.selectedColor}
-                herColor={resolvedPreferences.selectedColor}
-                hisSide="front"
-                herSide="back"
-                hisScale={45}
-                herScale={45}
+                frontPrompt={generatedFrontPrompt}
+                backPrompt={generatedBackPrompt}
+                color={resolvedPreferences.selectedColor}
                 API={API}
                 setSuccessMessage={setSuccessMessage}
                 confirmedDesign={confirmedDesign}

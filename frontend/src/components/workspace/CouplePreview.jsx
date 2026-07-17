@@ -13,7 +13,6 @@ export default function CouplePreview({
 
   hisSide,
   herSide,
-  designVariant = "couple",
   isLoading = false,
   onRendered,
   onRenderError
@@ -72,21 +71,7 @@ export default function CouplePreview({
     });
   };
 
-  const designStyles = designVariant === "double" ? {
-
-    tshirt: {
-      top: "50%",
-      width: "48%",
-      maxHeight: "58%"
-    },
-
-    hoodie: {
-      top: "42%",
-      width: "27%",
-      maxHeight: "30%"
-    }
-  } : {
-
+  const designStyles = {
     tshirt: {
 
       top: "42%",

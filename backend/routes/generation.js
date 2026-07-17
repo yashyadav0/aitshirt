@@ -247,6 +247,44 @@ Return ONLY the enhanced prompt.
   }
 }
 
+// =====================================
+// DOUBLE-SIDE PROMPT ENHANCER
+// =====================================
+
+async function enhanceDoublePrompt(userPrompt) {
+  const fallback = {
+    frontPrompt: `Minimal, premium front apparel print based on ${userPrompt}. Centered composition with matching typography.`,
+    backPrompt: `Detailed, premium back apparel print expanding ${userPrompt}. Centered composition with matching typography.`
+  };
+
+  try {
+    const enhancerPrompt = `You are an elite AI fashion prompt engineer. Turn one apparel idea into two complementary, visually consistent print prompts for the FRONT and BACK of the SAME garment.
+
+Rules:
+- front is a clear, premium centered front print; back expands the same concept
+- preserve one art style, palette, typography language, and subject
+- each prompt must be independently renderable and under 70 words
+- isolated artwork, transparent background, no mockup, no garment, no watermark, print-ready
+
+User Prompt: ${userPrompt}
+
+Return ONLY valid JSON: {"frontPrompt":"...","backPrompt":"..."}`;
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      { contents: [{ parts: [{ text: enhancerPrompt }] }] },
+      { timeout: 30000 }
+    );
+    const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const json = JSON.parse((text || "").replace(/^```json\s*|\s*```$/g, ""));
+    if (!json.frontPrompt || !json.backPrompt) throw new Error("Enhancer returned incomplete double-side prompts.");
+    return { frontPrompt: json.frontPrompt.trim(), backPrompt: json.backPrompt.trim() };
+  } catch (err) {
+    console.log("DOUBLE PROMPT ENHANCER ERROR:", err.response?.data || err.message);
+    return fallback;
+  }
+}
+
 const PRINT_QUALITY_BRIEF = `
 Professional premium t-shirt graphic. Large centered composition for a modern
 oversized graphic tee. Print-ready artwork, highly detailed, bold graphic
@@ -946,81 +984,33 @@ IMPORTANT:
           });
         }
 
-        // Keep the established Couple enhancer and generation transport, with
-        // a garment-specific shared-prompt direction for front and back.
-        const enhancedPrompt = await enhanceCouplePrompt(`
-Create a coordinated premium front-and-back apparel set from this single idea:
-${sharedPrompt}
+        const { frontPrompt, backPrompt } = await enhanceDoublePrompt(
+          buildPreferenceEnrichedPrompt(sharedPrompt, preferences)
+        );
+        const referenceInstruction = imageParts.length
+          ? "\nUse uploaded images only as visual references; never return the source image."
+          : "";
+        const printInstructions = `${PRINT_QUALITY_BRIEF}\nCreate one centered, oversized apparel print.${referenceInstruction}`;
 
-The front and back belong to the same garment. Keep one artistic style, color
-palette, typography language, and theme. Make the back expand or complement
-the front rather than repeating it exactly.`);
+        // These are deliberately independent requests. Double Side never
+        // creates a combined canvas and never uses the couple split pipeline.
+        const [frontImage, backImage] = await Promise.all([
+          generateImage(`${frontPrompt}\n${printInstructions}`, imageParts),
+          generateImage(`${backPrompt}\n${printInstructions}`, imageParts)
+        ]);
+        const [fallbackFront, fallbackBack] = await Promise.all([
+          frontImage ? Promise.resolve(frontImage) : createFallbackSingleImage(preferences, frontPrompt),
+          backImage ? Promise.resolve(backImage) : createFallbackSingleImage(preferences, backPrompt)
+        ]);
 
-        const splitPrompt = `
-${enhancedPrompt}
-
-IMPORTANT:
-- generate a coordinated front design in the LEFT half and a complementary back design in the RIGHT half
-- both designs are for the same garment and must share style, palette, typography, and theme
-- the back artwork may expand the front concept, but must not duplicate it exactly
-- leave a clean vertical gutter between the two panels
-- each panel is an oversized, large centered apparel print, never a chest logo
-- isolated artwork only, transparent background, premium print-ready DTG design
-- no clothing, hoodie, t-shirt, mannequin, mockup, model, watermark, or background scene
-${imageParts.length ? "- use uploaded images only as visual references; never copy, paste, or return the source image\n" : ""}`;
-
-        console.log("DOUBLE DESIGN: generating one front/back canvas for split pipeline");
-        const combinedImage =
-          (await generateImage(splitPrompt, imageParts))
-          || await createFallbackCoupleImage(preferences, sharedPrompt);
-
-        const combinedArtwork = await validateGeneratedArtwork(combinedImage, "combined double-side");
-        console.log("[3] Combined double-side image metadata", {
-          width: combinedArtwork.width,
-          height: combinedArtwork.height,
-          mimeType: combinedArtwork.mimeType
-        });
-
-        const splitArtwork = await splitImage(combinedArtwork.buffer);
-        const frontArtwork = {
-          url: splitArtwork.leftImage,
-          width: splitArtwork.leftWidth,
-          height: splitArtwork.height,
-          mimeType: "image/png"
-        };
-        const backArtwork = {
-          url: splitArtwork.rightImage,
-          width: splitArtwork.rightWidth,
-          height: splitArtwork.height,
-          mimeType: "image/png"
-        };
-        const responsePayload = {
+        return res.json({
           success: true,
-          artwork: {
-            front: frontArtwork,
-            back: backArtwork
-          },
-          // Compatibility fields for the existing frontend renderer.
-          frontImage: frontArtwork.url,
-          backImage: backArtwork.url,
-          imageFormat: "data-uri",
-          preferences,
-          enrichedPrompt: {
-            shared: enhancedPrompt
-          }
-        };
-
-        console.log("[5] Upload/storage", {
-          status: "not required during generation",
-          reason: "Both validated print-ready data URIs are returned directly and stored only when the user confirms the design."
+          frontImage: fallbackFront,
+          backImage: fallbackBack,
+          frontPrompt,
+          backPrompt,
+          preferences
         });
-        console.log("[6] Double-side payload created");
-        console.dir(responsePayload, { depth: 3 });
-        console.log("[7] Double-side payload sent to frontend", {
-          front: { urlPresent: Boolean(frontArtwork.url), width: frontArtwork.width, height: frontArtwork.height },
-          back: { urlPresent: Boolean(backArtwork.url), width: backArtwork.width, height: backArtwork.height }
-        });
-        return res.json(responsePayload);
       }
 
 
