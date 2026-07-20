@@ -131,6 +131,15 @@ export default function AIWorkspace() {
     setGeneratedHerImage] =
     useState("");
 
+  // Double Side owns independent front/back artwork. Keeping this state
+  // separate prevents the Double renderer from reading Couple results.
+  const [generatedFrontImage, setGeneratedFrontImage] = useState("");
+  const [generatedBackImage, setGeneratedBackImage] = useState("");
+  const [generatedFrontPrompt, setGeneratedFrontPrompt] = useState("");
+  const [generatedBackPrompt, setGeneratedBackPrompt] = useState("");
+  const [frontSide, setFrontSide] = useState("front");
+  const [backSide, setBackSide] = useState("back");
+
   const [productType,
     setProductType] =
     useState("tshirt");
@@ -276,6 +285,7 @@ export default function AIWorkspace() {
   const hasGenerated =
     Boolean(
       generatedImage ||
+      (generatedFrontImage && generatedBackImage) ||
       (
         generatedHisImage &&
         generatedHerImage
@@ -362,6 +372,8 @@ export default function AIWorkspace() {
     singleDisplayImage,
     firstDualDisplayImage,
     secondDualDisplayImage,
+    generatedFrontImage,
+    generatedBackImage,
     hisColor,
     herColor,
     hisSide,
@@ -628,7 +640,15 @@ const startListening = () => {
               ? preloadArtwork(cachedGeneration.generatedHerImage, { label: "cached second artwork" })
               : Promise.resolve("")
           ]);
-          cachedArtwork = { single, first, second };
+          const [front, back] = await Promise.all([
+            cachedGeneration.generatedFrontImage
+              ? preloadArtwork(cachedGeneration.generatedFrontImage, { label: "cached front artwork" })
+              : Promise.resolve(""),
+            cachedGeneration.generatedBackImage
+              ? preloadArtwork(cachedGeneration.generatedBackImage, { label: "cached back artwork" })
+              : Promise.resolve("")
+          ]);
+          cachedArtwork = { single, first, second, front, back };
         } catch (cacheError) {
           console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
           sessionStorage.removeItem(`aiwork:${cacheKey}`);
@@ -664,6 +684,10 @@ const startListening = () => {
         setGeneratedHerImage(
           cachedArtwork.second
         );
+        setGeneratedFrontImage(cachedArtwork.front);
+        setGeneratedBackImage(cachedArtwork.back);
+        setGeneratedFrontPrompt(cachedGeneration.frontPrompt || activePrompt);
+        setGeneratedBackPrompt(cachedGeneration.backPrompt || activePrompt);
         return;
       }
 
@@ -692,6 +716,10 @@ const startListening = () => {
         setGeneratedHisImage("");
 
         setGeneratedHerImage("");
+        setGeneratedFrontImage("");
+        setGeneratedBackImage("");
+        setGeneratedFrontPrompt("");
+        setGeneratedBackPrompt("");
 
         setConfirmedDesign(null);
 
@@ -873,20 +901,40 @@ const startListening = () => {
             generatedImage: preparedArtwork.url
           });
           setGenerationStep("");
+        } else if (activeMode === "double") {
+          const frontSource = res.data?.frontImage;
+          const backSource = res.data?.backImage;
+
+          if (!frontSource || !backSource) {
+            throw new Error("The generator completed without both front and back artworks.");
+          }
+
+          const [frontArtwork, backArtwork] = await Promise.all([
+            prepareArtwork({ source: frontSource, api: API, token, label: "front design", onStep: setGenerationStep }),
+            prepareArtwork({ source: backSource, api: API, token, label: "back design", onStep: setGenerationStep })
+          ]);
+
+          if (requestId !== generationRequestIdRef.current) return;
+
+          setGeneratedFrontImage(frontArtwork.url);
+          setGeneratedBackImage(backArtwork.url);
+          setGeneratedFrontPrompt(res.data?.frontPrompt || activePrompt);
+          setGeneratedBackPrompt(res.data?.backPrompt || activePrompt);
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedFrontImage: frontArtwork.url,
+            generatedBackImage: backArtwork.url,
+            frontPrompt: res.data?.frontPrompt || activePrompt,
+            backPrompt: res.data?.backPrompt || activePrompt
+          });
+          setGenerationStep("");
         } else {
 
-          const firstDesignLabel =
-            activeMode === "double" ? "front" : "his";
+          const firstDesignLabel = "his";
+          const secondDesignLabel = "her";
 
-          const secondDesignLabel =
-            activeMode === "double" ? "back" : "her";
-
-          const firstSource = activeMode === "double"
-            ? res.data?.artwork?.front?.url || res.data?.frontImage
-            : res.data?.hisImage || res.data?.frontImage;
-          const secondSource = activeMode === "double"
-            ? res.data?.artwork?.back?.url || res.data?.backImage
-            : res.data?.herImage || res.data?.backImage;
+          const firstSource = res.data?.hisImage;
+          const secondSource = res.data?.herImage;
 
           if (!firstSource || !secondSource) {
             throw new Error(`The generator completed without both ${firstDesignLabel} and ${secondDesignLabel} artworks.`);
