@@ -909,6 +909,27 @@ const startListening = () => {
             throw new Error("The generator completed without both front and back artworks.");
           }
 
+          // Paint the generated artwork first. Background removal and storage
+          // are enhancements, not prerequisites for displaying a result.
+          const [readyFront, readyBack] = await Promise.all([
+            preloadArtwork(frontSource, { label: "front design" }),
+            preloadArtwork(backSource, { label: "back design" })
+          ]);
+
+          if (requestId !== generationRequestIdRef.current) return;
+
+          setGeneratedFrontImage(readyFront);
+          setGeneratedBackImage(readyBack);
+          setGeneratedFrontPrompt(res.data?.frontPrompt || activePrompt);
+          setGeneratedBackPrompt(res.data?.backPrompt || activePrompt);
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedFrontImage: readyFront,
+            generatedBackImage: readyBack,
+            frontPrompt: res.data?.frontPrompt || activePrompt,
+            backPrompt: res.data?.backPrompt || activePrompt
+          });
+
           const [frontArtwork, backArtwork] = await Promise.all([
             prepareArtwork({ source: frontSource, api: API, token, label: "front design", onStep: setGenerationStep }),
             prepareArtwork({ source: backSource, api: API, token, label: "back design", onStep: setGenerationStep })
@@ -918,8 +939,6 @@ const startListening = () => {
 
           setGeneratedFrontImage(frontArtwork.url);
           setGeneratedBackImage(backArtwork.url);
-          setGeneratedFrontPrompt(res.data?.frontPrompt || activePrompt);
-          setGeneratedBackPrompt(res.data?.backPrompt || activePrompt);
           writeGenerationCache(cacheKey, {
             preferences: responsePreferences,
             generatedFrontImage: frontArtwork.url,

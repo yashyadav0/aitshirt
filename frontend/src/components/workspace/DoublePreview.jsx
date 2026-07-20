@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export default function DoublePreview({
   frontImage,
   backImage,
@@ -8,14 +10,11 @@ export default function DoublePreview({
   backSide = "back",
   isLoading = false,
 }) {
-  console.log("[DoublePreview]", {
-    frontImage,
-    backImage,
-    productType,
-    color,
-    frontSide,
-    backSide,
-  });
+  const [failedImages, setFailedImages] = useState({});
+
+  useEffect(() => {
+    setFailedImages({});
+  }, [frontImage, backImage]);
 
   const printArea =
     productType === "hoodie"
@@ -55,7 +54,7 @@ export default function DoublePreview({
             />
 
             {/* Artwork */}
-            {image && (
+            {image && !failedImages[label] && (
               <div
                 className="absolute flex items-center justify-center overflow-hidden"
                 style={printArea}
@@ -68,11 +67,14 @@ export default function DoublePreview({
                   onLoad={() =>
                     console.log(`${label} artwork loaded successfully`)
                   }
-                  onError={() =>
-                    console.error(`${label} artwork failed to load`)
-                  }
+                  onError={() => setFailedImages((current) => ({ ...current, [label]: true }))}
                 />
               </div>
+            )}
+            {failedImages[label] && (
+              <p className="absolute inset-x-4 bottom-4 rounded-lg bg-red-950/80 px-3 py-2 text-center text-xs text-red-200">
+                {label} artwork could not be displayed. Please regenerate.
+              </p>
             )}
           </>
         )}
