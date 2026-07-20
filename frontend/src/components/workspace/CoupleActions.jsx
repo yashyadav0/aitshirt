@@ -30,8 +30,6 @@ export default function CoupleActions({
 
   generationPreferences,
 
-  designVariant = "couple",
-
   setSuccessMessage,
 
   confirmedDesign,
@@ -42,8 +40,9 @@ export default function CoupleActions({
 
 }) {
 
-  const isDouble =
-    designVariant === "double";
+  // CoupleActions is now called only by Couple mode. Double Side owns
+  // DoubleActions and never enters this legacy compatibility path.
+  const isDouble = false;
 
   const [hisSize,
     setHisSize] =

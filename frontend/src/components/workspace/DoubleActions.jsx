@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
 
-export default function DoubleActions({ frontImage, backImage, frontPrompt, backPrompt, color, productType, getMockup, API, generationPreferences, confirmedDesign, setConfirmedDesign, isConfirmed, setIsConfirmed, setSuccessMessage }) {
+export default function DoubleActions({ frontImage, backImage, color, frontSide, backSide, prompt, frontScale, backScale, productType, getMockup, API, generationPreferences, confirmedDesign, setConfirmedDesign, isConfirmed, setIsConfirmed, setSuccessMessage }) {
   const [size, setSize] = useState("M");
   const [isProcessing, setIsProcessing] = useState(false);
   const toast = (message) => { setSuccessMessage(message); setTimeout(() => setSuccessMessage(""), 2500); };
-  const makeMockup = async (side, design) => {
+  const makeMockup = async (side, design, scale) => {
     const canvas = document.createElement("canvas"); canvas.width = 800; canvas.height = 800;
     const [mockup, artwork] = await Promise.all([getImage(getMockup(productType, color, side)), getImage(design)]);
     const ctx = canvas.getContext("2d"); ctx.drawImage(mockup, -60, -120, 920, 1040);
@@ -14,10 +14,11 @@ export default function DoubleActions({ frontImage, backImage, frontPrompt, back
     const printArea = productType === "hoodie"
       ? { x: 144, y: 200, width: 512, height: 464 }
       : { x: 112, y: 184, width: 576, height: 496 };
+    const scaleFactor = (scale || 100) / 100;
     const imageRatio = artwork.naturalWidth / artwork.naturalHeight || 1;
     const areaRatio = printArea.width / printArea.height;
-    const drawWidth = imageRatio > areaRatio ? printArea.width : printArea.height * imageRatio;
-    const drawHeight = imageRatio > areaRatio ? printArea.width / imageRatio : printArea.height;
+    const drawWidth = (imageRatio > areaRatio ? printArea.width : printArea.height * imageRatio) * scaleFactor;
+    const drawHeight = (imageRatio > areaRatio ? printArea.width / imageRatio : printArea.height) * scaleFactor;
     const x = printArea.x + (printArea.width - drawWidth) / 2;
     const y = printArea.y + (printArea.height - drawHeight) / 2;
     ctx.drawImage(artwork, x, y, drawWidth, drawHeight);
@@ -30,8 +31,8 @@ export default function DoubleActions({ frontImage, backImage, frontPrompt, back
     setIsProcessing(true);
     try {
       const token = localStorage.getItem("token");
-      const [frontDesignImage, backDesignImage] = await Promise.all([uploadBlob(await makeMockup("front", frontImage), token), uploadBlob(await makeMockup("back", backImage), token)]);
-      const design = { isCouple: false, generationMode: "double", preferences: generationPreferences, productType, designType: "double", designImage: frontDesignImage, frontDesignImage, backDesignImage, frontTransparentDesign: frontImage, backTransparentDesign: backImage, prompt: `Front: ${frontPrompt}\nBack: ${backPrompt}`, frontPrompt, backPrompt, color, selectedColor: color, size, side: "front", designScale: productType === "hoodie" ? 64 : 72, isConfirmed: true };
+      const [frontDesignImage, backDesignImage] = await Promise.all([uploadBlob(await makeMockup(frontSide, frontImage, frontScale), token), uploadBlob(await makeMockup(backSide, backImage, backScale), token)]);
+      const design = { generationMode: "double", preferences: generationPreferences, productType, designType: "double", designImage: frontDesignImage, frontDesignImage, backDesignImage, frontTransparentDesign: frontImage, backTransparentDesign: backImage, prompt, color, selectedColor: color, size, side: frontSide, frontSide, backSide, frontScale, backScale, isConfirmed: true };
       await API.post("/generation/save", design, { headers: { Authorization: `Bearer ${token}` } });
       setConfirmedDesign(design); setIsConfirmed(true); toast("Double-sided design confirmed");
     } finally { setIsProcessing(false); }
