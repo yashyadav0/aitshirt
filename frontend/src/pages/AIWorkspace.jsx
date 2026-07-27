@@ -60,6 +60,9 @@ from "../components/workspace/CoupleControls";
 import CoupleActions
 from "../components/workspace/CoupleActions";
 
+import DoubleSidePreview
+from "../components/workspace/DoubleSidePreview";
+
 
 
 // ===== FRONT =====
@@ -127,6 +130,14 @@ export default function AIWorkspace() {
 
   const [generatedHerImage,
     setGeneratedHerImage] =
+    useState("");
+
+  const [generatedFrontImage,
+    setGeneratedFrontImage] =
+    useState("");
+
+  const [generatedBackImage,
+    setGeneratedBackImage] =
     useState("");
 
 
@@ -275,6 +286,7 @@ export default function AIWorkspace() {
   const hasGenerated =
     Boolean(
       generatedImage ||
+      (generatedFrontImage && generatedBackImage) ||
       (
         generatedHisImage &&
         generatedHerImage
@@ -354,6 +366,8 @@ export default function AIWorkspace() {
     generatedHisImage;
   const secondDualDisplayImage =
     generatedHerImage;
+  const frontDisplayImage = generatedFrontImage;
+  const backDisplayImage = generatedBackImage;
 
   const previewRenderKey = [
     activeResultMode,
@@ -361,6 +375,8 @@ export default function AIWorkspace() {
     singleDisplayImage,
     firstDualDisplayImage,
     secondDualDisplayImage,
+    frontDisplayImage,
+    backDisplayImage,
     hisColor,
     herColor,
     hisSide,
@@ -627,7 +643,16 @@ const startListening = () => {
               ? preloadArtwork(cachedGeneration.generatedHerImage, { label: "cached second artwork" })
               : Promise.resolve("")
           ]);
-          cachedArtwork = { single, first, second };
+          const front = cachedGeneration.generatedFrontImage
+            ? await preloadArtwork(cachedGeneration.generatedFrontImage, { label: "cached front artwork" })
+            : "";
+          const back = cachedGeneration.generatedBackImage
+            ? await preloadArtwork(cachedGeneration.generatedBackImage, { label: "cached back artwork" })
+            : "";
+          if (generationPrefs.designType === "double" && (!front || !back)) {
+            throw new Error("The cached double-side design is incomplete.");
+          }
+          cachedArtwork = { single, first, second, front, back };
         } catch (cacheError) {
           console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
           sessionStorage.removeItem(`aiwork:${cacheKey}`);
@@ -663,6 +688,8 @@ const startListening = () => {
         setGeneratedHerImage(
           cachedArtwork.second
         );
+        setGeneratedFrontImage(cachedArtwork.front);
+        setGeneratedBackImage(cachedArtwork.back);
         return;
       }
 
@@ -692,6 +719,10 @@ const startListening = () => {
 
         setGeneratedHerImage("");
 
+        setGeneratedFrontImage("");
+
+        setGeneratedBackImage("");
+
         setConfirmedDesign(null);
 
         setIsConfirmed(false);
@@ -699,6 +730,8 @@ const startListening = () => {
 
         if (activeMode === "single") {
           setGenerationStep("Enhancing prompt...");
+        } else if (activeMode === "double") {
+          setGenerationStep("Generating Images...");
         } else {
           setGenerationStep("Enhancing couple prompt...");
         }
@@ -838,6 +871,46 @@ const startListening = () => {
             generatedImage: preparedArtwork.url
           });
           setGenerationStep("");
+        } else if (activeMode === "double") {
+          const frontSource = res.data?.images?.front;
+          const backSource = res.data?.images?.back;
+
+          if (!res.data?.success || !frontSource || !backSource) {
+            throw new Error("The generator did not return both front and back designs.");
+          }
+
+          const frontArtwork = await prepareArtwork({
+            source: frontSource,
+            api: API,
+            token,
+            label: "front design",
+            onProcessing: () => setGenerationStep("Processing Front..."),
+            onSaving: () => setGenerationStep("Saving Front..."),
+            allowFallback: false
+          });
+          if (requestId !== generationRequestIdRef.current) return;
+
+          const backArtwork = await prepareArtwork({
+            source: backSource,
+            api: API,
+            token,
+            label: "back design",
+            onProcessing: () => setGenerationStep("Processing Back..."),
+            onSaving: () => setGenerationStep("Saving Back..."),
+            allowFallback: false
+          });
+          if (requestId !== generationRequestIdRef.current) return;
+
+          setGenerationStep("Preparing Preview...");
+          writeGenerationCache(cacheKey, {
+            preferences: responsePreferences,
+            generatedFrontImage: frontArtwork.url,
+            generatedBackImage: backArtwork.url
+          });
+          setGeneratedFrontImage(frontArtwork.url);
+          setGeneratedBackImage(backArtwork.url);
+          setGenerationStep("Completed");
+          await new Promise((resolve) => window.setTimeout(resolve, 0));
         } else {
 
           const firstDesignLabel = "his";
@@ -1404,6 +1477,25 @@ const startListening = () => {
         }
 
 
+
+        {/* DOUBLE SIDE */}
+
+        {
+          activeResultMode === "double"
+          && (loading || (frontDisplayImage && backDisplayImage))
+          && (
+            <DoubleSidePreview
+              frontImage={frontDisplayImage}
+              backImage={backDisplayImage}
+              getMockup={getMockup}
+              productType={resolvedPreferences.productType}
+              selectedColor={resolvedPreferences.selectedColor}
+              isLoading={loading && !frontDisplayImage && !backDisplayImage}
+              onRendered={() => setRenderedMockupKey(previewRenderKey)}
+              onRenderError={handlePreviewRenderError}
+            />
+          )
+        }
 
         {/* COUPLE */}
 
