@@ -247,44 +247,6 @@ Return ONLY the enhanced prompt.
   }
 }
 
-// =====================================
-// DOUBLE-SIDE PROMPT ENHANCER
-// =====================================
-
-async function enhanceDoublePrompt(userPrompt) {
-  const fallback = {
-    frontPrompt: `Minimal, premium front apparel print based on ${userPrompt}. Centered composition with matching typography.`,
-    backPrompt: `Detailed, premium back apparel print expanding ${userPrompt}. Centered composition with matching typography.`
-  };
-
-  try {
-    const enhancerPrompt = `You are an elite AI fashion prompt engineer. Turn one apparel idea into two complementary, visually consistent print prompts for the FRONT and BACK of the SAME garment.
-
-Rules:
-- front is a clear, premium centered front print; back expands the same concept
-- preserve one art style, palette, typography language, and subject
-- each prompt must be independently renderable and under 70 words
-- isolated artwork, transparent background, no mockup, no garment, no watermark, print-ready
-
-User Prompt: ${userPrompt}
-
-Return ONLY valid JSON: {"frontPrompt":"...","backPrompt":"..."}`;
-
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      { contents: [{ parts: [{ text: enhancerPrompt }] }] },
-      { timeout: 30000 }
-    );
-    const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    const json = JSON.parse((text || "").replace(/^```json\s*|\s*```$/g, ""));
-    if (!json.frontPrompt || !json.backPrompt) throw new Error("Enhancer returned incomplete double-side prompts.");
-    return { frontPrompt: json.frontPrompt.trim(), backPrompt: json.backPrompt.trim() };
-  } catch (err) {
-    console.log("DOUBLE PROMPT ENHANCER ERROR:", err.response?.data || err.message);
-    return fallback;
-  }
-}
-
 const PRINT_QUALITY_BRIEF = `
 Professional premium t-shirt graphic. Large centered composition for a modern
 oversized graphic tee. Print-ready artwork, highly detailed, bold graphic
@@ -969,58 +931,12 @@ IMPORTANT:
       }
 
       // =====================================
-      // DOUBLE MODE
+      // DOUBLE-SIDE MODE
       // =====================================
 
-      if (
-        activeMode === "double"
-      ) {
+const isDoubleSide = activeMode === "double";
 
-        const sharedPrompt = String(prompt || "").trim();
-
-        if (!sharedPrompt) {
-          return res.status(400).json({
-            error: "A design prompt is required for the double-side set."
-          });
-        }
-
-        const { frontPrompt, backPrompt } = await enhanceDoublePrompt(
-          buildPreferenceEnrichedPrompt(sharedPrompt, preferences)
-        );
-        const referenceInstruction = imageParts.length
-          ? "\nUse uploaded images only as visual references; never return the source image."
-          : "";
-        const printInstructions = `${PRINT_QUALITY_BRIEF}\nCreate one centered, oversized apparel print.${referenceInstruction}`;
-
-        // These are deliberately independent requests. Double Side never
-        // creates a combined canvas and never uses the couple split pipeline.
-        const [frontImage, backImage] = await Promise.all([
-          generateImage(`${frontPrompt}\n${printInstructions}`, imageParts),
-          generateImage(`${backPrompt}\n${printInstructions}`, imageParts)
-        ]);
-        const [fallbackFront, fallbackBack] = await Promise.all([
-          frontImage ? Promise.resolve(frontImage) : createFallbackSingleImage(preferences, frontPrompt),
-          backImage ? Promise.resolve(backImage) : createFallbackSingleImage(preferences, backPrompt)
-        ]);
-
-        return res.json({
-          success: true,
-          frontImage: fallbackFront,
-          backImage: fallbackBack,
-          frontPrompt,
-          backPrompt,
-          preferences
-        });
-      }
-
-
-      // =====================================
-      // COUPLE MODE
-      // =====================================
-
-console.log(
-  "ENHANCING COUPLE PROMPT..."
-);
+console.log(isDoubleSide ? "PREPARING DOUBLE-SIDE PROMPT..." : "ENHANCING COUPLE PROMPT...");
 
 
 const enhancedPrompt =
@@ -1032,10 +948,7 @@ const enhancedPrompt =
   );
 
 
-console.log(
-  "ENHANCED COUPLE:",
-  enhancedPrompt
-);
+console.log(isDoubleSide ? "DOUBLE-SIDE PROMPT READY:" : "ENHANCED COUPLE:", enhancedPrompt);
 
 
 const finalPrompt = `
@@ -1044,9 +957,9 @@ ${enhancedPrompt}
 
 IMPORTANT:
 
-- perfect symmetrical vertical split composition
-- left design centered in left half
-- right design centered in right half
+${isDoubleSide
+  ? "- a clear vertical split composition\n- front design centered in the left half\n- back design centered in the right half"
+  : "- perfect symmetrical vertical split composition\n- left design centered in left half\n- right design centered in right half"}
 - balanced spacing
 - isolated artwork only
 - transparent background
@@ -1070,9 +983,7 @@ const finalCouplePrompt =
   `${finalPrompt}${referenceInstruction}`;
 
 
-console.log(
-  "GENERATING COUPLE DESIGN..."
-);
+console.log(isDoubleSide ? "GENERATING DOUBLE-SIDE DESIGN..." : "GENERATING COUPLE DESIGN...");
 
 
 const fallbackCoupleImage = await createFallbackCoupleImage(
@@ -1087,9 +998,7 @@ const combinedImage =
   )) || fallbackCoupleImage;
 
 
-console.log(
-  "COUPLE DESIGN GENERATED"
-);
+console.log(isDoubleSide ? "DOUBLE-SIDE DESIGN GENERATED" : "COUPLE DESIGN GENERATED");
 
 
 console.log(
@@ -1116,11 +1025,9 @@ return res.json({
 
   success: true,
 
-  hisImage:
-    leftImage,
-
-  herImage:
-    rightImage,
+  ...(activeMode === "double"
+    ? { images: { front: leftImage, back: rightImage } }
+    : { hisImage: leftImage, herImage: rightImage }),
 
   preferences,
 

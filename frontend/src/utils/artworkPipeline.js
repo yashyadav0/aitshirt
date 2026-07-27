@@ -92,8 +92,18 @@ async function uploadArtworkBlob(api, blob, token, label) {
   throw new ArtworkPipelineError("upload", `Unable to store the processed ${label}.`, lastError);
 }
 
-export async function prepareArtwork({ source, api, token, label, onStep }) {
+export async function prepareArtwork({
+  source,
+  api,
+  token,
+  label,
+  onStep,
+  onProcessing,
+  onSaving,
+  allowFallback = true
+}) {
   const renderSource = await preloadArtwork(source, { label });
+  onProcessing?.();
   onStep?.(`Preparing ${label}...`);
 
   try {
@@ -107,11 +117,15 @@ export async function prepareArtwork({ source, api, token, label, onStep }) {
     const transparentBlob = result instanceof Blob ? result : new Blob([result], { type: "image/png" });
     if (!transparentBlob.size) throw new Error("Background removal returned an empty image.");
 
+    onSaving?.();
     onStep?.(`Saving ${label}...`);
     const uploadedUrl = await uploadArtworkBlob(api, transparentBlob, token, label);
     const renderUrl = await preloadArtwork(uploadedUrl, { label });
     return { url: renderUrl, backgroundRemoved: true };
   } catch (error) {
+    if (!allowFallback) {
+      throw error;
+    }
     // Never discard a valid generation because processing/storage is temporarily unavailable.
     console.warn(`[artwork-pipeline] ${label} post-processing fallback`, error);
     const fallbackUrl = await preloadArtwork(renderSource, { label });

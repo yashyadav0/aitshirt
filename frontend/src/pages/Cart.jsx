@@ -397,8 +397,7 @@ export default function Cart() {
                   >
 
                     {
-                      item.designType === "double"
-                      || item.frontDesignImage
+                      item.frontDesignImage
                       || item.backDesignImage
 
                       ? (
@@ -427,7 +426,7 @@ export default function Cart() {
                                 "
                               >
 
-                                Double Side
+                                Saved Apparel Design
 
                               </div>
 

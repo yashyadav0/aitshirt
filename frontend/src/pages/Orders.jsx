@@ -211,7 +211,7 @@ export default function Orders() {
               >
 
                 {/* Image */}
-                {(order.items?.[0]?.designType === "double" || order.items?.[0]?.frontDesignImage || order.items?.[0]?.backDesignImage) ? (
+                {(order.items?.[0]?.frontDesignImage || order.items?.[0]?.backDesignImage) ? (
                   <div className="grid aspect-square grid-cols-2 gap-1 bg-zinc-950 overflow-hidden">
                     <img
                       src={order.items?.[0]?.frontDesignImage || getOrderPreviewImage(order)}

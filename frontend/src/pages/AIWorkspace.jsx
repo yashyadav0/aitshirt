@@ -59,8 +59,6 @@ from "../components/workspace/CoupleControls";
 
 import CoupleActions
 from "../components/workspace/CoupleActions";
-import DoublePreview from "../components/workspace/DoublePreview";
-import DoubleActions from "../components/workspace/DoubleActions";
 
 
 
@@ -131,14 +129,6 @@ export default function AIWorkspace() {
     setGeneratedHerImage] =
     useState("");
 
-  // Double Side owns independent front/back artwork. Keeping this state
-  // separate prevents the Double renderer from reading Couple results.
-  const [generatedFrontImage, setGeneratedFrontImage] = useState("");
-  const [generatedBackImage, setGeneratedBackImage] = useState("");
-  const [generatedFrontPrompt, setGeneratedFrontPrompt] = useState("");
-  const [generatedBackPrompt, setGeneratedBackPrompt] = useState("");
-  const [frontSide, setFrontSide] = useState("front");
-  const [backSide, setBackSide] = useState("back");
 
   const [productType,
     setProductType] =
@@ -285,7 +275,6 @@ export default function AIWorkspace() {
   const hasGenerated =
     Boolean(
       generatedImage ||
-      (generatedFrontImage && generatedBackImage) ||
       (
         generatedHisImage &&
         generatedHerImage
@@ -372,8 +361,6 @@ export default function AIWorkspace() {
     singleDisplayImage,
     firstDualDisplayImage,
     secondDualDisplayImage,
-    generatedFrontImage,
-    generatedBackImage,
     hisColor,
     herColor,
     hisSide,
@@ -640,15 +627,7 @@ const startListening = () => {
               ? preloadArtwork(cachedGeneration.generatedHerImage, { label: "cached second artwork" })
               : Promise.resolve("")
           ]);
-          const [front, back] = await Promise.all([
-            cachedGeneration.generatedFrontImage
-              ? preloadArtwork(cachedGeneration.generatedFrontImage, { label: "cached front artwork" })
-              : Promise.resolve(""),
-            cachedGeneration.generatedBackImage
-              ? preloadArtwork(cachedGeneration.generatedBackImage, { label: "cached back artwork" })
-              : Promise.resolve("")
-          ]);
-          cachedArtwork = { single, first, second, front, back };
+          cachedArtwork = { single, first, second };
         } catch (cacheError) {
           console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
           sessionStorage.removeItem(`aiwork:${cacheKey}`);
@@ -684,10 +663,6 @@ const startListening = () => {
         setGeneratedHerImage(
           cachedArtwork.second
         );
-        setGeneratedFrontImage(cachedArtwork.front);
-        setGeneratedBackImage(cachedArtwork.back);
-        setGeneratedFrontPrompt(cachedGeneration.frontPrompt || activePrompt);
-        setGeneratedBackPrompt(cachedGeneration.backPrompt || activePrompt);
         return;
       }
 
@@ -716,10 +691,6 @@ const startListening = () => {
         setGeneratedHisImage("");
 
         setGeneratedHerImage("");
-        setGeneratedFrontImage("");
-        setGeneratedBackImage("");
-        setGeneratedFrontPrompt("");
-        setGeneratedBackPrompt("");
 
         setConfirmedDesign(null);
 
@@ -728,8 +699,6 @@ const startListening = () => {
 
         if (activeMode === "single") {
           setGenerationStep("Enhancing prompt...");
-        } else if (activeMode === "double") {
-          setGenerationStep("Generating front and back designs...");
         } else {
           setGenerationStep("Enhancing couple prompt...");
         }
@@ -817,38 +786,6 @@ const startListening = () => {
             }
           );
 
-        if (activeMode === "double") {
-          console.log("[double-design] raw API response", res);
-          console.log("[double-design] parsed API response", res.data);
-          console.debug("[double-design] candidate image URLs", {
-            front: res.data?.frontImage,
-            back: res.data?.backImage,
-            generatedImages: res.data?.generatedImages,
-            images: res.data?.images,
-            output: res.data?.output,
-            candidates: res.data?.candidates,
-            predictions: res.data?.predictions
-          });
-
-          const frontArtwork = res.data?.artwork?.front?.url || res.data?.frontImage;
-          const backArtwork = res.data?.artwork?.back?.url || res.data?.backImage;
-          console.log("[double-design] normalized artwork payload", {
-            frontPresent: Boolean(frontArtwork),
-            backPresent: Boolean(backArtwork),
-            artwork: res.data?.artwork || null
-          });
-
-          if (!frontArtwork || !backArtwork) {
-            const details = res.data?.details
-              ? ` Front: ${res.data.details.front || "not returned"}. Back: ${res.data.details.back || "not returned"}.`
-              : "";
-            throw new Error(`Double-side API returned no complete artwork payload.${details}`);
-          }
-
-          res.data.frontImage = frontArtwork;
-          res.data.backImage = backArtwork;
-        }
-
         if (requestId !== generationRequestIdRef.current) {
           return;
         }
@@ -899,52 +836,6 @@ const startListening = () => {
           writeGenerationCache(cacheKey, {
             preferences: responsePreferences,
             generatedImage: preparedArtwork.url
-          });
-          setGenerationStep("");
-        } else if (activeMode === "double") {
-          const frontSource = res.data?.frontImage;
-          const backSource = res.data?.backImage;
-
-          if (!frontSource || !backSource) {
-            throw new Error("The generator completed without both front and back artworks.");
-          }
-
-          // Paint the generated artwork first. Background removal and storage
-          // are enhancements, not prerequisites for displaying a result.
-          const [readyFront, readyBack] = await Promise.all([
-            preloadArtwork(frontSource, { label: "front design" }),
-            preloadArtwork(backSource, { label: "back design" })
-          ]);
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          setGeneratedFrontImage(readyFront);
-          setGeneratedBackImage(readyBack);
-          setGeneratedFrontPrompt(res.data?.frontPrompt || activePrompt);
-          setGeneratedBackPrompt(res.data?.backPrompt || activePrompt);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedFrontImage: readyFront,
-            generatedBackImage: readyBack,
-            frontPrompt: res.data?.frontPrompt || activePrompt,
-            backPrompt: res.data?.backPrompt || activePrompt
-          });
-
-          const [frontArtwork, backArtwork] = await Promise.all([
-            prepareArtwork({ source: frontSource, api: API, token, label: "front design", onStep: setGenerationStep }),
-            prepareArtwork({ source: backSource, api: API, token, label: "back design", onStep: setGenerationStep })
-          ]);
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          setGeneratedFrontImage(frontArtwork.url);
-          setGeneratedBackImage(backArtwork.url);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedFrontImage: frontArtwork.url,
-            generatedBackImage: backArtwork.url,
-            frontPrompt: res.data?.frontPrompt || activePrompt,
-            backPrompt: res.data?.backPrompt || activePrompt
           });
           setGenerationStep("");
         } else {
@@ -1259,9 +1150,7 @@ const startListening = () => {
                   prompt={prompt}
                   setPrompt={setPrompt}
                   placeholder={
-                    generationMode === "double"
-                      ? "Describe the shared front-and-back apparel design..."
-                      : generationMode === "couple"
+                    generationMode === "couple"
                         ? "Describe the matching couple apparel designs..."
                         : "Describe your dream design..."
                   }
@@ -1511,68 +1400,6 @@ const startListening = () => {
               />
 
             </>
-          )
-        }
-
-
-        {/* DOUBLE */}
-
-        {
-          activeResultMode === "double"
-          &&
-          (loading || (generatedFrontImage && generatedBackImage))
-          && (
-
-            <>
-              {/* DOUBLE */}
-
-      <DoublePreview
-        frontImage={generatedFrontImage}
-        backImage={generatedBackImage}
-        getMockup={getMockup}
-        productType={resolvedPreferences.productType}
-        color={resolvedPreferences.selectedColor}
-        frontSide={frontSide}
-        backSide={backSide}
-        isLoading={
-          loading &&
-          !generatedFrontImage &&
-          !generatedBackImage
-        }
-      />
-
-      <DoubleActions
-        frontImage={generatedFrontImage}
-        backImage={generatedBackImage}
-
-        getMockup={getMockup}
-
-        productType={resolvedPreferences.productType}
-
-        prompt={`Front: ${generatedFrontPrompt}\nBack: ${generatedBackPrompt}`}
-
-        color={resolvedPreferences.selectedColor}
-
-        frontSide={frontSide}
-        backSide={backSide}
-
-        frontScale={productDesignScale}
-        backScale={productDesignScale}
-
-        API={API}
-
-        setSuccessMessage={setSuccessMessage}
-
-        confirmedDesign={confirmedDesign}
-        setConfirmedDesign={setConfirmedDesign}
-
-        isConfirmed={isConfirmed}
-        setIsConfirmed={setIsConfirmed}
-
-        generationPreferences={resolvedPreferences}
-      />
-
-          </>
           )
         }
 

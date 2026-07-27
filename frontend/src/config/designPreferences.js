@@ -7,7 +7,7 @@ export const DESIGN_TYPES = {
   double: {
     id: "double",
     label: "Double Side",
-    description: "Front and back designs for one apparel item"
+    description: "Coordinated front and back designs for one apparel item"
   },
   couple: {
     id: "couple",

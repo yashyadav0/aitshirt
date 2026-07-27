@@ -253,7 +253,7 @@ export default function Checkout() {
                 "
               >
 
-                {(item.designType === "double" || item.frontDesignImage || item.backDesignImage) ? (
+                {(item.frontDesignImage || item.backDesignImage) ? (
                   <div className="grid w-16 h-16 sm:w-24 sm:h-24 grid-cols-2 gap-1 overflow-hidden rounded-lg sm:rounded-xl flex-shrink-0">
                     <img
                       src={item.frontDesignImage || getCartPreviewImage(item)}

@@ -97,12 +97,11 @@ function buildPreferenceEnrichedPrompt(
 
   if (designType === "double") {
     return [
-      `Create a high-quality print-ready apparel graphic featuring ${trimmedPrompt}.`,
-      `Optimized for a ${colorLabel} ${product.label}.`,
-      "Create one independent large centered apparel graphic.",
+      `Create coordinated front and back apparel designs featuring ${trimmedPrompt}.`,
+      `Optimized for one ${colorLabel} ${product.label}.`,
+      "The two designs should complement each other while remaining distinct.",
       "Transparent background.",
-      "Professional DTG print style.",
-      "Oversized centered print placement, never a small chest logo."
+      "Professional apparel print style."
     ].join(" ");
   }
 
