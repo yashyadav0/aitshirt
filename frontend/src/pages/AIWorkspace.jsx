@@ -819,6 +819,11 @@ const startListening = () => {
             }
           );
 
+        console.log("====================================");
+        console.log("FULL API RESPONSE");
+        console.log(res.data);
+        console.log("====================================");
+
         if (requestId !== generationRequestIdRef.current) {
           return;
         }
@@ -986,7 +991,15 @@ const startListening = () => {
 
       } catch (err) {
 
-        if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
+          console.log("====================================");
+          console.log("GENERATION ERROR");
+          console.log(err);
+          console.log("STATUS :", err.response?.status);
+          console.log("DATA :", err.response?.data);
+          console.log("HEADERS :", err.response?.headers);
+          console.log("====================================");
+
+          if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
           return;
         }
 
@@ -995,8 +1008,6 @@ const startListening = () => {
           err.response?.data?.message ||
           err.message ||
           "Generation failed";
-
-        console.log(err);
 
         setErrorMessage(apiMessage);
         showError(apiMessage);
