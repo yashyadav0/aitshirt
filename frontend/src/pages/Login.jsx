@@ -172,7 +172,7 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
-        window.recaptchaRefWidgetId = null;
+        window.recaptchaWidgetId = null;
       }
     };
 
@@ -259,7 +259,7 @@ export default function Login() {
             if (recaptchaRef.current) {
               recaptchaRef.current.clear();
               recaptchaRef.current = null;
-              window.recaptchaRefWidgetId = null;
+              window.recaptchaWidgetId = null;
             }
           }
         }
@@ -309,16 +309,7 @@ export default function Login() {
       setFirebaseIdToken("");
 
       const verifier =
-        recaptchaRef.current ||
-        new RecaptchaVerifier(
-          "recaptcha-container",
-          {
-            size: "invisible"
-          },
-          auth
-        );
-
-      recaptchaRef.current = verifier;
+        getRecaptchaVerifier();
 
       if (!window.recaptchaWidgetId) {
         window.recaptchaWidgetId = await verifier.render();
@@ -366,7 +357,6 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
-        window.recaptchaRefWidgetId = null;
       }
 
     } finally {
