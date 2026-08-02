@@ -172,6 +172,7 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
+        window.recaptchaRefWidgetId = null;
       }
     };
 
@@ -258,6 +259,7 @@ export default function Login() {
             if (recaptchaRef.current) {
               recaptchaRef.current.clear();
               recaptchaRef.current = null;
+              window.recaptchaRefWidgetId = null;
             }
           }
         }
@@ -307,9 +309,20 @@ export default function Login() {
       setFirebaseIdToken("");
 
       const verifier =
-        getRecaptchaVerifier();
+        recaptchaRef.current ||
+        new RecaptchaVerifier(
+          "recaptcha-container",
+          {
+            size: "invisible"
+          },
+          auth
+        );
 
-      await verifier.render();
+      recaptchaRef.current = verifier;
+
+      if (!window.recaptchaWidgetId) {
+        window.recaptchaWidgetId = await verifier.render();
+      }
 
       const result =
         await signInWithPhoneNumber(
@@ -353,6 +366,7 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
+        window.recaptchaRefWidgetId = null;
       }
 
     } finally {
