@@ -800,7 +800,16 @@ const startListening = () => {
           localStorage.getItem(
             "token"
           );
+        
+        console.log("========== REQUEST ==========");
+        console.log("generationMode:", activeMode);
+        console.log("preferences:", generationPrefs);
 
+        for (const pair of formData.entries()) {
+        console.log(pair[0], ":", pair[1]);
+        }
+
+        console.log("=============================");
 
         const res =
           await API.post(
