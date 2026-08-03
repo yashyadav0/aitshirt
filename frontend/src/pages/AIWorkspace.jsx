@@ -979,7 +979,8 @@ const startListening = () => {
             api: API,
             token,
             label: `${firstDesignLabel} design`,
-            onStep: setGenerationStep
+            onStep: setGenerationStep,
+            allowFallback: true
           });
 
           if (requestId !== generationRequestIdRef.current) return;
@@ -997,7 +998,8 @@ const startListening = () => {
             api: API,
             token,
             label: `${secondDesignLabel} design`,
-            onStep: setGenerationStep
+            onStep: setGenerationStep,
+            allowFallback: true
           });
 
           if (requestId !== generationRequestIdRef.current) return;
