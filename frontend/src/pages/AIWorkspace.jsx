@@ -248,6 +248,7 @@ export default function AIWorkspace() {
     selectedPreferenceDesignType;
 
 
+
   // =====================================
   // COUPLE STATES
   // =====================================
@@ -652,6 +653,9 @@ const startListening = () => {
           if (generationPrefs.designType === "double" && (!front || !back)) {
             throw new Error("The cached double-side design is incomplete.");
           }
+          if (generationPrefs.designType === "couple" && (!first || !second)) {
+            throw new Error("The cached couple design is incomplete.");
+          }
           cachedArtwork = { single, first, second, front, back };
         } catch (cacheError) {
           console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
@@ -801,9 +805,6 @@ const startListening = () => {
             "token"
           );
         
-        console.log("========== REQUEST ==========");
-        console.log("generationMode:", activeMode);
-        console.log("preferences:", generationPrefs);
 
         for (const pair of formData.entries()) {
         console.log(pair[0], ":", pair[1]);
@@ -893,36 +894,44 @@ const startListening = () => {
             throw new Error("The generator did not return both front and back designs.");
           }
 
-          const frontArtwork = await prepareArtwork({
-            source: frontSource,
-            api: API,
-            token,
-            label: "front design",
-            onProcessing: () => setGenerationStep("Processing Front..."),
-            onSaving: () => setGenerationStep("Saving Front..."),
-            allowFallback: false
-          });
+          // Render the server response immediately so the user sees the preview
+          setGeneratedFrontImage(frontSource);
+          setGeneratedBackImage(backSource);
+
+          // Background removal and storage can safely replace after display.
+          const [readyFrontSource, readyBackSource] = await Promise.all([
+            preloadArtwork(frontSource, { label: "front design" }),
+            preloadArtwork(backSource, { label: "back design" })
+          ]);
+
           if (requestId !== generationRequestIdRef.current) return;
 
-          const backArtwork = await prepareArtwork({
-            source: backSource,
-            api: API,
-            token,
-            label: "back design",
-            onProcessing: () => setGenerationStep("Processing Back..."),
-            onSaving: () => setGenerationStep("Saving Back..."),
-            allowFallback: false
-          });
+          const [frontArtwork, backArtwork] = await Promise.all([
+            prepareArtwork({
+              source: readyFrontSource,
+              api,
+              token,
+              label: "front design",
+              allowFallback: true
+            }),
+            prepareArtwork({
+              source: readyBackSource,
+              api,
+              token,
+              label: "back design",
+              allowFallback: true
+            })
+          ]);
+
           if (requestId !== generationRequestIdRef.current) return;
 
-          setGenerationStep("Preparing Preview...");
+          setGeneratedFrontImage(frontArtwork.url);
+          setGeneratedBackImage(backArtwork.url);
           writeGenerationCache(cacheKey, {
             preferences: responsePreferences,
             generatedFrontImage: frontArtwork.url,
             generatedBackImage: backArtwork.url
           });
-          setGeneratedFrontImage(frontArtwork.url);
-          setGeneratedBackImage(backArtwork.url);
           setGenerationStep("Completed");
           await new Promise((resolve) => window.setTimeout(resolve, 0));
         } else {
@@ -937,9 +946,14 @@ const startListening = () => {
             throw new Error(`The generator completed without both ${firstDesignLabel} and ${secondDesignLabel} artworks.`);
           }
 
-          // Rendering is not allowed to wait on background removal or storage.
-          // A valid generated image should appear as soon as the browser has
-          // decoded it; post-processing can safely replace it afterwards.
+          // Render the server response immediately. A pre-load failure must
+          // not discard a complete couple result and send the user back to
+          // the empty generation screen.
+          setGeneratedHisImage(firstSource);
+          setGeneratedHerImage(secondSource);
+
+          // Background removal and storage can safely replace the initial
+          // images after they have been shown on the mockups.
           const [readyFirstSource, readySecondSource] = await Promise.all([
             preloadArtwork(firstSource, { label: `${firstDesignLabel} design` }),
             preloadArtwork(secondSource, { label: `${secondDesignLabel} design` })
@@ -1521,10 +1535,7 @@ const startListening = () => {
 
         {
           activeResultMode === "couple"
-          &&
-          firstDualDisplayImage
-          &&
-          secondDualDisplayImage
+          && (loading || (firstDualDisplayImage && secondDualDisplayImage))
           && (
 
             <>
