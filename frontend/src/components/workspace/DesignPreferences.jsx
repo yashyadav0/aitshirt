@@ -212,7 +212,7 @@ export default function DesignPreferences({
                             : "border-[#3f3f46] group-hover:border-zinc-400"
                         }
                       `}
-                    />
+                    style={{ backgroundColor: color.hex }} />
                     <span
                       className={`
                         text-xs
