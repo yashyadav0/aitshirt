@@ -1,4 +1,60 @@
 const sharp =
+
+
+
+async function enhanceDoubleSidePrompt(
+  userPrompt
+) {
+
+  try {
+
+    const enhancerPrompt = `
+
+You are an elite AI fashion prompt engineer.
+
+Convert the user's idea into a premium front-and-back t-shirt design prompt.
+
+Rules:
+
+- keep original subject intact
+- create a design suitable for both front and back
+- front design should be the main graphic
+- back design should be complementary
+- maintain visual consistency between front and back
+- improve apparel composition
+- improve streetwear quality
+- keep prompt under 70 words
+- isolated artwork only
+- transparent background
+- no mockup
+- no tshirt
+- no watermark
+- print-ready design
+
+User Prompt:
+${userPrompt}
+
+Return ONLY the enhanced prompt.
+
+`;
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [{ parts: [{ text: enhancerPrompt }] }]
+      },
+      { timeout: 30000 }
+    );
+
+    return response.data?.candidates?.[0]?.content?.parts?.[0]?.text || userPrompt;
+
+  } catch (err) {
+
+    console.log("DOUBLE-SIDE PROMPT ENHANCER ERROR:", err.response?.data || err.message);
+    return userPrompt;
+  }
+}
+const sharp =
   require("sharp");
   
 const express =
@@ -245,8 +301,6 @@ Return ONLY the enhanced prompt.
 
     return userPrompt;
   }
-async function enhanceDoubleSidePrompt(
-  userPrompt
 ) {
 
   try {
