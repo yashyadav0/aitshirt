@@ -1048,13 +1048,12 @@ IMPORTANT:
 ${frontEnhanced}
 
 IMPORTANT:
-- generate ONE complete, standalone graphic design for the FRONT of a ${preferences.productType}
+- generate ONLY the artwork/graphic design itself — do NOT generate any t-shirt, clothing, mockup, or background scene
 - centered composition, premium streetwear aesthetic
-- isolated artwork only, transparent background
-- apparel graphic only
-- no mockup, no tshirt, no watermark
+- transparent background with only the graphic artwork visible
 - ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
-- print-ready
+- ABSOLUTELY NO t-shirt, clothing, garment, or mockup in the image
+- print-ready isolated graphic only
 ${doubleReferenceInstruction}
 `;
 
@@ -1088,17 +1087,16 @@ ${doubleReferenceInstruction}
 
 
         const backFinalPrompt = `
-Create a bold, premium streetwear apparel graphic inspired by the theme of "${prompt}" but rendered in a COMPLETELY DIFFERENT artistic style — for example, if the front is illustrative, make this one geometric or abstract. If the front is detailed, make this one minimal and bold. Different composition, different visual approach, different focal elements, while sharing the same core theme.
+Create a bold, premium streetwear graphic inspired by the theme of "${prompt}" but rendered in a COMPLETELY DIFFERENT artistic style — for example, if the front is illustrative, make this one geometric or abstract. If the front is detailed, make this one minimal and bold. Different composition, different visual approach, different focal elements, while sharing the same core theme.
 
 IMPORTANT:
-- generate ONE complete, standalone graphic design for the BACK of a ${preferences.productType}
+- generate ONLY the artwork/graphic design itself — do NOT generate any t-shirt, clothing, mockup, or background scene
 - this MUST be a visually distinct design from the front — different art style, different layout, different focal point
 - centered composition, premium streetwear aesthetic
-- isolated artwork only, transparent background
-- apparel graphic only
-- no mockup, no tshirt, no watermark
+- transparent background with only the graphic artwork visible
 - ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
-- print-ready
+- ABSOLUTELY NO t-shirt, clothing, garment, or mockup in the image
+- print-ready isolated graphic only
 ${doubleReferenceInstruction}
 `;
 
