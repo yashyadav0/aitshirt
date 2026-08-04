@@ -1027,7 +1027,7 @@ IMPORTANT:
 
 
         // =====================================
-        // FRONT DESIGN
+        // FRONT DESIGN — enhanced prompt
         // =====================================
 
         console.log(
@@ -1035,8 +1035,17 @@ IMPORTANT:
         );
 
 
+        const frontEnhanced =
+          await enhanceDoubleSidePrompt(
+            buildPreferenceEnrichedPrompt(
+              prompt,
+              preferences
+            )
+          );
+
+
         const frontFinalPrompt = `
-${prompt}
+${frontEnhanced}
 
 IMPORTANT:
 - generate ONE complete, standalone graphic design for the FRONT of a ${preferences.productType}
@@ -1070,7 +1079,7 @@ ${doubleReferenceInstruction}
 
 
         // =====================================
-        // BACK DESIGN — COMPLETELY DIFFERENT
+        // BACK DESIGN — different style entirely
         // =====================================
 
         console.log(
@@ -1079,11 +1088,11 @@ ${doubleReferenceInstruction}
 
 
         const backFinalPrompt = `
-A completely different and distinct apparel graphic design inspired by: ${prompt}. This must NOT be the same design as the front — different composition, different visual elements, different focal point, but sharing the same aesthetic theme.
+Create a bold, premium streetwear apparel graphic inspired by the theme of "${prompt}" but rendered in a COMPLETELY DIFFERENT artistic style — for example, if the front is illustrative, make this one geometric or abstract. If the front is detailed, make this one minimal and bold. Different composition, different visual approach, different focal elements, while sharing the same core theme.
 
 IMPORTANT:
 - generate ONE complete, standalone graphic design for the BACK of a ${preferences.productType}
-- must be visually distinct from the front design
+- this MUST be a visually distinct design from the front — different art style, different layout, different focal point
 - centered composition, premium streetwear aesthetic
 - isolated artwork only, transparent background
 - apparel graphic only

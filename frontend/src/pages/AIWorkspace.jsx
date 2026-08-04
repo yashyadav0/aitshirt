@@ -809,11 +809,19 @@ const startListening = () => {
           activeMode === "double"
         ) {
 
-          try {
+          // Render immediately from raw response
+          setGeneratedFrontImage(
+            res.data.frontImage
+          );
 
-            // =====================================
-            // FRONT DESIGN
-            // =====================================
+          setGeneratedBackImage(
+            res.data.backImage
+          );
+
+          setGenerationStep("");
+
+          // Background removal + upload can safely replace after display
+          try {
 
             setGenerationStep(
               "Processing Front..."
@@ -828,11 +836,6 @@ const startListening = () => {
             setGeneratedFrontImage(
               frontArtwork
             );
-
-
-            // =====================================
-            // BACK DESIGN
-            // =====================================
 
             setGenerationStep(
               "Processing Back..."
@@ -854,14 +857,6 @@ const startListening = () => {
 
             console.log(
               bgErr
-            );
-
-            setGeneratedFrontImage(
-              res.data.frontImage
-            );
-
-            setGeneratedBackImage(
-              res.data.backImage
             );
 
             setGenerationStep("");
