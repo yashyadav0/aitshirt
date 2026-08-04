@@ -7,6 +7,37 @@ import {
 } from "lucide-react";
 
 
+// =====================================
+// ROBUST IMAGE LOADER
+// =====================================
+
+const loadImage = (
+  src
+) =>
+  new Promise(
+    (resolve, reject) => {
+      const img =
+        new Image();
+
+      img.crossOrigin =
+        "anonymous";
+
+      img.onload =
+        () => resolve(img);
+
+      img.onerror =
+        () =>
+          reject(
+            new Error(
+              "Could not load image"
+            )
+          );
+
+      img.src = src;
+    }
+  );
+
+
 export default function DoubleSideActions({
 
   generatedFrontImage,
@@ -98,55 +129,28 @@ export default function DoubleSideActions({
       canvas.getContext("2d");
 
 
-    // MOCKUP IMAGE
+    const [mockupImg, designImg] =
+      await Promise.all([
 
-    const mockupImage =
-      new Image();
+        loadImage(
+          getMockup(
+            productType,
+            selectedColor,
+            side
+          )
+        ),
 
-    mockupImage.crossOrigin =
-      "anonymous";
-
-    mockupImage.src =
-      getMockup(
-        productType,
-        selectedColor,
-        side
-      );
-
-
-    // DESIGN IMAGE
-
-    const designImage =
-      new Image();
-
-    designImage.crossOrigin =
-      "anonymous";
-
-    designImage.src =
-      artworkImage;
-
-
-    await Promise.all([
-
-      new Promise(
-        (resolve) =>
-          mockupImage.onload =
-            resolve
-      ),
-
-      new Promise(
-        (resolve) =>
-          designImage.onload =
-            resolve
-      )
-    ]);
+        loadImage(
+          artworkImage
+        )
+      ]);
 
 
     // DRAW MOCKUP
 
     ctx.drawImage(
 
-      mockupImage,
+      mockupImg,
 
       -60,
       -120,
@@ -156,38 +160,28 @@ export default function DoubleSideActions({
     );
 
 
-    // DESIGN SIZE
+    // DESIGN — LARGE, CENTERED
 
-    const designWidth =
-      390 *
-      (designScale / 45);
-
-    const designHeight =
-      designWidth;
-
-
-    // DESIGN POSITION
+    const designSize = 520;
 
     const x =
-      (canvas.width - designWidth) / 2;
+      (canvas.width - designSize) / 2;
 
     const y =
-      side === "front"
-        ? 170
-        : 190;
+      (canvas.height - designSize) / 2;
 
 
     // DRAW DESIGN
 
     ctx.drawImage(
 
-      designImage,
+      designImg,
 
       x,
       y,
 
-      designWidth,
-      designHeight
+      designSize,
+      designSize
     );
 
 
@@ -377,6 +371,11 @@ export default function DoubleSideActions({
       } catch (err) {
 
         console.log(err);
+
+        showToast(
+          err?.message
+          || "Could not confirm design — please try again"
+        );
       }
     };
 
