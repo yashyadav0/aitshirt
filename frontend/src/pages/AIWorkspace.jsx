@@ -833,9 +833,10 @@ const startListening = () => {
                 token
               );
 
-            setGeneratedFrontImage(
-              frontArtwork
-            );
+            if (frontArtwork)
+              setGeneratedFrontImage(
+                frontArtwork
+              );
 
             setGenerationStep(
               "Processing Back..."
@@ -847,9 +848,10 @@ const startListening = () => {
                 token
               );
 
-            setGeneratedBackImage(
-              backArtwork
-            );
+            if (backArtwork)
+              setGeneratedBackImage(
+                backArtwork
+              );
 
             setGenerationStep("");
 
