@@ -50,9 +50,10 @@ export default function GenerationModeToggle({
         `}
       >
 
-        Single Side
+        Single Design
 
       </button>
+
 
       <button
 

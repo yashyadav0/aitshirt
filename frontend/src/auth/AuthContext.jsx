@@ -108,6 +108,7 @@ export function AuthProvider({
   }
 
   function logout() {
+
     localStorage.removeItem(
       "token"
     );

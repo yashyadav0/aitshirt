@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from "react";
-
 export default function SinglePreview({
 
   generatedImage,
@@ -9,45 +7,11 @@ export default function SinglePreview({
   productType,
 
   selectedColor,
-  selectedSide,
-  isLoading = false,
-  onRendered,
-  onRenderError
+  selectedSide
 
 }) {
 
-  const renderKey = [
-    generatedImage,
-    productType,
-    selectedColor,
-    selectedSide
-  ].join("|");
-  const [loaded, setLoaded] = useState({
-    key: "",
-    mockup: false,
-    artwork: false
-  });
-  const reportedRenderKey = useRef("");
-
-  const rendered = loaded.key === renderKey && loaded.mockup && loaded.artwork;
-
-  useEffect(() => {
-    if (generatedImage && rendered && reportedRenderKey.current !== renderKey) {
-      reportedRenderKey.current = renderKey;
-      onRendered?.();
-    }
-  }, [generatedImage, onRendered, renderKey, rendered]);
-
-  const markLoaded = (part) => {
-    setLoaded((current) => {
-      const next = current.key === renderKey
-        ? current
-        : { key: renderKey, mockup: false, artwork: false };
-      return { ...next, [part]: true };
-    });
-  };
-
-  if (!generatedImage && !isLoading)
+  if (!generatedImage)
     return null;
 
   const designStyles = {
@@ -96,41 +60,53 @@ export default function SinglePreview({
         "
       >
 
-        {isLoading && !generatedImage ? (
-          <div className="aspect-square w-full animate-pulse bg-[#202020]" />
-        ) : (
-          <>
-            <img
-              src={
-                getMockup(
-                  productType,
-                  selectedColor,
-                  selectedSide
-                )
-              }
-              alt="mockup"
-              className="w-full block"
-              onLoad={() => markLoaded("mockup")}
-              onError={() => onRenderError?.("The product mockup could not be loaded.")}
-            />
+        <img
 
-            <img
-              src={generatedImage}
-              alt="design"
-              onLoad={() => markLoaded("artwork")}
-              onError={() => onRenderError?.("The generated design could not be rendered on the mockup.")}
-              style={{
-                position: "absolute",
-                top: currentStyle.top,
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: currentStyle.width,
-                objectFit: "contain",
-                pointerEvents: "none"
-              }}
-            />
-          </>
-        )}
+          src={
+            getMockup(
+              productType,
+              selectedColor,
+              selectedSide
+            )
+          }
+
+          alt="mockup"
+
+          className="
+            w-full
+            block
+          "
+        />
+
+        <img
+
+          src={generatedImage}
+
+          alt="design"
+
+          style={{
+
+            position:
+              "absolute",
+
+            top:
+              currentStyle.top,
+
+            left: "50%",
+
+            transform:
+              "translate(-50%, -50%)",
+
+            width:
+              currentStyle.width,
+
+            objectFit:
+              "contain",
+
+            pointerEvents:
+              "none"
+          }}
+        />
 
       </div>
 

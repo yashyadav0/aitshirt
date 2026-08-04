@@ -24,27 +24,28 @@ function SegmentedControl({ options, value, onChange, ariaLabel }) {
     >
       {options.map((option) => (
         <button
-  key={option.id}
-  type="button"
-  onClick={() => onChange(option.id)}
-  className={`
-    flex-1
-    min-h-11
-    rounded-lg
-    px-3
-    py-2.5
-    text-sm
-    font-medium
-    transition-all
-    ${
-      value === option.id
-        ? "bg-[#2f2f2f] text-white shadow-sm"
-        : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-white"
-    }
-  `}
->
-  {option.label}
-</button>
+          key={option.id}
+          type="button"
+          onClick={() => onChange(option.id)}
+          className={`
+            flex-1
+            min-h-11
+            rounded-lg
+            px-3
+            py-2.5
+            text-sm
+            font-medium
+            transition-all
+            duration-200
+            ${
+              value === option.id
+                ? "bg-[#2f2f2f] text-white shadow-sm"
+                : "text-zinc-400 hover:bg-[#1a1a1a] hover:text-white"
+            }
+          `}
+        >
+          {option.label}
+        </button>
       ))}
     </div>
   );
@@ -66,7 +67,6 @@ export default function DesignPreferences({
     preferences.selectedColor || preferences.color;
 
   const handleDesignTypeChange = (designType) => {
-
     setDesignType(designType);
     onDesignTypeChange?.(designType);
   };
@@ -86,18 +86,18 @@ export default function DesignPreferences({
     >
       <button
         type="button"
-        onClick={() => setIsOpen((s) => !s)}
+        onClick={() => setIsOpen((prev) => !prev)}
         className="
           flex
           w-full
+          items-center
           justify-between
-          min-h-11
-          rounded-lg
-          px-3
-          py-2.5
-          text-sm
-          font-medium
-          transition-all
+          gap-3
+          px-4
+          py-3.5
+          text-left
+          transition-colors
+          hover:bg-[#1a1a1a]
         "
         aria-expanded={isOpen}
       >
@@ -212,7 +212,8 @@ export default function DesignPreferences({
                             : "border-[#3f3f46] group-hover:border-zinc-400"
                         }
                       `}
-                    style={{ backgroundColor: color.hex }} />
+                      style={{ backgroundColor: color.hex }}
+                    />
                     <span
                       className={`
                         text-xs

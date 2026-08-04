@@ -1,4 +1,4 @@
-﻿const sharp =
+const sharp =
   require("sharp");
   
 const express =

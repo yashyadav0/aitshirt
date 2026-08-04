@@ -11,8 +11,6 @@ import {
 import API from "../api";
 
 const getCartPreviewImage = (item) =>
-  item.frontDesignImage ||
-  item.backDesignImage ||
   item.designImage ||
   item.hisDesignImage ||
   item.herDesignImage ||
@@ -253,20 +251,7 @@ export default function Checkout() {
                 "
               >
 
-                {(item.frontDesignImage || item.backDesignImage) ? (
-                  <div className="grid w-16 h-16 sm:w-24 sm:h-24 grid-cols-2 gap-1 overflow-hidden rounded-lg sm:rounded-xl flex-shrink-0">
-                    <img
-                      src={item.frontDesignImage || getCartPreviewImage(item)}
-                      alt="front cart preview"
-                      className="h-full w-full object-cover"
-                    />
-                    <img
-                      src={item.backDesignImage || item.frontDesignImage || getCartPreviewImage(item)}
-                      alt="back cart preview"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : item.isCouple ? (
+                {item.isCouple ? (
                   <div className="grid w-16 h-16 sm:w-24 sm:h-24 grid-cols-2 gap-1 overflow-hidden rounded-lg sm:rounded-xl flex-shrink-0">
                     <img
                       src={item.hisDesignImage || getCartPreviewImage(item)}

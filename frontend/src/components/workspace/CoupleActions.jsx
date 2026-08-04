@@ -1,135 +1,825 @@
-import { useState } from "react";
-import { Heart } from "lucide-react";
+import React, {
+  useState
+} from "react";
+
+import {
+  Heart
+} from "lucide-react";
+
 
 export default function CoupleActions({
+
   generatedHisImage,
   generatedHerImage,
+
   couplePrompt,
+
   hisColor,
   herColor,
+
   hisSide,
   herSide,
+
   hisScale,
   herScale,
+
   API,
+
   getMockup,
   productType,
+
   generationPreferences,
+
   setSuccessMessage,
+
   confirmedDesign,
   setConfirmedDesign,
+
   isConfirmed,
   setIsConfirmed
+
 }) {
-  const [hisSize, setHisSize] = useState("M");
-  const [herSize, setHerSize] = useState("M");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const sizes = ["S", "M", "L"];
 
-  const showToast = (message) => {
-    setSuccessMessage(message);
-    window.setTimeout(() => setSuccessMessage(""), 2500);
+  const [hisSize,
+    setHisSize] =
+    useState("M");
+
+  const [herSize,
+    setHerSize] =
+    useState("M");
+
+  const sizes = [
+    "S",
+    "M",
+    "L"
+  ];
+
+  // =====================================
+  // TOAST
+  // =====================================
+
+  const showToast = (
+    message
+  ) => {
+
+    setSuccessMessage(
+      message
+    );
+
+    setTimeout(() => {
+
+      setSuccessMessage("");
+
+    }, 2500);
   };
 
-  const loadImage = (src) => new Promise((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Unable to load preview artwork."));
-    image.src = src;
-  });
 
-  const createMockup = async (mockupSource, artworkSource, scale) => {
-    const [mockup, artwork] = await Promise.all([loadImage(mockupSource), loadImage(artworkSource)]);
-    const canvas = document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 800;
-    const context = canvas.getContext("2d");
-    context.drawImage(mockup, -60, -120, 920, 1040);
-    const area = productType === "hoodie"
-      ? { x: 144, y: 200, width: 512, height: 464 }
-      : { x: 112, y: 184, width: 576, height: 496 };
-    const ratio = artwork.naturalWidth / artwork.naturalHeight || 1;
-    const areaRatio = area.width / area.height;
-    const factor = (scale || 48) / 48;
-    const width = (ratio > areaRatio ? area.width : area.height * ratio) * factor;
-    const height = (ratio > areaRatio ? area.width / ratio : area.height) * factor;
-    context.drawImage(artwork, area.x + (area.width - width) / 2, area.y + (area.height - height) / 2, width, height);
-    return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-  };
+  // =====================================
+  // CREATE FINAL MOCKUP
+  // =====================================
 
-  const uploadImage = async (blob, token) => {
-    const formData = new FormData();
-    formData.append("image", blob, "couple-design.png");
-    const response = await API.post("/upload", formData, { headers: { Authorization: `Bearer ${token}` } });
-    return response.data.imageUrl;
-  };
+  const createFinalMockup =
+    async (
 
-  const confirm = async () => {
-    if (isProcessing || isConfirmed) return;
-    setIsProcessing(true);
-    try {
-      const token = localStorage.getItem("token");
-      const [hisBlob, herBlob] = await Promise.all([
-        createMockup(getMockup(productType, hisColor, hisSide), generatedHisImage, hisScale),
-        createMockup(getMockup(productType, herColor, herSide), generatedHerImage, herScale)
+      mockupSrc,
+      designSrc,
+      scale,
+      side
+
+    ) => {
+
+      const canvas =
+        document.createElement(
+          "canvas"
+        );
+
+      canvas.width = 800;
+      canvas.height = 800;
+
+      const ctx =
+        canvas.getContext("2d");
+
+
+      // MOCKUP
+
+      const mockupImage =
+        new Image();
+
+      mockupImage.crossOrigin =
+        "anonymous";
+
+      mockupImage.src =
+        mockupSrc;
+
+
+      // DESIGN
+
+      const designImage =
+        new Image();
+
+      designImage.crossOrigin =
+        "anonymous";
+
+      designImage.src =
+        designSrc;
+
+
+      await Promise.all([
+
+        new Promise(
+          (resolve) =>
+            mockupImage.onload =
+              resolve
+        ),
+
+        new Promise(
+          (resolve) =>
+            designImage.onload =
+              resolve
+        )
       ]);
-      const [hisDesignImage, herDesignImage] = await Promise.all([
-        uploadImage(hisBlob, token),
-        uploadImage(herBlob, token)
-      ]);
-      const design = {
-        isCouple: true,
-        generationMode: "couple",
-        preferences: generationPreferences,
-        productType,
-        designType: "couple",
-        hisDesignImage,
-        herDesignImage,
-        hisDesign: generatedHisImage,
-        herDesign: generatedHerImage,
-        couplePrompt,
-        hisColor,
-        herColor,
-        hisSide,
-        herSide,
-        hisSize,
-        herSize,
-        isConfirmed: true
-      };
-      await API.post("/generation/save", design, { headers: { Authorization: `Bearer ${token}` } });
-      setConfirmedDesign(design);
-      setIsConfirmed(true);
-      showToast("Couple design confirmed");
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
-  const send = async (endpoint, message) => {
-    if (!isConfirmed || isProcessing) return;
-    setIsProcessing(true);
-    try {
-      const token = localStorage.getItem("token");
-      await API.post(endpoint, { ...confirmedDesign, price: 699 }, { headers: { Authorization: `Bearer ${token}` } });
-      showToast(message);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
-  const sizePicker = (value, setValue, label) => (
-    <div className="rounded-2xl border border-[#2f2f2f] bg-[#171717] p-4">
-      <p className="mb-3 text-sm font-medium text-zinc-200">{label} size</p>
-      <div className="grid grid-cols-3 gap-2">
-        {sizes.map((size) => <button key={size} onClick={() => setValue(size)} className={`min-h-11 rounded-xl border ${value === size ? "border-cyan-400 bg-cyan-400/10 text-white" : "border-[#3f3f46] text-zinc-400"}`}>{size}</button>)}
+      // DRAW MOCKUP
+
+      ctx.drawImage(
+
+        mockupImage,
+
+        -60,
+        -120,
+
+        920,
+        1040
+      );
+
+
+      // SIZE
+
+      const designWidth =
+        390 *
+        (scale / 45);
+
+      const designHeight =
+        designWidth;
+
+
+      // POSITION
+
+      const x =
+        (canvas.width - designWidth) / 2;
+
+      const y =
+        side === "front"
+          ? 170
+          : 190;
+
+
+      // DRAW DESIGN
+
+      ctx.drawImage(
+
+        designImage,
+
+        x,
+        y,
+
+        designWidth,
+        designHeight
+      );
+
+
+      // EXPORT
+
+      return await new Promise(
+
+        (resolve) =>
+
+          canvas.toBlob(
+            resolve,
+            "image/png"
+          )
+      );
+    };
+
+
+  // =====================================
+  // UPLOAD IMAGE
+  // =====================================
+
+  const uploadImage =
+    async (
+      blob,
+      token
+    ) => {
+
+      const formData =
+        new FormData();
+
+      formData.append(
+        "image",
+        blob
+      );
+
+
+      const res =
+        await API.post(
+
+          "/upload",
+
+          formData,
+
+          {
+            headers: {
+
+              Authorization:
+                `Bearer ${token}`,
+
+              "Content-Type":
+                "multipart/form-data"
+            }
+          }
+        );
+
+
+      return res.data.imageUrl;
+    };
+
+
+  // =====================================
+  // CONFIRM
+  // =====================================
+
+  const handleConfirm =
+    async () => {
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+
+        // =====================================
+        // HIS FINAL MOCKUP
+        // =====================================
+
+        const hisBlob =
+          await createFinalMockup(
+
+            getMockup(
+              productType,
+              hisColor,
+              hisSide
+            ),
+
+            generatedHisImage,
+
+            hisScale,
+
+            hisSide
+          );
+
+
+        const hisFinalImage =
+          await uploadImage(
+            hisBlob,
+            token
+          );
+
+
+        // =====================================
+        // HER FINAL MOCKUP
+        // =====================================
+
+        const herBlob =
+          await createFinalMockup(
+
+            getMockup(
+              productType,
+              herColor,
+              herSide
+            ),
+
+            generatedHerImage,
+
+            herScale,
+
+            herSide
+          );
+
+
+        const herFinalImage =
+          await uploadImage(
+            herBlob,
+            token
+          );
+
+
+        // =====================================
+        // SAVE DATA
+        // =====================================
+
+        const designData = {
+
+          isCouple: true,
+
+          generationMode:
+            "couple",
+
+          preferences:
+            generationPreferences || {
+              productType,
+              designType: "couple",
+              selectedColor: hisColor,
+              color: hisColor
+            },
+
+          productType:
+            generationPreferences?.productType
+            || productType,
+
+          designType:
+            generationPreferences?.designType
+            || "couple",
+
+          // FINAL MOCKUPS
+
+          hisDesignImage:
+            hisFinalImage,
+
+          herDesignImage:
+            herFinalImage,
+
+          // TRANSPARENT PNGS
+
+          hisDesign:
+            generatedHisImage,
+
+          herDesign:
+            generatedHerImage,
+
+          // PROMPT
+
+          couplePrompt,
+
+          // INFO
+
+          selectedColor:
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
+            || hisColor,
+
+          color:
+            generationPreferences?.selectedColor
+            || generationPreferences?.color
+            || hisColor,
+
+          hisColor,
+          herColor,
+
+          hisSize,
+          herSize,
+
+          hisSide,
+          herSide,
+
+          hisScale,
+          herScale,
+
+          price: 1299
+        };
+
+
+        // =====================================
+        // SAVE HISTORY
+        // =====================================
+
+        await API.post(
+
+          "/generation/save",
+
+          designData,
+
+          {
+            headers: {
+
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        setConfirmedDesign(
+          designData
+        );
+
+        setIsConfirmed(true);
+
+        showToast(
+          "Couple Design Confirmed"
+        );
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+
+  // =====================================
+  // ADD TO CART
+  // =====================================
+
+  const handleAddToCart =
+    async () => {
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+
+        await API.post(
+
+          "/cart/add",
+
+          {
+
+            isCouple: true,
+
+            hisDesignImage:
+              confirmedDesign.hisDesignImage,
+
+            herDesignImage:
+              confirmedDesign.herDesignImage,
+
+            hisDesign:
+              confirmedDesign.hisDesign,
+
+            herDesign:
+              confirmedDesign.herDesign,
+
+            couplePrompt:
+              confirmedDesign.couplePrompt,
+
+            productType:
+              confirmedDesign.productType,
+
+            selectedColor:
+              confirmedDesign.selectedColor,
+
+            hisColor:
+              confirmedDesign.hisColor,
+
+            herColor:
+              confirmedDesign.herColor,
+
+            hisSize:
+              confirmedDesign.hisSize,
+
+            herSize:
+              confirmedDesign.herSize,
+
+            hisSide:
+              confirmedDesign.hisSide,
+
+            herSide:
+              confirmedDesign.herSide,
+
+            hisScale:
+              confirmedDesign.hisScale,
+
+            herScale:
+              confirmedDesign.herScale,
+
+            price: 1299
+          },
+
+          {
+            headers: {
+
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        showToast(
+          "Added To Cart"
+        );
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+
+  // =====================================
+  // ADD TO WISHLIST
+  // =====================================
+
+  const handleWishlist =
+    async () => {
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+
+        await API.post(
+
+          "/wishlist/add",
+
+          {
+
+            isCouple: true,
+
+            hisDesignImage:
+              confirmedDesign.hisDesignImage,
+
+            herDesignImage:
+              confirmedDesign.herDesignImage,
+
+            hisDesign:
+              confirmedDesign.hisDesign,
+
+            herDesign:
+              confirmedDesign.herDesign,
+
+            couplePrompt:
+              confirmedDesign.couplePrompt,
+
+            productType:
+              confirmedDesign.productType,
+
+            selectedColor:
+              confirmedDesign.selectedColor,
+
+            hisColor:
+              confirmedDesign.hisColor,
+
+            herColor:
+              confirmedDesign.herColor,
+
+            hisSize:
+              confirmedDesign.hisSize,
+
+            herSize:
+              confirmedDesign.herSize,
+
+            hisSide:
+              confirmedDesign.hisSide,
+
+            herSide:
+              confirmedDesign.herSide,
+
+            hisScale:
+              confirmedDesign.hisScale,
+
+            herScale:
+              confirmedDesign.herScale
+          },
+
+          {
+            headers: {
+
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+
+        showToast(
+          "Added To Wishlist"
+        );
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+
+  return (
+
+    <>
+
+      <div
+        className="
+          mt-6
+          grid
+          gap-3
+          sm:grid-cols-2
+        "
+      >
+
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[#2f2f2f]
+            bg-[#171717]
+            p-4
+          "
+        >
+          <p className="mb-3 text-sm font-medium text-zinc-200">
+            His Size
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {
+              sizes.map((size) => (
+
+                <button
+                  key={size}
+                  onClick={() =>
+                    setHisSize(
+                      size
+                    )
+                  }
+                  className={`
+                    min-h-12
+                    rounded-xl
+                    text-sm
+                    font-medium
+                    transition
+                    ${
+                      hisSize === size
+                        ? "bg-cyan-400 text-black"
+                        : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                    }
+                  `}
+                >
+                  {size}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
+        <div
+          className="
+            rounded-2xl
+            border
+            border-[#2f2f2f]
+            bg-[#171717]
+            p-4
+          "
+        >
+          <p className="mb-3 text-sm font-medium text-zinc-200">
+            Her Size
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            {
+              sizes.map((size) => (
+
+                <button
+                  key={size}
+                  onClick={() =>
+                    setHerSize(
+                      size
+                    )
+                  }
+                  className={`
+                    min-h-12
+                    rounded-xl
+                    text-sm
+                    font-medium
+                    transition
+                    ${
+                      herSize === size
+                        ? "bg-cyan-400 text-black"
+                        : "bg-[#202020] text-zinc-300 hover:bg-[#2a2a2a] hover:text-white"
+                    }
+                  `}
+                >
+                  {size}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
       </div>
-    </div>
-  );
 
-  return <div className="mt-6">
-    <div className="grid gap-3 sm:grid-cols-2">{sizePicker(hisSize, setHisSize, "His")}{sizePicker(herSize, setHerSize, "Her")}</div>
-    <button onClick={confirm} disabled={isProcessing || isConfirmed} className="mt-4 w-full rounded-2xl bg-cyan-500 py-4 text-lg font-bold text-black disabled:opacity-50">{isConfirmed ? "Design Confirmed" : "Confirm Couple Design"}</button>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2"><button onClick={() => send("/cart/add", "Added to cart")} disabled={!isConfirmed || isProcessing} className="rounded-xl bg-[#252525] px-4 py-3 disabled:opacity-50">Add to cart</button><button onClick={() => send("/wishlist/add", "Added to wishlist")} disabled={!isConfirmed || isProcessing} className="flex items-center justify-center gap-2 rounded-xl bg-[#252525] px-4 py-3 disabled:opacity-50"><Heart size={18} /> Wishlist</button></div>
-  </div>;
+      {/* CONFIRM */}
+
+      <button
+
+        onClick={
+          handleConfirm
+        }
+
+        disabled={
+          isConfirmed
+        }
+
+        className="
+          w-full
+          mt-6
+          bg-green-500
+          hover:bg-green-600
+          transition
+          text-white
+          py-4
+          rounded-[24px]
+          font-bold
+          text-lg
+          disabled:opacity-50
+        "
+      >
+
+        {
+          isConfirmed
+
+          ? "Design Confirmed"
+
+          : "Confirm Couple Design"
+        }
+
+      </button>
+
+
+      {/* ACTIONS */}
+
+      <div
+        className="
+          flex
+          gap-4
+          mt-4
+        "
+      >
+
+        {/* CART */}
+
+        <button
+
+          onClick={
+            handleAddToCart
+          }
+
+          disabled={
+            !isConfirmed
+          }
+
+          className="
+            flex-1
+            bg-cyan-500
+            py-4
+            rounded-[24px]
+            font-bold
+            disabled:opacity-50
+          "
+        >
+
+          Add To Cart
+
+        </button>
+
+
+        {/* WISHLIST */}
+
+        <button
+
+          onClick={
+            handleWishlist
+          }
+
+          disabled={
+            !isConfirmed
+          }
+
+          className="
+            w-20
+            border
+            border-white/20
+            rounded-[24px]
+            flex
+            items-center
+            justify-center
+            disabled:opacity-50
+          "
+        >
+
+          <Heart size={28} />
+
+        </button>
+
+      </div>
+
+    </>
+
+  );
 }

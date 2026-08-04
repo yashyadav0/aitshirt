@@ -172,7 +172,6 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
-        window.recaptchaWidgetId = null;
       }
     };
 
@@ -259,7 +258,6 @@ export default function Login() {
             if (recaptchaRef.current) {
               recaptchaRef.current.clear();
               recaptchaRef.current = null;
-              window.recaptchaWidgetId = null;
             }
           }
         }
@@ -311,9 +309,7 @@ export default function Login() {
       const verifier =
         getRecaptchaVerifier();
 
-      if (!window.recaptchaWidgetId) {
-        window.recaptchaWidgetId = await verifier.render();
-      }
+      await verifier.render();
 
       const result =
         await signInWithPhoneNumber(
@@ -357,7 +353,6 @@ export default function Login() {
       if (recaptchaRef.current) {
         recaptchaRef.current.clear();
         recaptchaRef.current = null;
-        window.recaptchaWidgetId = null;
       }
 
     } finally {

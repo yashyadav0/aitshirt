@@ -1,8 +1,7 @@
 export default function SinglePromptBox({
 
   prompt,
-  setPrompt,
-  placeholder = "Describe your dream design..."
+  setPrompt
 
 }) {
 
@@ -10,7 +9,7 @@ export default function SinglePromptBox({
 
     <textarea
 
-      placeholder={placeholder}
+      placeholder="Describe your dream design..."
 
       value={prompt}
 

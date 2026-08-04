@@ -1,4 +1,4 @@
-import {
+import React, {
   useState,
   useRef,
   useEffect
@@ -11,10 +11,8 @@ import {
 import API from "../api";
 
 import {
-  showError
-} from "../utils/toast";
-
-import { preloadArtwork, prepareArtwork } from "../utils/artworkPipeline";
+  removeBackground
+} from "@imgly/background-removal";
 
 import DesignPreferences
 from "../components/workspace/DesignPreferences";
@@ -41,6 +39,8 @@ from "../components/workspace/ReferenceUploader";
 import SinglePromptBox
 from "../components/workspace/SinglePromptBox";
 
+import CouplePromptBox
+from "../components/workspace/CouplePromptBox";
 
 import SinglePreview
 from "../components/workspace/SinglePreview";
@@ -59,10 +59,6 @@ from "../components/workspace/CoupleControls";
 
 import CoupleActions
 from "../components/workspace/CoupleActions";
-
-import DoubleSidePreview
-from "../components/workspace/DoubleSidePreview";
-
 
 
 // ===== FRONT =====
@@ -116,6 +112,10 @@ export default function AIWorkspace() {
     setPrompt] =
     useState("");
 
+  const [couplePrompt,
+    setCouplePrompt] =
+    useState("");
+
   const [loading,
     setLoading] =
     useState(false);
@@ -132,14 +132,9 @@ export default function AIWorkspace() {
     setGeneratedHerImage] =
     useState("");
 
-  const [generatedFrontImage,
-    setGeneratedFrontImage] =
-    useState("");
-
-  const [generatedBackImage,
-    setGeneratedBackImage] =
-    useState("");
-
+  const [generationMode,
+    setGenerationMode] =
+    useState("single");
 
   const [productType,
     setProductType] =
@@ -153,7 +148,7 @@ export default function AIWorkspace() {
     setReferenceImages] =
     useState([]);
 
-  const [,
+  const [selectedColor,
     setSelectedColor] =
     useState("white");
 
@@ -161,7 +156,7 @@ export default function AIWorkspace() {
     setSelectedSide] =
     useState("front");
 
-  const [,
+  const [designScale,
     setDesignScale] =
     useState(45);
 
@@ -176,17 +171,6 @@ export default function AIWorkspace() {
   const [successMessage,
     setSuccessMessage] =
     useState("");
-
-  const [errorMessage,
-    setErrorMessage] =
-    useState("");
-
-  // Regeneration is intentionally unavailable until the preview reports that
-  // its mockup and generated artwork have both painted successfully.
-  const [renderedMockupKey,
-    setRenderedMockupKey] =
-    useState("");
-
   const [isListening,
     setIsListening] =
     useState(false);
@@ -232,21 +216,24 @@ export default function AIWorkspace() {
     setColor: setPrefColor
   } = useDesignPreferences();
 
+  const [activeGenerationPreferences,
+    setActiveGenerationPreferences] =
+    useState(null);
+
   const resolvedPreferences =
-    normalizePreferences(preferences);
+    normalizePreferences({
+      ...preferences,
+      productType,
+      designType: generationMode,
+      selectedColor,
+      color: selectedColor
+    });
   const selectedPreferenceColor =
     resolvedPreferences.selectedColor;
   const selectedPreferenceProductType =
     resolvedPreferences.productType;
   const selectedPreferenceDesignType =
     resolvedPreferences.designType;
-
-  // The visible prompt, UI mode, cache key, and API request must all derive
-  // from one source of truth. Keeping a second mode/prompt state let the UI
-  // display text that the generation request could not see.
-  const generationMode =
-    selectedPreferenceDesignType;
-
 
 
   // =====================================
@@ -273,21 +260,10 @@ export default function AIWorkspace() {
 
   const mockupRef =
     useRef(null);
-  const recognitionRef =
-    useRef(null);
-  const isListeningRef =
-    useRef(false);
-  const generationLockRef =
-    useRef(false);
-  const generationAbortRef =
-    useRef(null);
-  const generationRequestIdRef =
-    useRef(0);
 
   const hasGenerated =
     Boolean(
       generatedImage ||
-      (generatedFrontImage && generatedBackImage) ||
       (
         generatedHisImage &&
         generatedHerImage
@@ -300,10 +276,10 @@ export default function AIWorkspace() {
       : 48;
 
   const activeResultMode =
-    resolvedPreferences.designType;
+    generationMode;
 
   const activeResultProductType =
-    resolvedPreferences.productType;
+    productType;
 
   useEffect(() => {
 
@@ -339,6 +315,10 @@ export default function AIWorkspace() {
 
   useEffect(() => {
 
+    setGenerationMode(
+      selectedPreferenceDesignType
+    );
+
     setSelectedColor(
       selectedPreferenceColor
     );
@@ -361,82 +341,28 @@ export default function AIWorkspace() {
     selectedPreferenceColor
   ]);
 
-  const singleDisplayImage =
-    generatedImage;
-  const firstDualDisplayImage =
-    generatedHisImage;
-  const secondDualDisplayImage =
-    generatedHerImage;
-  const frontDisplayImage = generatedFrontImage;
-  const backDisplayImage = generatedBackImage;
-
-  const previewRenderKey = [
-    activeResultMode,
-    activeResultProductType,
-    singleDisplayImage,
-    firstDualDisplayImage,
-    secondDualDisplayImage,
-    frontDisplayImage,
-    backDisplayImage,
-    hisColor,
-    herColor,
-    hisSide,
-    herSide,
-    resolvedPreferences.selectedColor,
-    selectedSide
-  ].join("|");
-
-  const mockupReady = Boolean(
-    renderedMockupKey
-    && renderedMockupKey === previewRenderKey
-  );
-
-  const buildGenerationCacheKey =
-    (generationPrefs, promptText) => {
-
-      const referenceKey =
-        referenceImages
-          .map(
-            (file) =>
-              `${file.name}:${file.size}:${file.lastModified}`
-          )
-          .join("|");
-
-      return JSON.stringify({
-        productType: generationPrefs.productType,
-        designType: generationPrefs.designType,
-        selectedColor: generationPrefs.selectedColor,
-        prompt: promptText,
-        references: referenceKey
-      });
-    };
-
-  const readGenerationCache = (cacheKey) => {
-    try {
-      const cached = sessionStorage.getItem(
-        `aiwork:${cacheKey}`
-      );
-
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  };
-
-  const writeGenerationCache = (cacheKey, value) => {
-    try {
-      sessionStorage.setItem(
-        `aiwork:${cacheKey}`,
-        JSON.stringify(value)
-      );
-    } catch {
-      // Ignore cache write failures.
-    }
-  };
-
   const applyPreset =
     (preset) => {
-      setPrompt(preset.prompt);
+
+      if (
+        generationMode === "single"
+      ) {
+        setPrompt(
+          preset.prompt
+        );
+      } else {
+        setCouplePrompt(
+          preset.prompt
+        );
+      }
+    };
+
+  const handlePreferenceDesignTypeChange =
+    (designType) => {
+
+      setGenerationMode(
+        designType
+      );
     };
 
 
@@ -498,9 +424,9 @@ export default function AIWorkspace() {
   };
 
 
-// =====================================
-// GENERATE
-// =====================================
+  // =====================================
+  // GENERATE
+  // =====================================
 const startListening = () => {
 
   const SpeechRecognition =
@@ -516,75 +442,39 @@ const startListening = () => {
     return;
   }
 
-  if (isListening && recognitionRef.current) {
-    isListeningRef.current = false;
-    recognitionRef.current.stop();
-    return;
-  }
-
   const recognition =
     new SpeechRecognition();
 
-  recognitionRef.current =
-    recognition;
-
   recognition.lang = "en-IN";
 
-  recognition.continuous = true;
+  recognition.continuous = false;
 
-  recognition.interimResults = true;
+  recognition.interimResults = false;
 
   recognition.onstart = () => {
 
-    isListeningRef.current = true;
     setIsListening(true);
   };
 
   recognition.onend = () => {
 
-    if (recognitionRef.current === recognition) {
-      recognitionRef.current = null;
-    }
-
     setIsListening(false);
-
-    if (isListeningRef.current) {
-      window.setTimeout(() => {
-        if (isListeningRef.current) {
-          startListening();
-        }
-      }, 350);
-    }
   };
 
   recognition.onresult = (event) => {
 
     const transcript =
-      Array.from(event.results)
-        .slice(event.resultIndex)
-        .filter((result) => result.isFinal)
-        .map((result) => result[0].transcript)
-        .join(" ")
-        .trim();
+      event.results[0][0].transcript;
 
-    if (!transcript) {
-      return;
-    }
+    if (
+      generationMode === "single"
+    ) {
 
-    setPrompt((previousPrompt) => {
-      const base = previousPrompt.trim();
-      const next = transcript.trim();
-      if (!base) return next;
-      if (base.toLowerCase().endsWith(next.toLowerCase())) return base;
-      return `${base} ${next}`.trim();
-    });
-  };
+      setPrompt(transcript);
 
-  recognition.onerror = () => {
-    isListeningRef.current = false;
-    setIsListening(false);
-    if (recognitionRef.current === recognition) {
-      recognitionRef.current = null;
+    } else {
+
+      setCouplePrompt(transcript);
     }
   };
 
@@ -595,127 +485,24 @@ const startListening = () => {
       overridePreferences = null
     ) => {
 
-      if (generationLockRef.current) {
-        return;
-      }
-
       const generationPrefs =
         normalizePreferences(
           overridePreferences
-          || preferences
+          || {
+            ...preferences,
+            productType,
+            designType: generationMode,
+            selectedColor,
+            color: selectedColor
+          }
         );
 
       const activeMode =
         generationPrefs.designType;
-      const activePrompt =
-        prompt;
-
-      if (!activePrompt.trim()) {
-        const message = "Describe the artwork you want before generating a design.";
-        setErrorMessage(message);
-        showError(message);
-        return;
-      }
-
-      const cacheKey =
-        buildGenerationCacheKey(
-          generationPrefs,
-          activePrompt
-        );
-      const cachedGeneration =
-        readGenerationCache(cacheKey);
-
-      if (cachedGeneration) {
-        setRenderedMockupKey("");
-        setErrorMessage("");
-        setLoading(false);
-        setGenerationStep("");
-
-        let cachedArtwork;
-        try {
-          const [single, first, second] = await Promise.all([
-            cachedGeneration.generatedImage
-              ? preloadArtwork(cachedGeneration.generatedImage, { label: "cached single artwork" })
-              : Promise.resolve(""),
-            cachedGeneration.generatedHisImage
-              ? preloadArtwork(cachedGeneration.generatedHisImage, { label: "cached first artwork" })
-              : Promise.resolve(""),
-            cachedGeneration.generatedHerImage
-              ? preloadArtwork(cachedGeneration.generatedHerImage, { label: "cached second artwork" })
-              : Promise.resolve("")
-          ]);
-          const front = cachedGeneration.generatedFrontImage
-            ? await preloadArtwork(cachedGeneration.generatedFrontImage, { label: "cached front artwork" })
-            : "";
-          const back = cachedGeneration.generatedBackImage
-            ? await preloadArtwork(cachedGeneration.generatedBackImage, { label: "cached back artwork" })
-            : "";
-          if (generationPrefs.designType === "double" && (!front || !back)) {
-            throw new Error("The cached double-side design is incomplete.");
-          }
-          if (generationPrefs.designType === "couple" && (!first || !second)) {
-            throw new Error("The cached couple design is incomplete.");
-          }
-          cachedArtwork = { single, first, second, front, back };
-        } catch (cacheError) {
-          console.warn("[generation-cache] Discarding artwork that can no longer be rendered.", cacheError);
-          sessionStorage.removeItem(`aiwork:${cacheKey}`);
-          return handleGenerate(overridePreferences);
-        }
-
-        setProductType(
-          cachedGeneration.preferences?.productType
-          || generationPrefs.productType
-        );
-
-        setSelectedColor(
-          cachedGeneration.preferences?.selectedColor
-          || generationPrefs.selectedColor
-        );
-
-        setHisColor(
-          cachedGeneration.preferences?.selectedColor
-          || generationPrefs.selectedColor
-        );
-
-        setHerColor(
-          cachedGeneration.preferences?.selectedColor
-          || generationPrefs.selectedColor
-        );
-
-        setGeneratedImage(
-          cachedArtwork.single
-        );
-        setGeneratedHisImage(
-          cachedArtwork.first
-        );
-        setGeneratedHerImage(
-          cachedArtwork.second
-        );
-        setGeneratedFrontImage(cachedArtwork.front);
-        setGeneratedBackImage(cachedArtwork.back);
-        return;
-      }
-
-      generationLockRef.current = true;
-      generationRequestIdRef.current += 1;
-      const requestId =
-        generationRequestIdRef.current;
-      const abortController =
-        new AbortController();
-
-      if (generationAbortRef.current) {
-        generationAbortRef.current.abort();
-      }
-
-      generationAbortRef.current =
-        abortController;
 
       try {
 
-        setErrorMessage("");
         setLoading(true);
-        setRenderedMockupKey("");
 
         setGeneratedImage("");
 
@@ -723,21 +510,24 @@ const startListening = () => {
 
         setGeneratedHerImage("");
 
-        setGeneratedFrontImage("");
-
-        setGeneratedBackImage("");
-
         setConfirmedDesign(null);
 
         setIsConfirmed(false);
 
 
-        if (activeMode === "single") {
-          setGenerationStep("Enhancing prompt...");
-        } else if (activeMode === "double") {
-          setGenerationStep("Generating Images...");
+        if (
+          activeMode === "single"
+        ) {
+
+          setGenerationStep(
+            "Enhancing prompt..."
+          );
+
         } else {
-          setGenerationStep("Enhancing couple prompt...");
+
+          setGenerationStep(
+            "Enhancing couple prompt..."
+          );
         }
 
 
@@ -782,7 +572,27 @@ const startListening = () => {
         // SINGLE
         // =====================================
 
-        formData.append("prompt", activePrompt);
+        if (
+          activeMode === "single"
+        ) {
+
+          formData.append(
+            "prompt",
+            prompt
+          );
+        }
+
+        // =====================================
+        // COUPLE
+        // =====================================
+
+        else {
+
+          formData.append(
+            "prompt",
+            couplePrompt
+          );
+        }
 
 
         // =====================================
@@ -804,13 +614,7 @@ const startListening = () => {
           localStorage.getItem(
             "token"
           );
-        
 
-        for (const pair of formData.entries()) {
-        console.log(pair[0], ":", pair[1]);
-        }
-
-        console.log("=============================");
 
         const res =
           await API.post(
@@ -821,22 +625,15 @@ const startListening = () => {
 
             {
               headers: {
+
                 Authorization:
-                  `Bearer ${token}`
-              },
-              signal:
-                abortController.signal
+                  `Bearer ${token}`,
+
+                "Content-Type":
+                  "multipart/form-data"
+              }
             }
           );
-
-        console.log("====================================");
-        console.log("FULL API RESPONSE");
-        console.log(res.data);
-        console.log("====================================");
-
-        if (requestId !== generationRequestIdRef.current) {
-          return;
-        }
 
 
         const responsePreferences =
@@ -844,6 +641,10 @@ const startListening = () => {
             res.data.preferences
             || generationPrefs
           );
+
+        setActiveGenerationPreferences(
+          responsePreferences
+        );
 
         setProductType(
           responsePreferences.productType
@@ -861,191 +662,284 @@ const startListening = () => {
           responsePreferences.selectedColor || responsePreferences.color
         );
 
+
         // =====================================
         // SINGLE
         // =====================================
 
-        if (activeMode === "single") {
-          if (!res.data?.imageUrl) {
-            throw new Error("The image generator completed without returning artwork for the single design.");
+        if (
+          activeMode === "single"
+        ) {
+
+          setGenerationStep(
+            "Removing background..."
+          );
+
+
+          try {
+
+            const imageBlob =
+              await fetch(
+                res.data.imageUrl
+              ).then((r) =>
+                r.blob()
+              );
+
+
+            const transparentResult =
+
+              await removeBackground(
+                imageBlob
+              );
+
+
+            const transparentBlob =
+
+              transparentResult instanceof Blob
+
+                ? transparentResult
+
+                : new Blob(
+                    [transparentResult],
+                    {
+                      type:
+                        "image/png"
+                    }
+                  );
+
+
+            setGenerationStep(
+              "Uploading design..."
+            );
+
+
+            const uploadFormData =
+              new FormData();
+
+            uploadFormData.append(
+              "image",
+              transparentBlob
+            );
+
+
+            const uploadRes =
+              await API.post(
+
+                "/upload",
+
+                uploadFormData,
+
+                {
+                  headers: {
+
+                    Authorization:
+                      `Bearer ${token}`,
+
+                    "Content-Type":
+                      "multipart/form-data"
+                  }
+                }
+              );
+
+
+            setGeneratedImage(
+              uploadRes.data.imageUrl
+            );
+
+          } catch (bgErr) {
+
+            console.log(
+              bgErr
+            );
+
+            setGeneratedImage(
+              res.data.imageUrl
+            );
           }
 
-          const preparedArtwork = await prepareArtwork({
-            source: res.data.imageUrl,
-            api: API,
-            token,
-            label: "single design",
-            onStep: setGenerationStep
-          });
 
-          if (requestId !== generationRequestIdRef.current) return;
-
-          setGeneratedImage(preparedArtwork.url);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedImage: preparedArtwork.url
-          });
           setGenerationStep("");
-        } else if (activeMode === "double") {
-          const frontSource = res.data?.images?.front;
-          const backSource = res.data?.images?.back;
+        }
 
-          if (!res.data?.success || !frontSource || !backSource) {
-            throw new Error("The generator did not return both front and back designs.");
+
+        // =====================================
+        // COUPLE
+        // =====================================
+
+        else {
+
+          try {
+
+            // =====================================
+            // HIS DESIGN
+            // =====================================
+
+            setGenerationStep(
+              "Removing his background..."
+            );
+
+
+            const hisBlob =
+              await fetch(
+                res.data.hisImage
+              ).then((r) =>
+                r.blob()
+              );
+
+
+            const hisTransparentResult =
+
+              await removeBackground(
+                hisBlob
+              );
+
+
+            const hisTransparentBlob =
+
+              hisTransparentResult instanceof Blob
+
+                ? hisTransparentResult
+
+                : new Blob(
+                    [hisTransparentResult],
+                    {
+                      type:
+                        "image/png"
+                    }
+                  );
+
+
+            const hisUploadForm =
+              new FormData();
+
+            hisUploadForm.append(
+              "image",
+              hisTransparentBlob
+            );
+
+
+            const hisUploadRes =
+              await API.post(
+
+                "/upload",
+
+                hisUploadForm,
+
+                {
+                  headers: {
+
+                    Authorization:
+                      `Bearer ${token}`,
+
+                    "Content-Type":
+                      "multipart/form-data"
+                  }
+                }
+              );
+
+
+            setGeneratedHisImage(
+              hisUploadRes.data.imageUrl
+            );
+
+
+            // =====================================
+            // HER DESIGN
+            // =====================================
+
+            setGenerationStep(
+              "Removing her background..."
+            );
+
+
+            const herBlob =
+              await fetch(
+                res.data.herImage
+              ).then((r) =>
+                r.blob()
+              );
+
+
+            const herTransparentResult =
+
+              await removeBackground(
+                herBlob
+              );
+
+
+            const herTransparentBlob =
+
+              herTransparentResult instanceof Blob
+
+                ? herTransparentResult
+
+                : new Blob(
+                    [herTransparentResult],
+                    {
+                      type:
+                        "image/png"
+                    }
+                  );
+
+
+            const herUploadForm =
+              new FormData();
+
+            herUploadForm.append(
+              "image",
+              herTransparentBlob
+            );
+
+
+            const herUploadRes =
+              await API.post(
+
+                "/upload",
+
+                herUploadForm,
+
+                {
+                  headers: {
+
+                    Authorization:
+                      `Bearer ${token}`,
+
+                    "Content-Type":
+                      "multipart/form-data"
+                  }
+                }
+              );
+
+
+            setGeneratedHerImage(
+              herUploadRes.data.imageUrl
+            );
+
+
+            setGenerationStep("");
+
+          } catch (bgErr) {
+
+            console.log(bgErr);
+
+            setGeneratedHisImage(
+              res.data.hisImage
+            );
+
+            setGeneratedHerImage(
+              res.data.herImage
+            );
+
+            setGenerationStep("");
           }
-
-          // Render the server response immediately so the user sees the preview
-          setGeneratedFrontImage(frontSource);
-          setGeneratedBackImage(backSource);
-
-          // Background removal and storage can safely replace after display.
-          const [readyFrontSource, readyBackSource] = await Promise.all([
-            preloadArtwork(frontSource, { label: "front design" }),
-            preloadArtwork(backSource, { label: "back design" })
-          ]);
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          const [frontArtwork, backArtwork] = await Promise.all([
-            prepareArtwork({
-              source: readyFrontSource,
-              api,
-              token,
-              label: "front design",
-              allowFallback: true
-            }),
-            prepareArtwork({
-              source: readyBackSource,
-              api,
-              token,
-              label: "back design",
-              allowFallback: true
-            })
-          ]);
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          setGeneratedFrontImage(frontArtwork.url);
-          setGeneratedBackImage(backArtwork.url);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedFrontImage: frontArtwork.url,
-            generatedBackImage: backArtwork.url
-          });
-          setGenerationStep("Completed");
-          await new Promise((resolve) => window.setTimeout(resolve, 0));
-        } else {
-
-          const firstDesignLabel = "his";
-          const secondDesignLabel = "her";
-
-          const firstSource = res.data?.hisImage;
-          const secondSource = res.data?.herImage;
-
-          if (!firstSource || !secondSource) {
-            throw new Error(`The generator completed without both ${firstDesignLabel} and ${secondDesignLabel} artworks.`);
-          }
-
-          // Render the server response immediately. A pre-load failure must
-          // not discard a complete couple result and send the user back to
-          // the empty generation screen.
-          setGeneratedHisImage(firstSource);
-          setGeneratedHerImage(secondSource);
-
-          // Background removal and storage can safely replace the initial
-          // images after they have been shown on the mockups.
-          const [readyFirstSource, readySecondSource] = await Promise.all([
-            preloadArtwork(firstSource, { label: `${firstDesignLabel} design` }),
-            preloadArtwork(secondSource, { label: `${secondDesignLabel} design` })
-          ]);
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          let currentFirstSource = readyFirstSource;
-          let currentSecondSource = readySecondSource;
-          setGeneratedHisImage(currentFirstSource);
-          setGeneratedHerImage(currentSecondSource);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedHisImage: currentFirstSource,
-            generatedHerImage: currentSecondSource
-          });
-
-          // Background-removal uses a sizeable browser model. Process the
-          // two sides in sequence so one slow model task cannot starve both
-          // previews or keep their initial render from occurring.
-          const firstArtwork = await prepareArtwork({
-            source: readyFirstSource,
-            api: API,
-            token,
-            label: `${firstDesignLabel} design`,
-            onStep: setGenerationStep,
-            allowFallback: true
-          });
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          currentFirstSource = firstArtwork.url;
-          setGeneratedHisImage(currentFirstSource);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedHisImage: currentFirstSource,
-            generatedHerImage: currentSecondSource
-          });
-
-          const secondArtwork = await prepareArtwork({
-            source: readySecondSource,
-            api: API,
-            token,
-            label: `${secondDesignLabel} design`,
-            onStep: setGenerationStep,
-            allowFallback: true
-          });
-
-          if (requestId !== generationRequestIdRef.current) return;
-
-          currentSecondSource = secondArtwork.url;
-          setGeneratedHerImage(currentSecondSource);
-          writeGenerationCache(cacheKey, {
-            preferences: responsePreferences,
-            generatedHisImage: currentFirstSource,
-            generatedHerImage: currentSecondSource
-          });
-          setGenerationStep("");
         }
 
       } catch (err) {
 
-          console.log("====================================");
-          console.log("GENERATION ERROR");
-          console.log(err);
-          console.log("STATUS :", err.response?.status);
-          console.log("DATA :", err.response?.data);
-          console.log("HEADERS :", err.response?.headers);
-          console.log("====================================");
-
-          if (err?.code === "ERR_CANCELED" || err?.name === "CanceledError") {
-          return;
-        }
-
-        const apiMessage =
-          err.response?.data?.error ||
-          err.response?.data?.message ||
-          err.message ||
-          "Generation failed";
-
-        setErrorMessage(apiMessage);
-        showError(apiMessage);
+        console.log(err);
 
       } finally {
 
-        if (
-          generationAbortRef.current === abortController
-        ) {
-          generationAbortRef.current = null;
-        }
-
-        generationLockRef.current = false;
         setLoading(false);
       }
     };
@@ -1054,11 +948,6 @@ const startListening = () => {
     () => {
       handleGenerate();
     };
-
-  const handlePreviewRenderError = (message) => {
-    setRenderedMockupKey("");
-    setErrorMessage(message);
-  };
 
 
   return (
@@ -1108,44 +997,6 @@ const startListening = () => {
 
             {successMessage}
 
-          </div>
-        )
-      }
-
-      {
-        errorMessage && (
-
-          <div
-            className="
-              fixed
-              top-4
-              sm:top-6
-              right-4
-              z-50
-              max-w-[calc(100%-2rem)]
-              rounded-2xl
-              border
-              border-red-500/30
-              bg-[#171717]
-              px-4
-              py-3
-              text-sm
-              text-red-200
-              shadow-2xl
-            "
-          >
-            <div className="flex items-center gap-3">
-              <span className="min-w-0 flex-1">
-                {errorMessage}
-              </span>
-              <button
-                type="button"
-                onClick={handleRegenerate}
-                className="rounded-xl border border-red-500/30 px-3 py-1 text-xs font-medium text-red-100 transition hover:bg-red-500/10"
-              >
-                Retry
-              </button>
-            </div>
           </div>
         )
       }
@@ -1251,19 +1102,37 @@ const startListening = () => {
                   setProductType={setPrefProductType}
                   setDesignType={setPrefDesignType}
                   setColor={setPrefColor}
+                  onDesignTypeChange={
+                    handlePreferenceDesignTypeChange
+                  }
                 />
               </div>
 
               <div className="px-2">
-                <SinglePromptBox
-                  prompt={prompt}
-                  setPrompt={setPrompt}
-                  placeholder={
-                    generationMode === "couple"
-                        ? "Describe the matching couple apparel designs..."
-                        : "Describe your dream design..."
-                  }
-                />
+                {
+                  generationMode === "single"
+
+                  ? (
+
+                    <SinglePromptBox
+                      prompt={prompt}
+                      setPrompt={
+                        setPrompt
+                      }
+                    />
+
+                  ) : (
+
+                    <CouplePromptBox
+                      couplePrompt={
+                        couplePrompt
+                      }
+                      setCouplePrompt={
+                        setCouplePrompt
+                      }
+                    />
+                  )
+                }
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -1365,9 +1234,7 @@ const startListening = () => {
                 resolvedPreferences
               }
               onRegenerate={
-                mockupReady
-                  ? handleRegenerate
-                  : undefined
+                handleRegenerate
               }
               loading={loading}
             />
@@ -1380,15 +1247,16 @@ const startListening = () => {
         {
           activeResultMode === "single"
           &&
-          (singleDisplayImage || loading)
+          generatedImage
           && (
 
             <>
 
               <SinglePreview
 
-                 generatedImage={singleDisplayImage}
-                isLoading={loading && !singleDisplayImage}
+                 generatedImage={
+                  generatedImage
+                }
 
                 mockupRef={
                   mockupRef
@@ -1413,9 +1281,6 @@ const startListening = () => {
                 designScale={
                   productDesignScale
                }
-
-                onRendered={() => setRenderedMockupKey(previewRenderKey)}
-                onRenderError={handlePreviewRenderError}
               />
 
 
@@ -1455,7 +1320,9 @@ const startListening = () => {
 
               <SingleActions
 
-                generatedImage={singleDisplayImage}
+                generatedImage={
+                  generatedImage
+                }
 
                 prompt={
                   prompt
@@ -1513,31 +1380,14 @@ const startListening = () => {
         }
 
 
-
-        {/* DOUBLE SIDE */}
-
-        {
-          activeResultMode === "double"
-          && (loading || (frontDisplayImage && backDisplayImage))
-          && (
-            <DoubleSidePreview
-              frontImage={frontDisplayImage}
-              backImage={backDisplayImage}
-              getMockup={getMockup}
-              productType={resolvedPreferences.productType}
-              selectedColor={resolvedPreferences.selectedColor}
-              isLoading={loading && !frontDisplayImage && !backDisplayImage}
-              onRendered={() => setRenderedMockupKey(previewRenderKey)}
-              onRenderError={handlePreviewRenderError}
-            />
-          )
-        }
-
         {/* COUPLE */}
 
-        {
-          activeResultMode === "couple"
-          && (loading || (firstDualDisplayImage && secondDualDisplayImage))
+  {
+    activeResultMode === "couple"
+          &&
+          generatedHisImage
+          &&
+          generatedHerImage
           && (
 
             <>
@@ -1549,15 +1399,11 @@ const startListening = () => {
   }
 
   generatedHisImage={
-    firstDualDisplayImage
+    generatedHisImage
   }
 
   generatedHerImage={
-    secondDualDisplayImage
-  }
-
-  isLoading={
-    loading && !firstDualDisplayImage && !secondDualDisplayImage
+    generatedHerImage
   }
 
   getMockup={
@@ -1575,9 +1421,6 @@ const startListening = () => {
   hisSide={
     hisSide
   }
-
-  onRendered={() => setRenderedMockupKey(previewRenderKey)}
-  onRenderError={handlePreviewRenderError}
 
   herSide={
     herSide
@@ -1633,11 +1476,11 @@ const startListening = () => {
               <CoupleActions
 
                 generatedHisImage={
-                  firstDualDisplayImage
+                  generatedHisImage
                 }
 
                 generatedHerImage={
-                  secondDualDisplayImage
+                  generatedHerImage
                 }
 
                 getMockup={
@@ -1649,7 +1492,7 @@ const startListening = () => {
                 }
 
                 couplePrompt={
-                  prompt
+                  couplePrompt
                 }
 
                 hisColor={
