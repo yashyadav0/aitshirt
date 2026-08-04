@@ -288,6 +288,72 @@ export default function History() {
 
                     </div>
 
+                  ) : item.frontDesignImage && item.backDesignImage ? (
+
+                    <div
+                      className="
+                        grid
+                        grid-cols-2
+                        gap-4
+                        p-4
+                      "
+                    >
+
+                      <div
+                        className="
+                          aspect-square
+                          overflow-hidden
+                          rounded-[24px]
+                          bg-[#232326]
+                        "
+                      >
+
+                        <img
+
+                          src={
+                            item.frontDesignImage
+                          }
+
+                          alt="front design"
+
+                          className="
+                            w-full
+                            h-full
+                            object-cover
+                          "
+                        />
+
+                      </div>
+
+
+                      <div
+                        className="
+                          aspect-square
+                          overflow-hidden
+                          rounded-[24px]
+                          bg-[#232326]
+                        "
+                      >
+
+                        <img
+
+                          src={
+                            item.backDesignImage
+                          }
+
+                          alt="back design"
+
+                          className="
+                            w-full
+                            h-full
+                            object-cover
+                          "
+                        />
+
+                      </div>
+
+                    </div>
+
                   ) : (
 
                     <div
@@ -340,7 +406,9 @@ export default function History() {
                     {
                       item.isCouple
                         ? "Couple Design"
-                        : "Single Design"
+                        : (item.frontDesignImage && item.backDesignImage)
+                          ? "Double Side"
+                          : "Single Design"
                     }
 
                   </div>

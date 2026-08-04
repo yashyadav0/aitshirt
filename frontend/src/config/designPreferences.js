@@ -8,6 +8,11 @@ export const DESIGN_TYPES = {
     id: "couple",
     label: "Couple Design",
     description: "Two matching designs as a pair"
+  },
+  double: {
+    id: "double",
+    label: "Double Side",
+    description: "Front and back designs on one garment"
   }
 };
 

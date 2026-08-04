@@ -235,6 +235,101 @@ Return ONLY the enhanced prompt.
 
 
 // =====================================
+// DOUBLE-SIDE PROMPT ENHANCER
+// =====================================
+
+async function enhanceDoubleSidePrompt(
+  userPrompt
+) {
+
+  try {
+
+    const enhancerPrompt = `
+
+You are an elite AI fashion prompt engineer specializing in coordinated front-and-back apparel designs.
+
+Convert the user's idea into a cohesive premium double-sided design generation prompt.
+
+Rules:
+
+- keep original subject intact
+- create a design suitable for both front and back of ONE garment
+- front design should be the main graphic (centered, bold)
+- back design should be complementary (supporting layout, distinct)
+- maintain visual consistency and theme between front and back
+- create split composition: front design on the LEFT half, back design on the RIGHT half
+- keep each design balanced within its own half
+- improve apparel composition
+- improve streetwear quality
+- keep prompt under 70 words
+- isolated artwork only
+- transparent background
+- no mockup
+- no tshirt
+- no watermark
+- print-ready design
+
+User Prompt:
+${userPrompt}
+
+Return ONLY the enhanced prompt.
+
+`;
+
+
+    const response =
+      await axios.post(
+
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+
+        {
+
+          contents: [
+
+            {
+
+              parts: [
+
+                {
+                  text:
+                    enhancerPrompt
+                }
+              ]
+            }
+          ]
+        },
+
+        {
+          timeout:
+            30000
+        }
+      );
+
+
+    return (
+
+      response.data
+        ?.candidates?.[0]
+        ?.content?.parts?.[0]
+        ?.text
+
+      || userPrompt
+    );
+
+  } catch (err) {
+
+    console.log(
+      "DOUBLE-SIDE PROMPT ENHANCER ERROR:",
+      err.response?.data
+      || err.message
+    );
+
+    return userPrompt;
+  }
+}
+
+
+// =====================================
 // IMAGE GENERATION
 // =====================================
 
@@ -911,6 +1006,129 @@ IMPORTANT:
 
           enrichedPrompt:
             enhancedPrompt
+        });
+      }
+
+
+      // =====================================
+      // DOUBLE-SIDE MODE
+      // =====================================
+
+      if (
+        activeMode === "double"
+      ) {
+
+        console.log(
+          "ENHANCING DOUBLE-SIDE PROMPT..."
+        );
+
+
+        const enhancedDoublePrompt =
+          await enhanceDoubleSidePrompt(
+            buildPreferenceEnrichedPrompt(
+              prompt,
+              preferences
+            )
+          );
+
+
+        console.log(
+          "ENHANCED DOUBLE-SIDE:",
+          enhancedDoublePrompt
+        );
+
+
+        const finalDoublePrompt = `
+
+${enhancedDoublePrompt}
+
+IMPORTANT:
+
+- perfect vertical split composition
+- FRONT design centered in LEFT half
+- BACK design centered in RIGHT half
+- front and back designs coordinate (same theme, distinct layouts)
+- balanced spacing
+- isolated artwork only
+- transparent background
+- apparel graphic only
+- premium streetwear aesthetic
+- no mockup
+- no tshirt
+- no watermark
+- print-ready
+
+`;
+
+        const doubleReferenceInstruction =
+          imageParts.length > 0
+            ? "\n- use the uploaded reference image(s) as the main source and preserve the uploaded composition/style where possible\n"
+            : "";
+
+        const finalDoubleModePrompt =
+          `${finalDoublePrompt}${doubleReferenceInstruction}`;
+
+
+        console.log(
+          "GENERATING DOUBLE-SIDE DESIGN..."
+        );
+
+
+        const fallbackDoubleImage =
+          req.files && req.files.length > 0
+            ? await createReferenceFallbackCouple(
+                req.files,
+                preferences,
+                prompt
+              )
+            : await createFallbackCoupleImage(
+                preferences,
+                prompt
+              );
+
+
+        const combinedDoubleImage =
+          (await generateImage(
+            finalDoubleModePrompt,
+            imageParts
+          )) || fallbackDoubleImage;
+
+
+        console.log(
+          "DOUBLE-SIDE DESIGN GENERATED"
+        );
+
+
+        console.log(
+          "SPLITTING DOUBLE-SIDE IMAGE..."
+        );
+
+
+        const {
+          leftImage: frontImage,
+          rightImage: backImage
+        } = await splitImage(
+          combinedDoubleImage
+        );
+
+
+        console.log(
+          "DOUBLE-SIDE SPLIT SUCCESS"
+        );
+
+
+        return res.json({
+
+          success: true,
+
+          frontImage,
+
+          backImage,
+
+          preferences,
+
+          enrichedPrompt:
+            enhancedDoublePrompt
         });
       }
 

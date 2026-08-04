@@ -60,6 +60,18 @@ from "../components/workspace/CoupleControls";
 import CoupleActions
 from "../components/workspace/CoupleActions";
 
+import DoubleSidePreview
+from "../components/workspace/DoubleSidePreview";
+
+import DoubleSideControls
+from "../components/workspace/DoubleSideControls";
+
+import DoubleSideActions
+from "../components/workspace/DoubleSideActions";
+
+import processGeneratedImage
+from "../components/workspace/processGeneratedImage";
+
 
 // ===== FRONT =====
 
@@ -130,6 +142,14 @@ export default function AIWorkspace() {
 
   const [generatedHerImage,
     setGeneratedHerImage] =
+    useState("");
+
+  const [generatedFrontImage,
+    setGeneratedFrontImage] =
+    useState("");
+
+  const [generatedBackImage,
+    setGeneratedBackImage] =
     useState("");
 
   const [generationMode,
@@ -267,6 +287,10 @@ export default function AIWorkspace() {
       (
         generatedHisImage &&
         generatedHerImage
+      ) ||
+      (
+        generatedFrontImage &&
+        generatedBackImage
       )
     );
 
@@ -345,7 +369,8 @@ export default function AIWorkspace() {
     (preset) => {
 
       if (
-        generationMode === "single"
+        generationMode === "single" ||
+        generationMode === "double"
       ) {
         setPrompt(
           preset.prompt
@@ -467,7 +492,8 @@ const startListening = () => {
       event.results[0][0].transcript;
 
     if (
-      generationMode === "single"
+      generationMode === "single" ||
+      generationMode === "double"
     ) {
 
       setPrompt(transcript);
@@ -510,6 +536,10 @@ const startListening = () => {
 
         setGeneratedHerImage("");
 
+        setGeneratedFrontImage("");
+
+        setGeneratedBackImage("");
+
         setConfirmedDesign(null);
 
         setIsConfirmed(false);
@@ -521,6 +551,14 @@ const startListening = () => {
 
           setGenerationStep(
             "Enhancing prompt..."
+          );
+
+        } else if (
+          activeMode === "double"
+        ) {
+
+          setGenerationStep(
+            "Enhancing double-side prompt..."
           );
 
         } else {
@@ -573,7 +611,8 @@ const startListening = () => {
         // =====================================
 
         if (
-          activeMode === "single"
+          activeMode === "single" ||
+          activeMode === "double"
         ) {
 
           formData.append(
@@ -759,6 +798,74 @@ const startListening = () => {
 
 
           setGenerationStep("");
+        }
+
+
+        // =====================================
+        // DOUBLE-SIDE
+        // =====================================
+
+        else if (
+          activeMode === "double"
+        ) {
+
+          try {
+
+            // =====================================
+            // FRONT DESIGN
+            // =====================================
+
+            setGenerationStep(
+              "Processing Front..."
+            );
+
+            const frontArtwork =
+              await processGeneratedImage(
+                res.data.frontImage,
+                token
+              );
+
+            setGeneratedFrontImage(
+              frontArtwork
+            );
+
+
+            // =====================================
+            // BACK DESIGN
+            // =====================================
+
+            setGenerationStep(
+              "Processing Back..."
+            );
+
+            const backArtwork =
+              await processGeneratedImage(
+                res.data.backImage,
+                token
+              );
+
+            setGeneratedBackImage(
+              backArtwork
+            );
+
+            setGenerationStep("");
+
+          } catch (bgErr) {
+
+            console.log(
+              bgErr
+            );
+
+            setGeneratedFrontImage(
+              res.data.frontImage
+            );
+
+            setGeneratedBackImage(
+              res.data.backImage
+            );
+
+            setGenerationStep("");
+          }
         }
 
 
@@ -1110,7 +1217,8 @@ const startListening = () => {
 
               <div className="px-2">
                 {
-                  generationMode === "single"
+                  generationMode === "single" ||
+                  generationMode === "double"
 
                   ? (
 
@@ -1542,6 +1650,128 @@ const startListening = () => {
                 }
 
   generationPreferences={
+                  resolvedPreferences
+                }
+              />
+
+            </>
+          )
+        }
+
+
+        {/* DOUBLE-SIDE */}
+
+        {
+          activeResultMode === "double"
+          &&
+          generatedFrontImage
+          &&
+          generatedBackImage
+          && (
+
+            <>
+
+              <DoubleSidePreview
+
+                frontImage={
+                  generatedFrontImage
+                }
+
+                backImage={
+                  generatedBackImage
+                }
+
+                getMockup={
+                  getMockup
+                }
+
+                productType={
+                  resolvedPreferences.productType
+                }
+
+                selectedColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                isLoading={loading}
+
+                onRendered={() => {}}
+
+                onRenderError={(msg) =>
+                  setSuccessMessage(msg)
+                }
+              />
+
+
+              <DoubleSideControls
+
+                productType={
+                  resolvedPreferences.productType
+                }
+
+                selectedColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                setSelectedColor={
+                  setSelectedColor
+                }
+
+                setPreferenceColor={
+                  setPrefColor
+                }
+              />
+
+
+              <DoubleSideActions
+
+                generatedFrontImage={
+                  generatedFrontImage
+                }
+
+                generatedBackImage={
+                  generatedBackImage
+                }
+
+                prompt={
+                  prompt
+                }
+
+                selectedColor={
+                  resolvedPreferences.selectedColor
+                }
+
+                getMockup={
+                  getMockup
+                }
+
+                productType={
+                  resolvedPreferences.productType
+                }
+
+                confirmedDesign={
+                  confirmedDesign
+                }
+
+                setConfirmedDesign={
+                  setConfirmedDesign
+                }
+
+                isConfirmed={
+                  isConfirmed
+                }
+
+                setIsConfirmed={
+                  setIsConfirmed
+                }
+
+                API={API}
+
+                setSuccessMessage={
+                  setSuccessMessage
+                }
+
+                generationPreferences={
                   resolvedPreferences
                 }
               />

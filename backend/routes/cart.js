@@ -40,9 +40,11 @@ router.post(
           quantity: 1,
 
           price:
-            data.isCouple
-              ? 1299
-              : 699
+            data.isDoubleSide
+              ? 899
+              : data.isCouple
+                ? 1299
+                : 699
         });
 
 

@@ -611,6 +611,221 @@ export default function Cart() {
 
                         </>
 
+                      ) : item.frontDesignImage && item.backDesignImage ? (
+
+                        <>
+
+                          <div
+                            className="
+                              p-4
+                              sm:p-5
+                              flex
+                              justify-between
+                              items-start
+                              sm:items-center
+                              gap-2
+                            "
+                          >
+
+                            <div className="flex-1 min-w-0">
+
+                              <div
+                                className="
+                                  text-xl
+                                  sm:text-2xl
+                                  font-black
+                                "
+                              >
+
+                                Double Side
+
+                              </div>
+
+                              <div
+                                className="
+                                  text-sm
+                                  sm:text-base
+                                  text-gray-400
+                                "
+                              >
+
+                                ₹899
+
+                              </div>
+
+                              {(item.selectedColor || item.color) && (
+                                <div className="mt-2 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                                  Color: {item.selectedColor || item.color}
+                                </div>
+                              )}
+
+                            </div>
+
+
+                            <button
+
+                              onClick={() =>
+                                removeItem(
+                                  item._id
+                                )
+                              }
+
+                              className="
+                                text-red-500
+                                flex-shrink-0
+                                p-2
+                                hover:bg-red-500/10
+                                rounded-lg
+                                transition
+                              "
+                              aria-label="Remove item"
+                            >
+
+                              <Trash2 size={20} />
+
+                            </button>
+
+                          </div>
+
+
+                          {/* QUANTITY */}
+
+                          <div
+                            className="
+                              px-5
+                              pb-4
+                              flex
+                              items-center
+                              gap-4
+                            "
+                          >
+
+                            <button
+
+                              onClick={() =>
+                                updateQuantity(
+                                  item._id,
+                                  item.quantity - 1
+                                )
+                              }
+
+                              className="
+                                bg-[#232326]
+                                p-2
+                                rounded-xl
+                              "
+                            >
+
+                              <Minus size={18} />
+
+                            </button>
+
+
+                            <div
+                              className="
+                                text-lg
+                                sm:text-xl
+                                font-bold
+                                flex-1
+                                text-center
+                              "
+                            >
+
+                              {item.quantity}
+
+                            </div>
+
+
+                            <button
+
+                              onClick={() =>
+                                updateQuantity(
+                                  item._id,
+                                  item.quantity + 1
+                                )
+                              }
+
+                              className="
+                                bg-[#232326]
+                                p-2
+                                rounded-xl
+                              "
+                            >
+
+                              <Plus size={18} />
+
+                            </button>
+
+                          </div>
+
+
+                          <div
+                            className="
+                              grid
+                              grid-cols-2
+                              gap-4
+                              px-5
+                              pb-5
+                            "
+                          >
+
+                            <div
+                              className="
+                                aspect-square
+                                overflow-hidden
+                                rounded-[24px]
+                                bg-[#232326]
+                              "
+                            >
+
+                              <img
+
+                                src={
+                                  item.frontDesignImage
+                                }
+
+                                alt="front design"
+
+                                className="
+                                  w-full
+                                  h-full
+                                  object-cover
+                                "
+                              />
+
+                            </div>
+
+
+                            <div
+                              className="
+                                aspect-square
+                                overflow-hidden
+                                rounded-[24px]
+                                bg-[#232326]
+                              "
+                            >
+
+                              <img
+
+                                src={
+                                  item.backDesignImage
+                                }
+
+                                alt="back design"
+
+                                className="
+                                  w-full
+                                  h-full
+                                  object-cover
+                                "
+                              />
+
+                            </div>
+
+                          </div>
+
+                        </>
+
                       ) : (
 
                         <>
