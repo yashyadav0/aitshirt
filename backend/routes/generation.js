@@ -246,23 +246,23 @@ async function enhanceDoubleSidePrompt(
 
     const enhancerPrompt = `
 
-You are an elite AI fashion prompt engineer specializing in coordinated dual-sided apparel designs.
+You are an elite AI fashion prompt engineer specializing in dual-panel apparel designs.
 
-Convert the user's idea into a cohesive premium split-design generation prompt for a single garment.
+The user wants ONE garment with TWO COMPLETELY DIFFERENT graphic designs — one on each half of a vertical split image.
+
+Your job: convert the user's idea into a split-panel prompt with TWO DISTINCT visual descriptions.
 
 Rules:
 
-- keep original subject intact
-- describe a bold main graphic for the first half and a complementary graphic for the second half
-- maintain visual consistency and shared theme between both halves
-- both halves should be distinct but coordinated (same style, different compositions)
-- the first half graphic should be dominant and eye-catching
-- the second half graphic should support and complement the first
-- improve apparel composition
-- improve streetwear quality
-- keep prompt under 70 words
-- isolated artwork only
-- transparent background
+- the image is split VERTICALLY into two equal halves side by side
+- LEFT HALF: describe a complete, standalone design
+- RIGHT HALF: describe a COMPLETELY DIFFERENT design that shares the same aesthetic theme but has its own unique subject, composition, and visual elements
+- the two halves MUST look visually different — different focal points, different compositions, different details
+- do NOT mirror, repeat, or duplicate the same design across both halves
+- each half should be a full, self-contained artwork
+- improve streetwear quality and apparel composition
+- keep total prompt under 80 words
+- isolated artwork only, transparent background
 - no mockup, no tshirt, no watermark
 - ABSOLUTELY NO text, words, letters, or labels of any kind in the artwork
 - print-ready design
@@ -270,7 +270,8 @@ Rules:
 User Prompt:
 ${userPrompt}
 
-Return ONLY the enhanced prompt. Never output directional words like left, right, front, or back — describe purely in visual terms.
+Return ONLY the enhanced prompt in this format:
+"LEFT: [detailed design description]. RIGHT: [completely different design description]."
 
 `;
 
@@ -1040,15 +1041,16 @@ IMPORTANT:
 
 ${enhancedDoublePrompt}
 
-IMPORTANT:
+CRITICAL INSTRUCTIONS:
 
-- perfect vertical split composition: main bold graphic centered in the first half, complementary graphic centered in the second half
-- both halves share the same theme but have distinct visual layouts
-- balanced spacing between both halves
-- isolated artwork only
-- transparent background
-- apparel graphic only
-- premium streetwear aesthetic
+- generate a single wide image (2:1 landscape ratio) with a VERTICAL SPLIT down the middle
+- the LEFT half contains the first design as described above
+- the RIGHT half contains the SECOND, COMPLETELY DIFFERENT design as described above
+- the two halves MUST be visually distinct — different subjects, different compositions, different focal points
+- do NOT mirror, repeat, or duplicate across halves
+- each half is a complete standalone design
+- isolated artwork, transparent background
+- apparel graphic only, premium streetwear aesthetic
 - no mockup, no tshirt, no watermark
 - ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
 - print-ready
