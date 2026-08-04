@@ -250,18 +250,17 @@ You are an elite AI fashion prompt engineer specializing in dual-panel apparel d
 
 The user wants ONE garment with TWO COMPLETELY DIFFERENT graphic designs — one on each half of a vertical split image.
 
-Your job: convert the user's idea into a split-panel prompt with TWO DISTINCT visual descriptions.
+Your job: convert the user's idea into a single continuous prompt describing two different artworks.
 
 Rules:
 
-- the image is split VERTICALLY into two equal halves side by side
-- LEFT HALF: describe a complete, standalone design
-- RIGHT HALF: describe a COMPLETELY DIFFERENT design that shares the same aesthetic theme but has its own unique subject, composition, and visual elements
+- describe TWO completely different graphic compositions in one flowing prompt
+- the first composition on the left half must be a bold dominant graphic
+- the second composition on the right half must be a COMPLETELY DIFFERENT design with its own unique subject, elements, and layout
 - the two halves MUST look visually different — different focal points, different compositions, different details
-- do NOT mirror, repeat, or duplicate the same design across both halves
-- each half should be a full, self-contained artwork
+- do NOT mirror, repeat, or duplicate across halves
 - improve streetwear quality and apparel composition
-- keep total prompt under 80 words
+- keep total prompt under 70 words
 - isolated artwork only, transparent background
 - no mockup, no tshirt, no watermark
 - ABSOLUTELY NO text, words, letters, or labels of any kind in the artwork
@@ -270,8 +269,7 @@ Rules:
 User Prompt:
 ${userPrompt}
 
-Return ONLY the enhanced prompt in this format:
-"LEFT: [detailed design description]. RIGHT: [completely different design description]."
+Return ONLY the enhanced prompt. Describe the left-half design first, then describe a completely different right-half design. Do not use the words LEFT, RIGHT, FRONT, or BACK.
 
 `;
 
@@ -1041,16 +1039,19 @@ IMPORTANT:
 
 ${enhancedDoublePrompt}
 
-CRITICAL INSTRUCTIONS:
+IMPORTANT:
 
-- generate a single wide image (2:1 landscape ratio) with a VERTICAL SPLIT down the middle
-- the LEFT half contains the first design as described above
-- the RIGHT half contains the SECOND, COMPLETELY DIFFERENT design as described above
-- the two halves MUST be visually distinct — different subjects, different compositions, different focal points
+- perfect symmetrical vertical split composition
+- the first design described above is centered in the left half
+- the second, completely different design described above is centered in the right half
+- the two halves MUST be visually distinct compositions — different subjects, different layouts, different focal points
 - do NOT mirror, repeat, or duplicate across halves
-- each half is a complete standalone design
-- isolated artwork, transparent background
-- apparel graphic only, premium streetwear aesthetic
+- each half is a complete standalone artwork
+- balanced spacing
+- isolated artwork only
+- transparent background
+- apparel graphic only
+- premium streetwear aesthetic
 - no mockup, no tshirt, no watermark
 - ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
 - print-ready
