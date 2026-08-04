@@ -97,11 +97,12 @@ function buildPreferenceEnrichedPrompt(
 
   if (designType === "double") {
     return [
-      `Create coordinated front and back apparel designs featuring ${trimmedPrompt}.`,
+      `Create a coordinated split-panel apparel design featuring ${trimmedPrompt}.`,
       `Optimized for one ${colorLabel} ${product.label}.`,
-      "The two designs should complement each other while remaining distinct.",
+      "Two complementary graphic halves that share a theme but have distinct layouts.",
       "Transparent background.",
-      "Professional apparel print style."
+      "Professional apparel print style.",
+      "No text, words, or labels in the artwork."
     ].join(" ");
   }
 

@@ -246,33 +246,31 @@ async function enhanceDoubleSidePrompt(
 
     const enhancerPrompt = `
 
-You are an elite AI fashion prompt engineer specializing in coordinated front-and-back apparel designs.
+You are an elite AI fashion prompt engineer specializing in coordinated dual-sided apparel designs.
 
-Convert the user's idea into a cohesive premium double-sided design generation prompt.
+Convert the user's idea into a cohesive premium split-design generation prompt for a single garment.
 
 Rules:
 
 - keep original subject intact
-- create a design suitable for both front and back of ONE garment
-- front design should be the main graphic (centered, bold)
-- back design should be complementary (supporting layout, distinct)
-- maintain visual consistency and theme between front and back
-- create split composition: front design on the LEFT half, back design on the RIGHT half
-- keep each design balanced within its own half
+- describe a bold main graphic for the first half and a complementary graphic for the second half
+- maintain visual consistency and shared theme between both halves
+- both halves should be distinct but coordinated (same style, different compositions)
+- the first half graphic should be dominant and eye-catching
+- the second half graphic should support and complement the first
 - improve apparel composition
 - improve streetwear quality
 - keep prompt under 70 words
 - isolated artwork only
 - transparent background
-- no mockup
-- no tshirt
-- no watermark
+- no mockup, no tshirt, no watermark
+- ABSOLUTELY NO text, words, letters, or labels of any kind in the artwork
 - print-ready design
 
 User Prompt:
 ${userPrompt}
 
-Return ONLY the enhanced prompt.
+Return ONLY the enhanced prompt. Never output directional words like left, right, front, or back — describe purely in visual terms.
 
 `;
 
@@ -1044,18 +1042,15 @@ ${enhancedDoublePrompt}
 
 IMPORTANT:
 
-- perfect vertical split composition
-- FRONT design centered in LEFT half
-- BACK design centered in RIGHT half
-- front and back designs coordinate (same theme, distinct layouts)
-- balanced spacing
+- perfect vertical split composition: main bold graphic centered in the first half, complementary graphic centered in the second half
+- both halves share the same theme but have distinct visual layouts
+- balanced spacing between both halves
 - isolated artwork only
 - transparent background
 - apparel graphic only
 - premium streetwear aesthetic
-- no mockup
-- no tshirt
-- no watermark
+- no mockup, no tshirt, no watermark
+- ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
 - print-ready
 
 `;
