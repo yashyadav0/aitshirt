@@ -160,15 +160,32 @@ export default function DoubleSideActions({
     );
 
 
-    // DESIGN — LARGE, CENTERED
+    // DESIGN — fit within shirt, preserve aspect ratio, centered on chest
 
-    const designSize = 520;
+    const maxDesignSize = 450;
 
-    const x =
-      (canvas.width - designSize) / 2;
+    const imgAspect =
+      designImg.naturalWidth /
+      designImg.naturalHeight;
 
-    const y =
-      (canvas.height - designSize) / 2;
+    let drawW, drawH;
+
+    if (imgAspect >= 1) {
+      drawW = maxDesignSize;
+      drawH = maxDesignSize / imgAspect;
+    } else {
+      drawH = maxDesignSize;
+      drawW = maxDesignSize * imgAspect;
+    }
+
+
+    const drawX =
+      (canvas.width - drawW) / 2;
+
+    const chestCenterY = 360;
+
+    const drawY =
+      chestCenterY - drawH / 2;
 
 
     // DRAW DESIGN
@@ -177,11 +194,11 @@ export default function DoubleSideActions({
 
       designImg,
 
-      x,
-      y,
+      drawX,
+      drawY,
 
-      designSize,
-      designSize
+      drawW,
+      drawH
     );
 
 

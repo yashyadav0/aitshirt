@@ -1016,102 +1016,100 @@ IMPORTANT:
       ) {
 
         console.log(
-          "ENHANCING DOUBLE-SIDE PROMPT..."
+          "GENERATING DOUBLE-SIDE: TWO SEPARATE IMAGES"
         );
 
-
-        const enhancedDoublePrompt =
-          await enhanceDoubleSidePrompt(
-            buildPreferenceEnrichedPrompt(
-              prompt,
-              preferences
-            )
-          );
-
-
-        console.log(
-          "ENHANCED DOUBLE-SIDE:",
-          enhancedDoublePrompt
-        );
-
-
-        const finalDoublePrompt = `
-
-${enhancedDoublePrompt}
-
-IMPORTANT:
-
-- perfect symmetrical vertical split composition
-- the first design described above is centered in the left half
-- the second, completely different design described above is centered in the right half
-- the two halves MUST be visually distinct compositions — different subjects, different layouts, different focal points
-- do NOT mirror, repeat, or duplicate across halves
-- each half is a complete standalone artwork
-- balanced spacing
-- isolated artwork only
-- transparent background
-- apparel graphic only
-- premium streetwear aesthetic
-- no mockup, no tshirt, no watermark
-- ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
-- print-ready
-
-`;
 
         const doubleReferenceInstruction =
           imageParts.length > 0
             ? "\n- use the uploaded reference image(s) as the main source and preserve the uploaded composition/style where possible\n"
             : "";
 
-        const finalDoubleModePrompt =
-          `${finalDoublePrompt}${doubleReferenceInstruction}`;
 
+        // =====================================
+        // FRONT DESIGN
+        // =====================================
 
         console.log(
-          "GENERATING DOUBLE-SIDE DESIGN..."
+          "GENERATING FRONT DESIGN..."
         );
 
 
-        const fallbackDoubleImage =
-          req.files && req.files.length > 0
-            ? await createReferenceFallbackCouple(
-                req.files,
-                preferences,
-                prompt
-              )
-            : await createFallbackCoupleImage(
-                preferences,
-                prompt
-              );
+        const frontFinalPrompt = `
+${prompt}
+
+IMPORTANT:
+- generate ONE complete, standalone graphic design for the FRONT of a ${preferences.productType}
+- centered composition, premium streetwear aesthetic
+- isolated artwork only, transparent background
+- apparel graphic only
+- no mockup, no tshirt, no watermark
+- ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
+- print-ready
+${doubleReferenceInstruction}
+`;
 
 
-        const combinedDoubleImage =
+        const frontFallbackImage =
+          await createFallbackSingleImage(
+            preferences,
+            prompt
+          );
+
+
+        const frontImage =
           (await generateImage(
-            finalDoubleModePrompt,
+            frontFinalPrompt,
             imageParts
-          )) || fallbackDoubleImage;
+          )) || frontFallbackImage;
 
 
         console.log(
-          "DOUBLE-SIDE DESIGN GENERATED"
+          "FRONT DESIGN GENERATED"
         );
+
+
+        // =====================================
+        // BACK DESIGN — COMPLETELY DIFFERENT
+        // =====================================
+
+        console.log(
+          "GENERATING BACK DESIGN..."
+        );
+
+
+        const backFinalPrompt = `
+A completely different and distinct apparel graphic design inspired by: ${prompt}. This must NOT be the same design as the front — different composition, different visual elements, different focal point, but sharing the same aesthetic theme.
+
+IMPORTANT:
+- generate ONE complete, standalone graphic design for the BACK of a ${preferences.productType}
+- must be visually distinct from the front design
+- centered composition, premium streetwear aesthetic
+- isolated artwork only, transparent background
+- apparel graphic only
+- no mockup, no tshirt, no watermark
+- ABSOLUTELY NO text, words, letters, numbers, or labels of any kind
+- print-ready
+${doubleReferenceInstruction}
+`;
+
+
+        const backFallbackImage =
+          await createFallbackSingleImage(
+            preferences,
+            prompt
+          );
+
+
+        const backImage =
+          (await generateImage(
+            backFinalPrompt,
+            imageParts
+          )) || backFallbackImage;
 
 
         console.log(
-          "SPLITTING DOUBLE-SIDE IMAGE..."
-        );
-
-
-        const {
-          leftImage: frontImage,
-          rightImage: backImage
-        } = await splitImage(
-          combinedDoubleImage
-        );
-
-
-        console.log(
-          "DOUBLE-SIDE SPLIT SUCCESS"
+          "BACK DESIGN GENERATED"
         );
 
 
@@ -1126,7 +1124,7 @@ IMPORTANT:
           preferences,
 
           enrichedPrompt:
-            enhancedDoublePrompt
+            "Front and back generated as separate designs"
         });
       }
 
