@@ -511,9 +511,19 @@ const startListening = () => {
       overridePreferences = null
     ) => {
 
+      const isEventObject =
+        overridePreferences &&
+        (
+          overridePreferences.nativeEvent ||
+          typeof overridePreferences.preventDefault === "function"
+        );
+
       const generationPrefs =
         normalizePreferences(
-          overridePreferences
+          (
+            overridePreferences &&
+            !isEventObject
+          )
           || {
             ...preferences,
             productType,

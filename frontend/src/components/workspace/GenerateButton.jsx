@@ -7,8 +7,8 @@ export default function GenerateButton({
 
     <button
 
-      onClick={
-        handleGenerate
+      onClick={() =>
+        handleGenerate()
       }
 
       disabled={loading}
