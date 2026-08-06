@@ -365,6 +365,24 @@ export default function AIWorkspace() {
     selectedPreferenceColor
   ]);
 
+  // Bootstrap generationMode / productType / selectedColor from
+  // stored preferences on first mount.  On initial render the
+  // state variables above are hardcoded defaults, so the sync
+  // effect above is a no-op — this one-time read closes the gap.
+  useEffect(() => {
+    if (preferences.designType)
+      setGenerationMode(preferences.designType);
+    if (preferences.productType)
+      setProductType(preferences.productType);
+    if (preferences.selectedColor || preferences.color) {
+      const color =
+        preferences.selectedColor || preferences.color;
+      setSelectedColor(color);
+      setHisColor(color);
+      setHerColor(color);
+    }
+  }, []); // mount only
+
   const applyPreset =
     (preset) => {
 
