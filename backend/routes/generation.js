@@ -673,26 +673,52 @@ function escapeSvgText(value) {
     .replace(/"/g, "&quot;");
 }
 
-async function createFallbackSingleImage(preferences, prompt) {
+async function createFallbackSingleImage(preferences, prompt, variant) {
   const color = preferences.selectedColor || preferences.color || "white";
   const bg = color === "black" ? "#0f0f0f" : "#f8f8f8";
   const accent = color === "red" ? "#991b1b" : color === "black" ? "#475569" : "#0e7490";
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-      <defs>
-        <radialGradient id="glow" cx="50%" cy="42%" r="55%">
-          <stop offset="0%" stop-color="${accent}" stop-opacity="0.35"/>
-          <stop offset="70%" stop-color="${accent}" stop-opacity="0.08"/>
-          <stop offset="100%" stop-color="${bg}" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-      <rect width="1024" height="1024" fill="${bg}"/>
-      <circle cx="512" cy="432" r="300" fill="url(#glow)"/>
-      <rect x="160" y="260" width="704" height="520" rx="28" fill="${accent}" opacity="0.07"/>
-      <circle cx="512" cy="520" r="80" fill="${accent}" opacity="0.12"/>
-      <path d="M460 520 Q512 440 564 520" fill="none" stroke="${accent}" stroke-width="6" opacity="0.18" stroke-linecap="round"/>
-    </svg>
-  `;
+
+  let svg;
+
+  if (variant === "back") {
+    // Back variant: geometric / diagonal pattern
+    svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+        <defs>
+          <linearGradient id="backfade" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${accent}" stop-opacity="0.08"/>
+            <stop offset="100%" stop-color="${bg}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="1024" height="1024" fill="${bg}"/>
+        <rect width="1024" height="1024" fill="url(#backfade)"/>
+        <polygon points="512,200 720,480 304,480" fill="${accent}" opacity="0.08"/>
+        <polygon points="512,824 720,544 304,544" fill="${accent}" opacity="0.08"/>
+        <circle cx="512" cy="512" r="120" fill="none" stroke="${accent}" stroke-width="5" opacity="0.14"/>
+        <circle cx="512" cy="512" r="210" fill="none" stroke="${accent}" stroke-width="3" opacity="0.09"/>
+        <line x1="312" y1="312" x2="712" y2="712" stroke="${accent}" stroke-width="2" opacity="0.06"/>
+        <line x1="712" y1="312" x2="312" y2="712" stroke="${accent}" stroke-width="2" opacity="0.06"/>
+      </svg>
+    `;
+  } else {
+    // Front variant (default): radial glow, centered
+    svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+        <defs>
+          <radialGradient id="frontglow" cx="50%" cy="42%" r="55%">
+            <stop offset="0%" stop-color="${accent}" stop-opacity="0.35"/>
+            <stop offset="70%" stop-color="${accent}" stop-opacity="0.08"/>
+            <stop offset="100%" stop-color="${bg}" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <rect width="1024" height="1024" fill="${bg}"/>
+        <circle cx="512" cy="432" r="300" fill="url(#frontglow)"/>
+        <rect x="160" y="260" width="704" height="520" rx="28" fill="${accent}" opacity="0.07"/>
+        <circle cx="512" cy="520" r="80" fill="${accent}" opacity="0.12"/>
+        <path d="M460 520 Q512 440 564 520" fill="none" stroke="${accent}" stroke-width="6" opacity="0.18" stroke-linecap="round"/>
+      </svg>
+    `;
+  }
 
   return svgToPngDataUri(svg);
 }
@@ -1132,14 +1158,16 @@ ${doubleReferenceInstruction}
           frontResult
           || await createFallbackSingleImage(
             preferences,
-            prompt
+            prompt,
+            "front"
           );
 
         const backImage =
           backResult
           || await createFallbackSingleImage(
             preferences,
-            prompt
+            prompt,
+            "back"
           );
 
 
