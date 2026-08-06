@@ -1093,10 +1093,13 @@ IMPORTANT:
 
 
         const frontEnhanced =
-          await enhanceDoubleSidePrompt(
+          await enhanceSinglePrompt(
             buildPreferenceEnrichedPrompt(
               prompt,
-              preferences
+              {
+                ...preferences,
+                designType: "single"
+              }
             )
           );
 
