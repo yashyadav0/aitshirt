@@ -511,6 +511,35 @@ async function generateImage(
   }
 }
 
+
+// =====================================
+// GENERATE WITH RETRY
+// =====================================
+
+async function generateImageWithRetry(
+  finalPrompt,
+  imageParts = []
+) {
+
+  const firstAttempt =
+    await generateImage(
+      finalPrompt,
+      imageParts
+    );
+
+  if (firstAttempt) return firstAttempt;
+
+  console.log(
+    "Image generation failed, retrying..."
+  );
+
+  return await generateImage(
+    finalPrompt,
+    imageParts
+  );
+}
+
+
 // =====================================
 // SPLIT IMAGE
 // =====================================
@@ -646,20 +675,22 @@ function escapeSvgText(value) {
 
 async function createFallbackSingleImage(preferences, prompt) {
   const color = preferences.selectedColor || preferences.color || "white";
-  const productLabel =
-    preferences.productType === "hoodie" ? "HOODIE" : "T-SHIRT";
-  const bg = color === "black" ? "#111111" : "#f3f3f3";
-  const fg = color === "black" ? "#f5f5f5" : "#111111";
-  const accent = color === "red" ? "#dc2626" : "#14b8a6";
+  const bg = color === "black" ? "#0f0f0f" : "#f8f8f8";
+  const accent = color === "red" ? "#991b1b" : color === "black" ? "#475569" : "#0e7490";
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+      <defs>
+        <radialGradient id="glow" cx="50%" cy="42%" r="55%">
+          <stop offset="0%" stop-color="${accent}" stop-opacity="0.35"/>
+          <stop offset="70%" stop-color="${accent}" stop-opacity="0.08"/>
+          <stop offset="100%" stop-color="${bg}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
       <rect width="1024" height="1024" fill="${bg}"/>
-      <rect x="96" y="96" width="832" height="832" rx="48" fill="${accent}" opacity="0.12"/>
-      <text x="512" y="360" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" fill="${fg}">${productLabel}</text>
-      <text x="512" y="470" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" font-weight="600" fill="${fg}">${escapeSvgText(color.toUpperCase())}</text>
-      <text x="512" y="610" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" fill="${fg}" opacity="0.8">${escapeSvgText(prompt).slice(0, 80)}</text>
-      <circle cx="512" cy="760" r="140" fill="${accent}" opacity="0.18"/>
-      <path d="M420 760c28-32 56-48 92-48s64 16 92 48" fill="none" stroke="${fg}" stroke-width="16" stroke-linecap="round"/>
+      <circle cx="512" cy="432" r="300" fill="url(#glow)"/>
+      <rect x="160" y="260" width="704" height="520" rx="28" fill="${accent}" opacity="0.07"/>
+      <circle cx="512" cy="520" r="80" fill="${accent}" opacity="0.12"/>
+      <path d="M460 520 Q512 440 564 520" fill="none" stroke="${accent}" stroke-width="6" opacity="0.18" stroke-linecap="round"/>
     </svg>
   `;
 
@@ -1058,33 +1089,9 @@ ${doubleReferenceInstruction}
 `;
 
 
-        const frontFallbackImage =
-          await createFallbackSingleImage(
-            preferences,
-            prompt
-          );
-
-
-        const frontImage =
-          (await generateImage(
-            frontFinalPrompt,
-            imageParts
-          )) || frontFallbackImage;
-
-
-        console.log(
-          "FRONT DESIGN GENERATED"
-        );
-
-
         // =====================================
         // BACK DESIGN — different style entirely
         // =====================================
-
-        console.log(
-          "GENERATING BACK DESIGN..."
-        );
-
 
         const backFinalPrompt = `
 Create a bold, premium streetwear graphic inspired by the theme of "${prompt}" but rendered in a COMPLETELY DIFFERENT artistic style — for example, if the front is illustrative, make this one geometric or abstract. If the front is detailed, make this one minimal and bold. Different composition, different visual approach, different focal elements, while sharing the same core theme.
@@ -1101,22 +1108,43 @@ ${doubleReferenceInstruction}
 `;
 
 
-        const backFallbackImage =
-          await createFallbackSingleImage(
+        // =====================================
+        // GENERATE BOTH IN PARALLEL + RETRY
+        // =====================================
+
+        console.log(
+          "GENERATING BOTH DESIGNS IN PARALLEL..."
+        );
+
+        const [frontResult, backResult] =
+          await Promise.all([
+            generateImageWithRetry(
+              frontFinalPrompt,
+              imageParts
+            ),
+            generateImageWithRetry(
+              backFinalPrompt,
+              imageParts
+            )
+          ]);
+
+        const frontImage =
+          frontResult
+          || await createFallbackSingleImage(
+            preferences,
+            prompt
+          );
+
+        const backImage =
+          backResult
+          || await createFallbackSingleImage(
             preferences,
             prompt
           );
 
 
-        const backImage =
-          (await generateImage(
-            backFinalPrompt,
-            imageParts
-          )) || backFallbackImage;
-
-
         console.log(
-          "BACK DESIGN GENERATED"
+          "FRONT AND BACK DESIGNS GENERATED"
         );
 
 
