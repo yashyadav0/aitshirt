@@ -1084,28 +1084,25 @@ IMPORTANT:
 
 
         // =====================================
-        // FRONT DESIGN — enhanced prompt
+        // FRONT DESIGN — direct prompt (no enhancer)
         // =====================================
 
         console.log(
           "GENERATING FRONT DESIGN..."
         );
 
-
-        const frontEnhanced =
-          await enhanceSinglePrompt(
-            buildPreferenceEnrichedPrompt(
-              prompt,
-              {
-                ...preferences,
-                designType: "single"
-              }
-            )
-          );
+        const frontColor =
+          preferences.selectedColor
+          || preferences.color
+          || "white";
+        const frontProduct =
+          preferences.productType === "hoodie"
+            ? "hoodie"
+            : "t-shirt";
 
 
         const frontFinalPrompt = `
-${frontEnhanced}
+Create a bold, premium streetwear graphic inspired by the theme of "${prompt}" — the PRIMARY design for the front of a ${frontColor} ${frontProduct}. Make it a strong, dominant, visually striking focal design with premium streetwear quality.
 
 IMPORTANT:
 - generate ONLY the artwork/graphic design itself — do NOT generate any t-shirt, clothing, mockup, or background scene
