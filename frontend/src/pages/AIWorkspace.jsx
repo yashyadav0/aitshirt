@@ -243,7 +243,6 @@ export default function AIWorkspace() {
   const resolvedPreferences =
     normalizePreferences({
       ...preferences,
-      productType,
       designType: generationMode,
       selectedColor,
       color: selectedColor
@@ -544,7 +543,6 @@ const startListening = () => {
           )
           || {
             ...preferences,
-            productType,
             designType: generationMode,
             selectedColor,
             color: selectedColor
