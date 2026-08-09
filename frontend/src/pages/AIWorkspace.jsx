@@ -93,6 +93,24 @@ from "../templates/hoodies/white/front.png";
 import hoodieBlueFront
 from "../templates/hoodies/blue/front.png";
 
+import oversizedBlackFront
+from "../templates/oversized/black/front.png";
+
+import oversizedWhiteFront
+from "../templates/oversized/white/front.png";
+
+import oversizedRedFront
+from "../templates/oversized/red/front.png";
+
+import kidsBlackFront
+from "../templates/kids/black/front.png";
+
+import kidsWhiteFront
+from "../templates/kids/white/front.png";
+
+import kidsRedFront
+from "../templates/kids/red/front.png";
+
 
 // ===== BACK =====
 
@@ -113,6 +131,24 @@ from "../templates/hoodies/white/back.png";
 
 import hoodieBlueBack
 from "../templates/hoodies/blue/back.png";
+
+import oversizedBlackBack
+from "../templates/oversized/black/back.png";
+
+import oversizedWhiteBack
+from "../templates/oversized/white/back.png";
+
+import oversizedRedBack
+from "../templates/oversized/red/back.png";
+
+import kidsBlackBack
+from "../templates/kids/black/back.png";
+
+import kidsWhiteBack
+from "../templates/kids/white/back.png";
+
+import kidsRedBack
+from "../templates/kids/red/back.png";
 
 export default function AIWorkspace() {
 
@@ -454,10 +490,51 @@ export default function AIWorkspace() {
     }
   };
 
+  const oversized = {
+
+    white: {
+      front: oversizedWhiteFront,
+      back: oversizedWhiteBack
+    },
+
+    black: {
+      front: oversizedBlackFront,
+      back: oversizedBlackBack
+    },
+
+    red: {
+      front: oversizedRedFront,
+      back: oversizedRedBack
+    }
+  };
+
+  const kids = {
+
+    white: {
+      front: kidsWhiteFront,
+      back: kidsWhiteBack
+    },
+
+    black: {
+      front: kidsBlackFront,
+      back: kidsBlackBack
+    },
+
+    red: {
+      front: kidsRedFront,
+      back: kidsRedBack
+    }
+  };
+
+  const mockupMap = {
+    tshirt: tshirts,
+    hoodie: hoodies,
+    oversized: oversized,
+    kids: kids
+  };
+
   const mockups =
-    productType === "hoodie"
-      ? hoodies
-      : tshirts;
+    mockupMap[productType] || tshirts;
 
   const productMockups =
     mockups[color] || mockups.white;
