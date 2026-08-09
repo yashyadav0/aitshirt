@@ -1,4 +1,4 @@
-import { getColorsForProductType } from "../../config/designPreferences";
+import { getColorsForProductType, getProductTypeConfig } from "../../config/designPreferences";
 
 export default function CoupleControls({
 
@@ -53,7 +53,7 @@ export default function CoupleControls({
           "
         >
 
-          His {productType === "hoodie" ? "Hoodie" : "T-Shirt"}
+          His {getProductTypeConfig(productType).label}
 
         </div>
 
@@ -153,7 +153,7 @@ export default function CoupleControls({
           "
         >
 
-          Her {productType === "hoodie" ? "Hoodie" : "T-Shirt"}
+          Her {getProductTypeConfig(productType).label}
 
         </div>
 

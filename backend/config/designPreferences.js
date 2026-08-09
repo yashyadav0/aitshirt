@@ -8,6 +8,16 @@ const PRODUCT_TYPES = {
     label: "hoodie",
     pluralLabel: "hoodies",
     colors: ["black", "white", "blue"]
+  },
+  oversized: {
+    label: "oversized t-shirt",
+    pluralLabel: "oversized t-shirts",
+    colors: ["white", "black", "red"]
+  },
+  kids: {
+    label: "kids t-shirt",
+    pluralLabel: "kids t-shirts",
+    colors: ["white", "black", "red"]
   }
 };
 

@@ -34,6 +34,24 @@ export const PRODUCT_TYPES = {
       { id: "white", label: "White", hex: "#ffffff" },
       { id: "blue", label: "Navy Blue", hex: "#1e3a5f" }
     ]
+  },
+  oversized: {
+    id: "oversized",
+    label: "Oversized",
+    colors: [
+      { id: "white", label: "White", hex: "#ffffff" },
+      { id: "black", label: "Black", hex: "#000000" },
+      { id: "red", label: "Red", hex: "#dc2626" }
+    ]
+  },
+  kids: {
+    id: "kids",
+    label: "Kids",
+    colors: [
+      { id: "white", label: "White", hex: "#ffffff" },
+      { id: "black", label: "Black", hex: "#000000" },
+      { id: "red", label: "Red", hex: "#dc2626" }
+    ]
   }
 };
 
