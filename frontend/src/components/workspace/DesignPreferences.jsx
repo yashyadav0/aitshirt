@@ -4,7 +4,8 @@ import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import {
   PRODUCT_TYPES,
   DESIGN_TYPES,
-  getColorsForProductType
+  getColorsForProductType,
+  normalizePreferences
 } from "../../config/designPreferences";
 
 function SegmentedControl({ options, value, onChange, ariaLabel }) {
@@ -61,12 +62,21 @@ export default function DesignPreferences({
   const [isOpen, setIsOpen] = useState(true);
 
   const productOptions = Object.values(PRODUCT_TYPES);
-  const designOptions = Object.values(DESIGN_TYPES);
+
+  // Kids only supports single design
+  const isKids = (preferences?.productType || "").toLowerCase() === "kids";
+  const designOptions = Object.values(DESIGN_TYPES).filter(
+    (d) => !isKids || d.id === "single"
+  );
+
   const colorOptions = getColorsForProductType(preferences.productType);
   const selectedColor =
     preferences.selectedColor || preferences.color;
 
   const handleDesignTypeChange = (designType) => {
+    // Kids only supports single — ignore invalid selection
+    const isKidsNow = (preferences?.productType || "").toLowerCase() === "kids";
+    if (isKidsNow && designType !== "single") return;
     setDesignType(designType);
     onDesignTypeChange?.(designType);
   };

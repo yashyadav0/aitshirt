@@ -26,6 +26,12 @@ export default function CouplePreview({
 
       top: "43%",
       width: "55%"
+    },
+
+    kids: {
+
+      top: "40%",
+      width: "34%"
     }
   };
 

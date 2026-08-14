@@ -35,6 +35,8 @@ export default function DoubleSidePreview({
 
   const artworkStyle = productType === "hoodie"
     ? { top: "42%", width: "52%" }
+    : productType === "kids"
+    ? { top: "42%", width: "40%" }
     : { top: "42%", width: "55%" };
   const sides = [
     { key: "front", label: "Front", image: frontImage },

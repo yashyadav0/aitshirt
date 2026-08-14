@@ -418,6 +418,13 @@ export default function AIWorkspace() {
     }
   }, []); // mount only
 
+  // Kids only supports single design — reset generationMode if productType becomes kids
+  useEffect(() => {
+    if (preferences.productType === "kids" && generationMode !== "single") {
+      setGenerationMode("single");
+    }
+  }, [preferences.productType]);
+
   const applyPreset =
     (preset) => {
 

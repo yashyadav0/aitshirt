@@ -28,6 +28,13 @@ export default function SinglePreview({
       top: "42%",
 
       width: "27%"
+    },
+
+    kids: {
+
+      top: "44%",
+
+      width: "34%"
     }
   };
 

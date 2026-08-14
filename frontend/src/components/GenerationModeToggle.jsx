@@ -2,9 +2,14 @@ export default function GenerationModeToggle({
 
   generationMode,
 
-  setGenerationMode
+  setGenerationMode,
+
+  productType = "tshirt"
 
 }) {
+
+  // Kids only supports single
+  const isKids = productType === "kids";
 
   return (
 
@@ -55,6 +60,8 @@ export default function GenerationModeToggle({
       </button>
 
 
+      {!isKids && (
+
       <button
 
         onClick={() =>
@@ -87,6 +94,8 @@ export default function GenerationModeToggle({
         Couple Design
 
       </button>
+
+      )}
 
     </div>
   );
