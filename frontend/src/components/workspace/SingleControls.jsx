@@ -1,4 +1,5 @@
 import { getColorsForProductType } from "../../config/designPreferences";
+import DesignScaleSlider from "./DesignScaleSlider";
 
 export default function SingleControls({
 
@@ -9,7 +10,9 @@ export default function SingleControls({
   selectedSide,
   setSelectedSide,
 
-  productType
+  productType,
+  designScale,
+  setDesignScale
 
 }) {
 
@@ -125,6 +128,11 @@ export default function SingleControls({
         {selectedSide === "front" ? "Front" : "Back"}
 
       </button>
+
+      <DesignScaleSlider
+        designScale={designScale}
+        setDesignScale={setDesignScale}
+      />
 
     </div>
   );

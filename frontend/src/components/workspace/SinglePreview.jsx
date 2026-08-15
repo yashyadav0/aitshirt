@@ -7,7 +7,9 @@ export default function SinglePreview({
   productType,
 
   selectedColor,
-  selectedSide
+  selectedSide,
+
+  designScale = 45
 
 }) {
 
@@ -20,28 +22,33 @@ export default function SinglePreview({
 
       top: "50%",
 
-      width: "48%"
+      baseWidth: "48%"
     },
 
     hoodie: {
 
       top: "42%",
 
-      width: "27%"
+      baseWidth: "27%"
+    },
+
+    oversized: {
+
+      top: "42%",
+
+      baseWidth: "55%"
     },
 
     kids: {
 
       top: "44%",
 
-      width: "34%"
+      baseWidth: "34%"
     }
   };
 
-  const currentStyle =
-    designStyles[
-      productType
-    ] || designStyles.tshirt;
+  const styleConfig = designStyles[productType] || designStyles.tshirt;
+  const scaledWidth = `${parseFloat(styleConfig.baseWidth) * (designScale / 45)}%`;
 
   return (
 
@@ -97,7 +104,7 @@ export default function SinglePreview({
               "absolute",
 
             top:
-              currentStyle.top,
+              styleConfig.top,
 
             left: "50%",
 
@@ -105,7 +112,7 @@ export default function SinglePreview({
               "translate(-50%, -50%)",
 
             width:
-              currentStyle.width,
+              scaledWidth,
 
             objectFit:
               "contain",

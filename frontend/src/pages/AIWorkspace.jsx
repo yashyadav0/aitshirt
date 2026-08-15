@@ -329,11 +329,6 @@ export default function AIWorkspace() {
       )
     );
 
-  const productDesignScale =
-    productType === "hoodie"
-      ? 55
-      : 48;
-
   const activeResultMode =
     generationMode;
 
@@ -1493,9 +1488,7 @@ const startListening = () => {
                   selectedSide
                 }
 
-                designScale={
-                  productDesignScale
-               }
+                designScale={designScale}
               />
 
 
@@ -1517,9 +1510,7 @@ const startListening = () => {
                   setSelectedSide
                 }
 
-                designScale={
-                  productDesignScale
-                }
+                designScale={designScale}
 
                 setDesignScale={
                   setDesignScale
@@ -1551,9 +1542,7 @@ const startListening = () => {
                   selectedSide
                 }
 
-                designScale={
-                  productDesignScale
-                }
+                designScale={designScale}
 
                 confirmedDesign={
                   confirmedDesign
@@ -1641,8 +1630,8 @@ const startListening = () => {
     herSide
   }
 
-  
-  
+  designScale={designScale}
+
 />
 
 
@@ -1684,7 +1673,10 @@ const startListening = () => {
                 setHerSide={
                   setHerSide
                 }
-               
+
+                designScale={designScale}
+                setDesignScale={setDesignScale}
+
               />
 
 
@@ -1726,13 +1718,9 @@ const startListening = () => {
                   herSide
                 }
 
-                hisScale={
-                  productDesignScale
-                }
+                hisScale={designScale}
 
-                herScale={
-                  productDesignScale
-                }
+                herScale={designScale}
 
                 API={API}
 
@@ -1807,6 +1795,8 @@ const startListening = () => {
                 onRenderError={(msg) =>
                   setSuccessMessage(msg)
                 }
+
+                designScale={designScale}
               />
 
 
@@ -1827,6 +1817,9 @@ const startListening = () => {
                 setPreferenceColor={
                   setPrefColor
                 }
+
+                designScale={designScale}
+                setDesignScale={setDesignScale}
               />
 
 
@@ -1855,6 +1848,8 @@ const startListening = () => {
                 productType={
                   resolvedPreferences.productType
                 }
+
+                designScale={designScale}
 
                 confirmedDesign={
                   confirmedDesign

@@ -64,7 +64,9 @@ export default function DoubleSideActions({
 
   setSuccessMessage,
 
-  generationPreferences
+  generationPreferences,
+
+  designScale
 
 }) {
 
@@ -85,7 +87,6 @@ export default function DoubleSideActions({
   ];
 
 
-  const designScale = 45;
 
 
   // =====================================
@@ -162,7 +163,7 @@ export default function DoubleSideActions({
 
     // DESIGN — fit within shirt, preserve aspect ratio, centered on chest
 
-    const maxDesignSize = 450;
+    const maxDesignSize = 450 * (designScale / 45);
 
     const imgAspect =
       designImg.naturalWidth /

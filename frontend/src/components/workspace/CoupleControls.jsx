@@ -1,4 +1,5 @@
 import { getColorsForProductType, getProductTypeConfig } from "../../config/designPreferences";
+import DesignScaleSlider from "./DesignScaleSlider";
 
 export default function CoupleControls({
 
@@ -14,7 +15,10 @@ export default function CoupleControls({
   setHisSide,
 
   herSide,
-  setHerSide
+  setHerSide,
+
+  designScale,
+  setDesignScale
 
 }) {
 
@@ -128,6 +132,11 @@ export default function CoupleControls({
         >
           {hisSide === "front" ? "Front" : "Back"}
         </button>
+
+        <DesignScaleSlider
+          designScale={designScale}
+          setDesignScale={setDesignScale}
+        />
 
       </div>
 

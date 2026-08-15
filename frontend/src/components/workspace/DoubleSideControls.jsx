@@ -1,6 +1,7 @@
 import {
   getColorsForProductType
 } from "../../config/designPreferences";
+import DesignScaleSlider from "./DesignScaleSlider";
 
 export default function DoubleSideControls({
 
@@ -8,7 +9,10 @@ export default function DoubleSideControls({
 
   selectedColor,
   setSelectedColor,
-  setPreferenceColor
+  setPreferenceColor,
+
+  designScale,
+  setDesignScale
 
 }) {
 
@@ -113,6 +117,11 @@ export default function DoubleSideControls({
         This color applies to both the front and back sides
 
       </div>
+
+      <DesignScaleSlider
+        designScale={designScale}
+        setDesignScale={setDesignScale}
+      />
 
     </div>
   );

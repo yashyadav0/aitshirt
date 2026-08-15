@@ -8,7 +8,8 @@ export default function DoubleSidePreview({
   selectedColor,
   isLoading = false,
   onRendered,
-  onRenderError
+  onRenderError,
+  designScale = 45
 }) {
   const renderKey = [frontImage, backImage, productType, selectedColor].join("|");
   const [loaded, setLoaded] = useState({ key: "", frontMockup: false, frontArtwork: false, backMockup: false, backArtwork: false });
@@ -33,11 +34,15 @@ export default function DoubleSidePreview({
     return isLoading ? <div className="mt-8 aspect-square animate-pulse rounded-2xl bg-[#202020]" /> : null;
   }
 
-  const artworkStyle = productType === "hoodie"
-    ? { top: "42%", width: "52%" }
+  const baseStyles = productType === "hoodie"
+    ? { top: "42%", baseWidth: "52%" }
     : productType === "kids"
-    ? { top: "42%", width: "40%" }
-    : { top: "42%", width: "55%" };
+    ? { top: "42%", baseWidth: "40%" }
+    : { top: "42%", baseWidth: "55%" };
+  const artworkStyle = {
+    ...baseStyles,
+    width: `${parseFloat(baseStyles.baseWidth) * (designScale / 45)}%`
+  };
   const sides = [
     { key: "front", label: "Front", image: frontImage },
     { key: "back", label: "Back", image: backImage }
