@@ -1,5 +1,6 @@
 import { getColorsForProductType } from "../../config/designPreferences";
 import DesignScaleSlider from "./DesignScaleSlider";
+import DesignTiltSlider from "./DesignTiltSlider";
 
 export default function SingleControls({
 
@@ -12,7 +13,9 @@ export default function SingleControls({
 
   productType,
   designScale,
-  setDesignScale
+  setDesignScale,
+  designTilt,
+  setDesignTilt
 
 }) {
 
@@ -132,6 +135,11 @@ export default function SingleControls({
       <DesignScaleSlider
         designScale={designScale}
         setDesignScale={setDesignScale}
+      />
+
+      <DesignTiltSlider
+        designTilt={designTilt}
+        setDesignTilt={setDesignTilt}
       />
 
     </div>

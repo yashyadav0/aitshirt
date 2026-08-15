@@ -12,7 +12,8 @@ export default function CouplePreview({
   hisSide,
   herSide,
 
-  designScale = 45
+  designScale = 45,
+  designTilt = 0
 
 }) {
 
@@ -20,30 +21,36 @@ export default function CouplePreview({
 
     tshirt: {
 
-      top: "42%",
+      frontTop: "28%",
+      backTop: "30%",
       baseWidth: "48%"
     },
 
     hoodie: {
 
-      top: "43%",
+      frontTop: "43%",
+      backTop: "45%",
       baseWidth: "55%"
     },
 
     oversized: {
 
-      top: "42%",
+      frontTop: "28%",
+      backTop: "30%",
       baseWidth: "55%"
     },
 
     kids: {
 
-      top: "40%",
+      frontTop: "40%",
+      backTop: "42%",
       baseWidth: "34%"
     }
   };
 
   const styleConfig = designStyles[productType] || designStyles.tshirt;
+  const hisTop = hisSide === "front" ? styleConfig.frontTop : styleConfig.backTop;
+  const herTop = herSide === "front" ? styleConfig.frontTop : styleConfig.backTop;
   const scaledWidth = `${parseFloat(styleConfig.baseWidth) * (designScale / 45)}%`;
 
   return (
@@ -116,10 +123,11 @@ export default function CouplePreview({
             style={{
 
               top:
-                styleConfig.top,
+                hisTop,
 
               width:
-                scaledWidth
+                scaledWidth,
+              transform: `rotate(${designTilt}deg)`
             }}
           />
 
@@ -186,10 +194,11 @@ export default function CouplePreview({
             style={{
 
               top:
-                styleConfig.top,
+                herTop,
 
               width:
-                scaledWidth
+                scaledWidth,
+              transform: `rotate(${designTilt}deg)`
             }}
           />
 

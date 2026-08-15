@@ -66,7 +66,8 @@ export default function DoubleSideActions({
 
   generationPreferences,
 
-  designScale
+  designScale,
+  designTilt
 
 }) {
 
@@ -191,16 +192,17 @@ export default function DoubleSideActions({
 
     // DRAW DESIGN
 
+    ctx.save();
+    ctx.translate(canvas.width / 2, chestCenterY);
+    ctx.rotate((designTilt * Math.PI) / 180);
     ctx.drawImage(
-
       designImg,
-
-      drawX,
-      drawY,
-
+      -drawW / 2,
+      -drawH / 2,
       drawW,
       drawH
     );
+    ctx.restore();
 
 
     // EXPORT PNG
@@ -350,6 +352,9 @@ export default function DoubleSideActions({
           designScale:
 
             designScale,
+
+          designTilt:
+            designTilt,
 
           isConfirmed:
             true

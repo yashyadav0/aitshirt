@@ -18,6 +18,7 @@ export default function SingleActions({
   selectedSide,
 
   designScale,
+  designTilt,
 
   confirmedDesign,
 
@@ -199,16 +200,17 @@ export default function SingleActions({
         // DRAW DESIGN
         // =====================================
 
+        ctx.save();
+        ctx.translate(canvas.width / 2, y + designHeight / 2);
+        ctx.rotate((designTilt * Math.PI) / 180);
         ctx.drawImage(
-
           designImage,
-
-          x,
-          y,
-
+          -designWidth / 2,
+          -designHeight / 2,
           designWidth,
           designHeight
         );
+        ctx.restore();
 
 
         // =====================================
@@ -320,6 +322,9 @@ export default function SingleActions({
 
           designScale:
             designScale,
+
+          designTilt:
+            designTilt,
 
           isConfirmed:
             true

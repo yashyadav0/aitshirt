@@ -216,6 +216,10 @@ export default function AIWorkspace() {
     setDesignScale] =
     useState(45);
 
+  const [designTilt,
+    setDesignTilt] =
+    useState(0);
+
   const [confirmedDesign,
     setConfirmedDesign] =
     useState(null);
@@ -1489,6 +1493,7 @@ const startListening = () => {
                 }
 
                 designScale={designScale}
+                designTilt={designTilt}
               />
 
 
@@ -1515,6 +1520,8 @@ const startListening = () => {
                 setDesignScale={
                   setDesignScale
                 }
+                designTilt={designTilt}
+                setDesignTilt={setDesignTilt}
                 productType={
                   resolvedPreferences.productType
                 }
@@ -1543,6 +1550,7 @@ const startListening = () => {
                 }
 
                 designScale={designScale}
+                designTilt={designTilt}
 
                 confirmedDesign={
                   confirmedDesign
@@ -1631,6 +1639,7 @@ const startListening = () => {
   }
 
   designScale={designScale}
+          designTilt={designTilt}
 
 />
 
@@ -1676,6 +1685,8 @@ const startListening = () => {
 
                 designScale={designScale}
                 setDesignScale={setDesignScale}
+                designTilt={designTilt}
+                setDesignTilt={setDesignTilt}
 
               />
 
@@ -1719,8 +1730,10 @@ const startListening = () => {
                 }
 
                 hisScale={designScale}
+                hisTilt={designTilt}
 
                 herScale={designScale}
+                herTilt={designTilt}
 
                 API={API}
 
@@ -1797,6 +1810,7 @@ const startListening = () => {
                 }
 
                 designScale={designScale}
+                designTilt={designTilt}
               />
 
 
@@ -1820,6 +1834,8 @@ const startListening = () => {
 
                 designScale={designScale}
                 setDesignScale={setDesignScale}
+                designTilt={designTilt}
+                setDesignTilt={setDesignTilt}
               />
 
 
@@ -1850,6 +1866,7 @@ const startListening = () => {
                 }
 
                 designScale={designScale}
+                designTilt={designTilt}
 
                 confirmedDesign={
                   confirmedDesign

@@ -22,6 +22,8 @@ export default function CoupleActions({
 
   hisScale,
   herScale,
+  hisTilt,
+  herTilt,
 
   API,
 
@@ -84,7 +86,8 @@ export default function CoupleActions({
       mockupSrc,
       designSrc,
       scale,
-      side
+      side,
+      tilt = 0
 
     ) => {
 
@@ -177,16 +180,17 @@ export default function CoupleActions({
 
       // DRAW DESIGN
 
+      ctx.save();
+      ctx.translate(canvas.width / 2, y + designHeight / 2);
+      ctx.rotate((tilt * Math.PI) / 180);
       ctx.drawImage(
-
         designImage,
-
-        x,
-        y,
-
+        -designWidth / 2,
+        -designHeight / 2,
         designWidth,
         designHeight
       );
+      ctx.restore();
 
 
       // EXPORT
@@ -278,7 +282,9 @@ export default function CoupleActions({
 
             hisScale,
 
-            hisSide
+            hisSide,
+
+            hisTilt
           );
 
 
@@ -306,7 +312,9 @@ export default function CoupleActions({
 
             herScale,
 
-            herSide
+            herSide,
+
+            herTilt
           );
 
 
@@ -387,6 +395,8 @@ export default function CoupleActions({
 
           hisScale,
           herScale,
+          hisTilt,
+          herTilt,
 
           price: 1299
         };
