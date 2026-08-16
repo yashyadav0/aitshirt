@@ -17,8 +17,7 @@ export default function SingleActions({
 
   selectedSide,
 
-  designScale,
-  designTilt,
+  designTransform,
 
   confirmedDesign,
 
@@ -172,37 +171,55 @@ export default function SingleActions({
 
 
         // =====================================
-        // DESIGN SIZE
+        // DESIGN SIZE + POSITION (from customer transform)
         // =====================================
+
+        // Canvas maps the 920x1040 mockup onto an 800x800 surface,
+        // so the box is scaled by 0.8 here.
+        const canvasScale = 800 / 920;
+
+        // Match preview defaults per product type
+        const designStyles = {
+          tshirt: { top: "50%", width: "48%" },
+          hoodie: { top: "42%", width: "27%" },
+          oversized: { top: "42%", width: "55%" },
+          kids: { top: "44%", width: "34%" }
+        };
+        const defaultStyle = designStyles[productType] || designStyles.tshirt;
+        const defaultWidthPct = parseFloat(defaultStyle.width.replace("%", ""));
+        const defaultY = parseFloat(defaultStyle.top.replace("%", ""));
+
+        const widthPct =
+          designTransform?.widthPct ?? defaultWidthPct;
 
         const designWidth =
-          390 *
-          (designScale / 45);
+          (widthPct / 100) *
+          canvas.width;
+        const designHeight = designWidth;
 
-        const designHeight =
-          designWidth;
-
-
-        // =====================================
-        // DESIGN POSITION
-        // =====================================
+        // Use preview defaults: center X=50%, Y from product type
+        const defaultX = 50;
+        const centerX = designTransform?.x ?? defaultX;
+        const centerY = designTransform?.y ?? defaultY;
+        const rotation = designTransform?.rotation ?? 0;
 
         const x =
-          (canvas.width - designWidth) / 2;
-
+          centerX / 100 *
+          canvas.width -
+          designWidth / 2;
         const y =
-          selectedSide === "front"
-            ? 170
-            : 190;
+          centerY / 100 *
+          canvas.height -
+          designHeight / 2;
 
 
         // =====================================
-        // DRAW DESIGN
+        // DRAW DESIGN with rotation
         // =====================================
 
         ctx.save();
-        ctx.translate(canvas.width / 2, y + designHeight / 2);
-        ctx.rotate((designTilt * Math.PI) / 180);
+        ctx.translate(x + designWidth / 2, y + designHeight / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
         ctx.drawImage(
           designImage,
           -designWidth / 2,
@@ -320,11 +337,8 @@ export default function SingleActions({
           side:
             selectedSide,
 
-          designScale:
-            designScale,
-
-          designTilt:
-            designTilt,
+          designTransform:
+            designTransform,
 
           isConfirmed:
             true
@@ -413,8 +427,8 @@ export default function SingleActions({
             side:
               confirmedDesign.side,
 
-            designScale:
-              confirmedDesign.designScale,
+            designTransform:
+              confirmedDesign.designTransform,
 
             price:
               699
@@ -483,8 +497,8 @@ export default function SingleActions({
             side:
               confirmedDesign.side,
 
-            designScale:
-              confirmedDesign.designScale
+            designTransform:
+              confirmedDesign.designTransform
           },
 
           {
@@ -559,7 +573,7 @@ export default function SingleActions({
                     )
                   }
 
-                  className={`
+                  className={`...
                     flex-1
                     min-h-12
                     py-2

@@ -1,6 +1,4 @@
 import { getColorsForProductType } from "../../config/designPreferences";
-import DesignScaleSlider from "./DesignScaleSlider";
-import DesignTiltSlider from "./DesignTiltSlider";
 
 export default function SingleControls({
 
@@ -11,11 +9,7 @@ export default function SingleControls({
   selectedSide,
   setSelectedSide,
 
-  productType,
-  designScale,
-  setDesignScale,
-  designTilt,
-  setDesignTilt
+  productType
 
 }) {
 
@@ -132,15 +126,17 @@ export default function SingleControls({
 
       </button>
 
-      <DesignScaleSlider
-        designScale={designScale}
-        setDesignScale={setDesignScale}
-      />
-
-      <DesignTiltSlider
-        designTilt={designTilt}
-        setDesignTilt={setDesignTilt}
-      />
+      <div
+        className="
+          mt-2
+          sm:mt-3
+          text-xs
+          text-zinc-500
+          text-center
+        "
+      >
+        Drag the design to reposition • Drag corners to resize • Use the rotate handle to tilt
+      </div>
 
     </div>
   );

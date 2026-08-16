@@ -20,10 +20,8 @@ export default function CoupleActions({
   hisSide,
   herSide,
 
-  hisScale,
-  herScale,
-  hisTilt,
-  herTilt,
+  hisTransform,
+  herTransform,
 
   API,
 
@@ -85,9 +83,9 @@ export default function CoupleActions({
 
       mockupSrc,
       designSrc,
-      scale,
-      side,
-      tilt = 0
+      transform,
+      productType,
+      side
 
     ) => {
 
@@ -157,32 +155,46 @@ export default function CoupleActions({
       );
 
 
-      // SIZE
+      // DESIGN SIZE + POSITION (from customer transform)
+      // Canvas maps the 920x1040 mockup onto an 800x800 surface
+
+      const designStyles = {
+        tshirt: { top: "50%", width: "48%" },
+        hoodie: { top: "42%", width: "27%" },
+        oversized: { top: "42%", width: "55%" },
+        kids: { top: "44%", width: "34%" }
+      };
+      const defaultStyle = designStyles[productType] || designStyles.tshirt;
+
+      const defaultWidthPct = parseFloat(defaultStyle.width.replace("%", ""));
+      const widthPct = transform?.widthPct ?? defaultWidthPct;
 
       const designWidth =
-        390 *
-        (scale / 45);
+        (widthPct / 100) *
+        canvas.width;
+      const designHeight = designWidth;
 
-      const designHeight =
-        designWidth;
-
-
-      // POSITION
+      const defaultX = 50;
+      const defaultY = parseFloat(defaultStyle.top.replace("%", ""));
+      const centerX = transform?.x ?? defaultX;
+      const centerY = transform?.y ?? defaultY;
+      const rotation = transform?.rotation ?? 0;
 
       const x =
-        (canvas.width - designWidth) / 2;
-
+        centerX / 100 *
+        canvas.width -
+        designWidth / 2;
       const y =
-        side === "front"
-          ? 170
-          : 190;
+        centerY / 100 *
+        canvas.height -
+        designHeight / 2;
 
 
-      // DRAW DESIGN
+      // DRAW DESIGN with rotation
 
       ctx.save();
-      ctx.translate(canvas.width / 2, y + designHeight / 2);
-      ctx.rotate((tilt * Math.PI) / 180);
+      ctx.translate(x + designWidth / 2, y + designHeight / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
       ctx.drawImage(
         designImage,
         -designWidth / 2,
@@ -280,11 +292,9 @@ export default function CoupleActions({
 
             generatedHisImage,
 
-            hisScale,
-
-            hisSide,
-
-            hisTilt
+            hisTransform,
+            productType,
+            hisSide
           );
 
 
@@ -310,11 +320,9 @@ export default function CoupleActions({
 
             generatedHerImage,
 
-            herScale,
-
-            herSide,
-
-            herTilt
+            herTransform,
+            productType,
+            herSide
           );
 
 
@@ -393,10 +401,8 @@ export default function CoupleActions({
           hisSide,
           herSide,
 
-          hisScale,
-          herScale,
-          hisTilt,
-          herTilt,
+          hisTransform,
+          herTransform,
 
           price: 1299
         };
@@ -501,11 +507,11 @@ export default function CoupleActions({
             herSide:
               confirmedDesign.herSide,
 
-            hisScale:
-              confirmedDesign.hisScale,
+            hisTransform:
+              confirmedDesign.hisTransform,
 
-            herScale:
-              confirmedDesign.herScale,
+            herTransform:
+              confirmedDesign.herTransform,
 
             price: 1299
           },
@@ -593,11 +599,11 @@ export default function CoupleActions({
             herSide:
               confirmedDesign.herSide,
 
-            hisScale:
-              confirmedDesign.hisScale,
+            hisTransform:
+              confirmedDesign.hisTransform,
 
-            herScale:
-              confirmedDesign.herScale
+            herTransform:
+              confirmedDesign.herTransform
           },
 
           {

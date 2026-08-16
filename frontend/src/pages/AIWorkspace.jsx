@@ -212,14 +212,6 @@ export default function AIWorkspace() {
     setSelectedSide] =
     useState("front");
 
-  const [designScale,
-    setDesignScale] =
-    useState(45);
-
-  const [designTilt,
-    setDesignTilt] =
-    useState(0);
-
   const [confirmedDesign,
     setConfirmedDesign] =
     useState(null);
@@ -315,6 +307,31 @@ export default function AIWorkspace() {
     setHerSide] =
     useState("front");
 
+
+
+  // =====================================
+  // DESIGN TRANSFORM STATES (drag/resize/rotate)
+  // =====================================
+
+  const [singleTransform,
+    setSingleTransform] =
+    useState(null);
+
+  const [frontTransform,
+    setFrontTransform] =
+    useState(null);
+
+  const [backTransform,
+    setBackTransform] =
+    useState(null);
+
+  const [hisTransform,
+    setHisTransform] =
+    useState(null);
+
+  const [herTransform,
+    setHerTransform] =
+    useState(null);
 
 
   const mockupRef =
@@ -1492,8 +1509,8 @@ const startListening = () => {
                   selectedSide
                 }
 
-                designScale={designScale}
-                designTilt={designTilt}
+                designTransform={singleTransform}
+                onDesignTransformChange={setSingleTransform}
               />
 
 
@@ -1515,13 +1532,6 @@ const startListening = () => {
                   setSelectedSide
                 }
 
-                designScale={designScale}
-
-                setDesignScale={
-                  setDesignScale
-                }
-                designTilt={designTilt}
-                setDesignTilt={setDesignTilt}
                 productType={
                   resolvedPreferences.productType
                 }
@@ -1549,8 +1559,7 @@ const startListening = () => {
                   selectedSide
                 }
 
-                designScale={designScale}
-                designTilt={designTilt}
+                designTransform={singleTransform}
 
                 confirmedDesign={
                   confirmedDesign
@@ -1638,8 +1647,11 @@ const startListening = () => {
     herSide
   }
 
-  designScale={designScale}
-          designTilt={designTilt}
+  hisTransform={hisTransform}
+  onHisTransformChange={setHisTransform}
+
+  herTransform={herTransform}
+  onHerTransformChange={setHerTransform}
 
 />
 
@@ -1656,7 +1668,7 @@ const startListening = () => {
                 }
 
   setHisColor={
-                  setHisColor 
+                  setHisColor
                 }
 
                 herColor={
@@ -1682,11 +1694,6 @@ const startListening = () => {
                 setHerSide={
                   setHerSide
                 }
-
-                designScale={designScale}
-                setDesignScale={setDesignScale}
-                designTilt={designTilt}
-                setDesignTilt={setDesignTilt}
 
               />
 
@@ -1729,11 +1736,8 @@ const startListening = () => {
                   herSide
                 }
 
-                hisScale={designScale}
-                hisTilt={designTilt}
-
-                herScale={designScale}
-                herTilt={designTilt}
+                hisTransform={hisTransform}
+                herTransform={herTransform}
 
                 API={API}
 
@@ -1809,8 +1813,11 @@ const startListening = () => {
                   setSuccessMessage(msg)
                 }
 
-                designScale={designScale}
-                designTilt={designTilt}
+                frontTransform={frontTransform}
+                onFrontTransformChange={setFrontTransform}
+
+                backTransform={backTransform}
+                onBackTransformChange={setBackTransform}
               />
 
 
@@ -1831,11 +1838,6 @@ const startListening = () => {
                 setPreferenceColor={
                   setPrefColor
                 }
-
-                designScale={designScale}
-                setDesignScale={setDesignScale}
-                designTilt={designTilt}
-                setDesignTilt={setDesignTilt}
               />
 
 
@@ -1865,8 +1867,8 @@ const startListening = () => {
                   resolvedPreferences.productType
                 }
 
-                designScale={designScale}
-                designTilt={designTilt}
+                frontTransform={frontTransform}
+                backTransform={backTransform}
 
                 confirmedDesign={
                   confirmedDesign

@@ -52,6 +52,10 @@ export default function DoubleSideActions({
 
   productType,
 
+  frontTransform,
+
+  backTransform,
+
   confirmedDesign,
 
   setConfirmedDesign,
@@ -64,10 +68,7 @@ export default function DoubleSideActions({
 
   setSuccessMessage,
 
-  generationPreferences,
-
-  designScale,
-  designTilt
+  generationPreferences
 
 }) {
 
@@ -88,6 +89,7 @@ export default function DoubleSideActions({
   ];
 
 
+  const designScale = 45;
 
 
   // =====================================
@@ -118,6 +120,9 @@ export default function DoubleSideActions({
     side,
     artworkImage
   ) => {
+
+    const transform =
+      side === "front" ? frontTransform : backTransform;
 
     const canvas =
       document.createElement(
@@ -162,45 +167,46 @@ export default function DoubleSideActions({
     );
 
 
-    // DESIGN — fit within shirt, preserve aspect ratio, centered on chest
+    // DESIGN — use customer transform (percentages of canvas)
 
-    const maxDesignSize = 450 * (designScale / 45);
+    const canvasScale = 800 / 920;
 
-    const imgAspect =
-      designImg.naturalWidth /
-      designImg.naturalHeight;
+    // Match preview defaults per product type
+    const designStyles = {
+      tshirt: { top: "50%", width: "48%" },
+      hoodie: { top: "42%", width: "27%" },
+      oversized: { top: "42%", width: "55%" },
+      kids: { top: "42%", width: "40%" }
+    };
+    const defaultStyle = designStyles[productType] || designStyles.tshirt;
+    const defaultWidthPct = parseFloat(defaultStyle.width.replace("%", ""));
+    const defaultY = parseFloat(defaultStyle.top.replace("%", ""));
 
-    let drawW, drawH;
+    const widthPct = transform?.widthPct ?? defaultWidthPct;
 
-    if (imgAspect >= 1) {
-      drawW = maxDesignSize;
-      drawH = maxDesignSize / imgAspect;
-    } else {
-      drawH = maxDesignSize;
-      drawW = maxDesignSize * imgAspect;
-    }
+    const designWidth = (widthPct / 100) * canvas.width;
+    const designHeight = designWidth;
 
+    const defaultX = 50;
+    const centerX = transform?.x ?? defaultX;
+    const centerY = transform?.y ?? defaultY;
+    const rotation = transform?.rotation ?? 0;
 
-    const drawX =
-      (canvas.width - drawW) / 2;
-
-    const chestCenterY = 360;
-
-    const drawY =
-      chestCenterY - drawH / 2;
+    const drawX = centerX / 100 * canvas.width - designWidth / 2;
+    const drawY = centerY / 100 * canvas.height - designHeight / 2;
 
 
-    // DRAW DESIGN
+    // DRAW DESIGN with rotation
 
     ctx.save();
-    ctx.translate(canvas.width / 2, chestCenterY);
-    ctx.rotate((designTilt * Math.PI) / 180);
+    ctx.translate(drawX + designWidth / 2, drawY + designHeight / 2);
+    ctx.rotate((rotation * Math.PI) / 180);
     ctx.drawImage(
       designImg,
-      -drawW / 2,
-      -drawH / 2,
-      drawW,
-      drawH
+      -designWidth / 2,
+      -designHeight / 2,
+      designWidth,
+      designHeight
     );
     ctx.restore();
 
@@ -353,8 +359,13 @@ export default function DoubleSideActions({
 
             designScale,
 
-          designTilt:
-            designTilt,
+          frontTransform:
+
+            frontTransform,
+
+          backTransform:
+
+            backTransform,
 
           isConfirmed:
             true
@@ -460,6 +471,12 @@ export default function DoubleSideActions({
             designScale:
               confirmedDesign.designScale,
 
+            frontTransform:
+              confirmedDesign.frontTransform,
+
+            backTransform:
+              confirmedDesign.backTransform,
+
             price:
               899
           },
@@ -537,7 +554,13 @@ export default function DoubleSideActions({
               confirmedDesign.size,
 
             designScale:
-              confirmedDesign.designScale
+              confirmedDesign.designScale,
+
+            frontTransform:
+              confirmedDesign.frontTransform,
+
+            backTransform:
+              confirmedDesign.backTransform
           },
 
           {
@@ -612,7 +635,7 @@ export default function DoubleSideActions({
                     )
                   }
 
-                  className={`
+                  className={`...
                     flex-1
                     min-h-12
                     py-2

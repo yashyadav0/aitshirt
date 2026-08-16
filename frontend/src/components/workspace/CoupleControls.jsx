@@ -1,6 +1,4 @@
 import { getColorsForProductType, getProductTypeConfig } from "../../config/designPreferences";
-import DesignScaleSlider from "./DesignScaleSlider";
-import DesignTiltSlider from "./DesignTiltSlider";
 
 export default function CoupleControls({
 
@@ -16,12 +14,7 @@ export default function CoupleControls({
   setHisSide,
 
   herSide,
-  setHerSide,
-
-  designScale,
-  setDesignScale,
-  designTilt,
-  setDesignTilt
+  setHerSide
 
 }) {
 
@@ -136,15 +129,16 @@ export default function CoupleControls({
           {hisSide === "front" ? "Front" : "Back"}
         </button>
 
-        <DesignScaleSlider
-          designScale={designScale}
-          setDesignScale={setDesignScale}
-        />
-
-        <DesignTiltSlider
-          designTilt={designTilt}
-          setDesignTilt={setDesignTilt}
-        />
+        <div
+          className="
+            mt-2
+            text-xs
+            text-zinc-500
+            text-center
+          "
+        >
+          Drag the design to reposition • Drag corners to resize • Rotate handle to tilt
+        </div>
 
       </div>
 
