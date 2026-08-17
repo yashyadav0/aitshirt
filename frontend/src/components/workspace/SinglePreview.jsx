@@ -63,26 +63,32 @@ export default function SinglePreview({
     rotation: 0
   };
 
-  // State for Rnd controlled position (top-left in pixels)
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Controlled Rnd state (top-left + size in pixels), derived from center percentages
+  const [rnd, setRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [containerRect, setContainerRect] = useState(null);
   const rndRef = useRef(null);
 
-  // Initialize position from center percentages on mount/transform change
+  // Measure container so we can convert percentage coordinates to pixels
   useLayoutEffect(() => {
-    if (!mockupRef.current || isInitialized) return;
+    if (!mockupRef.current) return;
     const rect = mockupRef.current.getBoundingClientRect();
-    const designWidth = (transform.widthPct / 100) * rect.width;
-    const designHeight = designWidth; // square due to lockAspectRatio
-    const centerX = (transform.x / 100) * rect.width;
-    const centerY = (transform.y / 100) * rect.height;
-    // Convert center to top-left for Rnd position
-    setPosition({
-      x: centerX - designWidth / 2,
-      y: centerY - designHeight / 2
+    setContainerRect(rect);
+  }, [mockupRef.current]);
+
+  // Derive Rnd pixel position + size from transform percentages whenever rect/transform changes
+  useLayoutEffect(() => {
+    if (!containerRect) return;
+    const width = (transform.widthPct / 100) * containerRect.width;
+    const height = width; // square due to lockAspectRatio
+    const centerX = (transform.x / 100) * containerRect.width;
+    const centerY = (transform.y / 100) * containerRect.height;
+    setRnd({
+      x: centerX - width / 2,
+      y: centerY - height / 2,
+      width,
+      height
     });
-    setIsInitialized(true);
-  }, [mockupRef.current, transform.widthPct, transform.x, transform.y, isInitialized]);
+  }, [containerRect, transform.widthPct, transform.x, transform.y]);
 
   const handleRotationStart = useCallback((e) => {
     e.stopPropagation();
@@ -115,38 +121,34 @@ export default function SinglePreview({
   }, [mockupRef, transform, onDesignTransformChange]);
 
   const onDragStop = useCallback((e, d) => {
-    if (!mockupRef.current) return;
-    const rect = mockupRef.current.getBoundingClientRect();
-    const designWidth = (transform.widthPct / 100) * rect.width;
-    const designHeight = designWidth;
+    if (!containerRect) return;
     // d.x, d.y from Rnd are top-left; convert to center percentages
-    const centerX = d.x + designWidth / 2;
-    const centerY = d.y + designHeight / 2;
+    const centerX = d.x + rnd.width / 2;
+    const centerY = d.y + rnd.height / 2;
     onDesignTransformChange?.({
       ...transform,
-      x: (centerX / rect.width) * 100,
-      y: (centerY / rect.height) * 100
+      x: (centerX / containerRect.width) * 100,
+      y: (centerY / containerRect.height) * 100
     });
-    setPosition({ x: d.x, y: d.y });
-  }, [mockupRef, transform, onDesignTransformChange]);
+    setRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
+  }, [containerRect, rnd.width, rnd.height, transform, onDesignTransformChange]);
 
   const onResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
-    if (!mockupRef.current) return;
-    const rect = mockupRef.current.getBoundingClientRect();
-    const newWidthPct = (ref.offsetWidth / rect.width) * 100;
-    const newDesignWidth = (newWidthPct / 100) * rect.width;
-    const newDesignHeight = newDesignWidth;
+    if (!containerRect) return;
+    const newWidth = ref.offsetWidth;
+    const newHeight = newWidth; // square due to lockAspectRatio
+    const newWidthPct = (newWidth / containerRect.width) * 100;
     // rndPosition is top-left; convert to center
-    const centerX = rndPosition.x + newDesignWidth / 2;
-    const centerY = rndPosition.y + newDesignHeight / 2;
+    const centerX = rndPosition.x + newWidth / 2;
+    const centerY = rndPosition.y + newHeight / 2;
     onDesignTransformChange?.({
       ...transform,
       widthPct: newWidthPct,
-      x: (centerX / rect.width) * 100,
-      y: (centerY / rect.height) * 100
+      x: (centerX / containerRect.width) * 100,
+      y: (centerY / containerRect.height) * 100
     });
-    setPosition({ x: rndPosition.x, y: rndPosition.y });
-  }, [mockupRef, transform, onDesignTransformChange]);
+    setRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
+  }, [containerRect, transform, onDesignTransformChange]);
 
   return (
 
@@ -191,20 +193,23 @@ export default function SinglePreview({
 
         <Rnd
           ref={rndRef}
-          size={{ width: `${transform.widthPct}%`, height: "auto" }}
-          position={position}
+          size={{ width: rnd.width, height: rnd.height }}
+          position={{ x: rnd.x, y: rnd.y }}
           lockAspectRatio
           onDragStop={onDragStop}
           onResizeStop={onResizeStop}
           bounds="parent"
           className="cursor-move"
-          style={{ touchAction: "none" }}
+          style={{ touchAction: "none", display: "block" }}
         >
           <div
             style={{
-              transform: `translate(-50%, -50%) rotate(${transform.rotation}deg)`,
+              transform: `rotate(${transform.rotation}deg)`,
               width: "100%",
-              height: "100%"
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
             }}
           >
             <img
@@ -213,10 +218,11 @@ export default function SinglePreview({
               draggable={false}
               style={{
                 width: "100%",
-                height: "auto",
+                height: "100%",
                 objectFit: "contain",
                 pointerEvents: "none",
-                userSelect: "none"
+                userSelect: "none",
+                display: "block"
               }}
             />
 
