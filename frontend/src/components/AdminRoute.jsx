@@ -11,8 +11,7 @@ export default function AdminRoute({
 
 }) {
 
-  const role =
-    localStorage.getItem("role");
+  const localRole = localStorage.getItem("role");
 
   const {
     loading,
@@ -24,7 +23,9 @@ export default function AdminRoute({
     return null;
   }
 
-  if ((profile?.role || role) !== "admin") {
+  // Priority: localStorage (manual override) > backend profile
+  const isAdmin = localRole === "admin" || profile?.role === "admin";
+  if (!isAdmin) {
 
     return <Navigate to="/" />;
   }

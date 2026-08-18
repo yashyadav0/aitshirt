@@ -50,11 +50,9 @@ export default function Sidebar() {
   } =
     useAuth();
 
-  const role =
-    profile?.role ||
-    localStorage.getItem(
-      "role"
-    );
+  // Priority: localStorage (manual override) > backend profile
+  const localRole = localStorage.getItem("role");
+  const role = localRole === "admin" || profile?.role === "admin" ? "admin" : "user";
 
   useEffect(() => {
 
