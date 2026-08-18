@@ -1,10 +1,9 @@
-import { useRef, useLayoutEffect, useState, useCallback } from "react";
+import { useRef, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import { Rnd } from "react-rnd";
 
 export default function SinglePreview({
 
   generatedImage,
-  mockupRef,
   getMockup,
 
   productType,
@@ -17,84 +16,62 @@ export default function SinglePreview({
 
 }) {
 
-  if (!generatedImage)
-    return null;
-
-  const designStyles = {
-
-    tshirt: {
-
-      top: "50%",
-      width: "48%"
-    },
-
-    hoodie: {
-
-      top: "42%",
-      width: "27%"
-    },
-
-    oversized: {
-
-      top: "42%",
-      width: "55%"
-    },
-
-    kids: {
-
-      top: "44%",
-      width: "34%"
-    }
-  };
-
-  const defaultStyle =
-    designStyles[
-      productType
-    ] || designStyles.tshirt;
+  // Memoize default style so it doesn't change on every render
+  const defaultStyle = useMemo(() => {
+    const designStyles = {
+      tshirt: { top: "50%", width: "48%" },
+      hoodie: { top: "50%", width: "27%" },
+      oversized: { top: "50%", width: "55%" },
+      kids: { top: "50%", width: "34%" }
+    };
+    return designStyles[productType] || designStyles.tshirt;
+  }, [productType]);
 
   const defaultY = parseFloat(String(defaultStyle.top).replace("%", ""));
   const defaultWidthPct = parseFloat(String(defaultStyle.width).replace("%", ""));
 
-  // Current transform — if customer hasn't moved it, fall back to default
-  const transform = designTransform || {
-    x: 50, // percentage of container (center X)
-    y: defaultY, // percentage of container (center Y)
+  // Memoize default transform
+  const defaultTransform = useMemo(() => ({
+    x: 50,
+    y: defaultY,
     widthPct: defaultWidthPct,
     rotation: 0
-  };
+  }), [defaultY, defaultWidthPct]);
 
-  // Controlled Rnd state (top-left + size in pixels), derived from center percentages
-  const [rnd, setRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  // Current transform — if customer hasn't moved it, fall back to default
+  const transform = designTransform || defaultTransform;
+
+  // Container dimensions — null until measured after mockup image loads
   const [containerRect, setContainerRect] = useState(null);
   const rndRef = useRef(null);
+  // Local ref for the mockup image container (parent of Rnd)
+  const containerRef = useRef(null);
 
-  // Measure container so we can convert percentage coordinates to pixels
-  useLayoutEffect(() => {
-    if (!mockupRef.current) return;
-    const rect = mockupRef.current.getBoundingClientRect();
-    setContainerRect(rect);
-  }, [mockupRef.current]);
+  // Measure container once the mockup image has loaded (guarantees valid height)
+  const measureContainer = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setContainerRect(rect);
+    }
+  }, []);
 
-  // Derive Rnd pixel position + size from transform percentages whenever rect/transform changes
+  // Also try measuring on mount (handles cached images)
   useLayoutEffect(() => {
-    if (!containerRect) return;
-    const width = (transform.widthPct / 100) * containerRect.width;
-    const height = width; // square due to lockAspectRatio
-    const centerX = (transform.x / 100) * containerRect.width;
-    const centerY = (transform.y / 100) * containerRect.height;
-    setRnd({
-      x: centerX - width / 2,
-      y: centerY - height / 2,
-      width,
-      height
-    });
-  }, [containerRect, transform.widthPct, transform.x, transform.y]);
+    if (!containerRect) measureContainer();
+  }, [measureContainer, containerRect]);
+
+  // Compute pixel position from center percentages
+  const rndWidth = containerRect ? (transform.widthPct / 100) * containerRect.width : 0;
+  const rndHeight = rndWidth; // square due to lockAspectRatio
+  const rndX = containerRect ? (transform.x / 100) * containerRect.width - rndWidth / 2 : 0;
+  const rndY = containerRect ? (transform.y / 100) * containerRect.height - rndHeight / 2 : 0;
 
   const handleRotationStart = useCallback((e) => {
     e.stopPropagation();
     e.preventDefault();
-    if (!mockupRef.current) return;
-    const rect = mockupRef.current.getBoundingClientRect();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
@@ -118,37 +95,38 @@ export default function SinglePreview({
     window.addEventListener('mouseup', stopRotation);
     window.addEventListener('touchmove', handleRotation, { passive: false });
     window.addEventListener('touchend', stopRotation);
-  }, [mockupRef, transform, onDesignTransformChange]);
+  }, [transform, onDesignTransformChange]);
 
   const onDragStop = useCallback((e, d) => {
     if (!containerRect) return;
+    const width = (transform.widthPct / 100) * containerRect.width;
     // d.x, d.y from Rnd are top-left; convert to center percentages
-    const centerX = d.x + rnd.width / 2;
-    const centerY = d.y + rnd.height / 2;
+    const centerX = d.x + width / 2;
+    const centerY = d.y + width / 2;
     onDesignTransformChange?.({
       ...transform,
       x: (centerX / containerRect.width) * 100,
       y: (centerY / containerRect.height) * 100
     });
-    setRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [containerRect, rnd.width, rnd.height, transform, onDesignTransformChange]);
+  }, [containerRect, transform, onDesignTransformChange]);
 
   const onResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
     if (!containerRect) return;
     const newWidth = ref.offsetWidth;
-    const newHeight = newWidth; // square due to lockAspectRatio
     const newWidthPct = (newWidth / containerRect.width) * 100;
     // rndPosition is top-left; convert to center
     const centerX = rndPosition.x + newWidth / 2;
-    const centerY = rndPosition.y + newHeight / 2;
+    const centerY = rndPosition.y + newWidth / 2;
     onDesignTransformChange?.({
       ...transform,
       widthPct: newWidthPct,
       x: (centerX / containerRect.width) * 100,
       y: (centerY / containerRect.height) * 100
     });
-    setRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
   }, [containerRect, transform, onDesignTransformChange]);
+
+  if (!generatedImage)
+    return null;
 
   return (
 
@@ -160,8 +138,7 @@ export default function SinglePreview({
     >
 
       <div
-        ref={mockupRef}
-
+        ref={containerRef}
         className="
           relative
           overflow-hidden
@@ -170,6 +147,7 @@ export default function SinglePreview({
           bg-[#171717]
           border
           border-[#2f2f2f]
+          aspect-square
         "
       >
 
@@ -187,14 +165,17 @@ export default function SinglePreview({
 
           className="
             w-full
+            h-full
+            object-cover
             block
           "
+          onLoad={measureContainer}
         />
 
         <Rnd
           ref={rndRef}
-          size={{ width: rnd.width, height: rnd.height }}
-          position={{ x: rnd.x, y: rnd.y }}
+          size={{ width: rndWidth, height: rndHeight }}
+          position={{ x: rndX, y: rndY }}
           lockAspectRatio
           onDragStop={onDragStop}
           onResizeStop={onResizeStop}

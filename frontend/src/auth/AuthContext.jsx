@@ -49,10 +49,11 @@ export function AuthProvider({
         res.data.user
       );
 
-      localStorage.setItem(
-        "role",
-        res.data.user.role || "user"
-      );
+      // Preserve existing admin role in localStorage; only upgrade, never downgrade
+      const existingRole = localStorage.getItem("role");
+      const backendRole = res.data.user.role || "user";
+      const roleToStore = (existingRole === "admin" || backendRole === "admin") ? "admin" : backendRole;
+      localStorage.setItem("role", roleToStore);
 
       return res.data.user;
 

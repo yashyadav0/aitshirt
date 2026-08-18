@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useLayoutEffect } from "react";
+import { useRef, useState, useCallback, useLayoutEffect, useMemo } from "react";
 import { Rnd } from "react-rnd";
 
 export default function CouplePreview({
@@ -22,93 +22,66 @@ export default function CouplePreview({
 
 }) {
 
-  const designStyles = {
+  const designStyles = useMemo(() => ({
+    tshirt: { top: "50%", width: "48%" },
+    hoodie: { top: "50%", width: "27%" },
+    oversized: { top: "50%", width: "55%" },
+    kids: { top: "50%", width: "34%" }
+  }), []);
 
-    tshirt: {
-
-      top: "50%",
-      width: "48%"
-    },
-
-    hoodie: {
-
-      top: "42%",
-      width: "27%"
-    },
-
-    oversized: {
-
-      top: "42%",
-      width: "55%"
-    },
-
-    kids: {
-
-      top: "44%",
-      width: "34%"
-    }
-  };
-
-  const defaultStyle =
-    designStyles[
-      productType
-    ] || designStyles.tshirt;
+  const defaultStyle = designStyles[productType] || designStyles.tshirt;
 
   const defaultY = parseFloat(defaultStyle.top.replace("%", ""));
   const defaultWidthPct = parseFloat(defaultStyle.width.replace("%", ""));
 
-  const hisT = hisTransform || {
+  const defaultHisT = useMemo(() => ({
     x: 50,
     y: defaultY,
     widthPct: defaultWidthPct,
     rotation: 0
-  };
+  }), [defaultY, defaultWidthPct]);
 
-  const herT = herTransform || {
+  const defaultHerT = useMemo(() => ({
     x: 50,
     y: defaultY,
     widthPct: defaultWidthPct,
     rotation: 0
-  };
+  }), [defaultY, defaultWidthPct]);
 
-  // Controlled Rnd state (top-left + size in pixels), derived from center percentages
-  const [hisRnd, setHisRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [herRnd, setHerRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const hisT = hisTransform || defaultHisT;
+  const herT = herTransform || defaultHerT;
+
+  // Container dimensions — null until measured after mockup images load
   const [hisRect, setHisRect] = useState(null);
   const [herRect, setHerRect] = useState(null);
   const hisMockupRef = useRef(null);
   const herMockupRef = useRef(null);
 
-  // Measure containers
-  useLayoutEffect(() => {
+  // Measure containers once the mockup images have loaded (guarantees valid height)
+  const measureHisContainer = useCallback(() => {
     if (!hisMockupRef.current) return;
-    setHisRect(hisMockupRef.current.getBoundingClientRect());
-  }, [hisMockupRef.current]);
+    const rect = hisMockupRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setHisRect(rect);
+    }
+  }, []);
 
-  useLayoutEffect(() => {
+  const measureHerContainer = useCallback(() => {
     if (!herMockupRef.current) return;
-    setHerRect(herMockupRef.current.getBoundingClientRect());
-  }, [herMockupRef.current]);
+    const rect = herMockupRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setHerRect(rect);
+    }
+  }, []);
 
-  // Derive his Rnd position + size from transform percentages
+  // Also try measuring on mount (handles cached images)
   useLayoutEffect(() => {
-    if (!hisRect) return;
-    const width = (hisT.widthPct / 100) * hisRect.width;
-    const height = width;
-    const centerX = (hisT.x / 100) * hisRect.width;
-    const centerY = (hisT.y / 100) * hisRect.height;
-    setHisRnd({ x: centerX - width / 2, y: centerY - height / 2, width, height });
-  }, [hisRect, hisT.widthPct, hisT.x, hisT.y]);
+    if (!hisRect) measureHisContainer();
+  }, [measureHisContainer, hisRect]);
 
-  // Derive her Rnd position + size from transform percentages
   useLayoutEffect(() => {
-    if (!herRect) return;
-    const width = (herT.widthPct / 100) * herRect.width;
-    const height = width;
-    const centerX = (herT.x / 100) * herRect.width;
-    const centerY = (herT.y / 100) * herRect.height;
-    setHerRnd({ x: centerX - width / 2, y: centerY - height / 2, width, height });
-  }, [herRect, herT.widthPct, herT.x, herT.y]);
+    if (!herRect) measureHerContainer();
+  }, [measureHerContainer, herRect]);
 
   const handleRotationStart = useCallback((e, transform, onChange, mockupEl) => {
     e.stopPropagation();
@@ -139,61 +112,71 @@ export default function CouplePreview({
     window.addEventListener('touchend', stopRotation);
   }, []);
 
+  // His drag/resize
   const onHisDragStop = useCallback((e, d) => {
     if (!hisRect) return;
-    const centerX = d.x + hisRnd.width / 2;
-    const centerY = d.y + hisRnd.height / 2;
+    const width = (hisT.widthPct / 100) * hisRect.width;
+    const centerX = d.x + width / 2;
+    const centerY = d.y + width / 2;
     onHisTransformChange?.({
       ...hisT,
       x: (centerX / hisRect.width) * 100,
       y: (centerY / hisRect.height) * 100
     });
-    setHisRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [hisRect, hisRnd.width, hisRnd.height, hisT, onHisTransformChange]);
+  }, [hisRect, hisT, onHisTransformChange]);
 
   const onHisResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
     if (!hisRect) return;
     const newWidth = ref.offsetWidth;
-    const newHeight = newWidth;
     const newWidthPct = (newWidth / hisRect.width) * 100;
     const centerX = rndPosition.x + newWidth / 2;
-    const centerY = rndPosition.y + newHeight / 2;
+    const centerY = rndPosition.y + newWidth / 2;
     onHisTransformChange?.({
       ...hisT,
       widthPct: newWidthPct,
       x: (centerX / hisRect.width) * 100,
       y: (centerY / hisRect.height) * 100
     });
-    setHisRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
   }, [hisRect, hisT, onHisTransformChange]);
 
+  // Her drag/resize
   const onHerDragStop = useCallback((e, d) => {
     if (!herRect) return;
-    const centerX = d.x + herRnd.width / 2;
-    const centerY = d.y + herRnd.height / 2;
+    const width = (herT.widthPct / 100) * herRect.width;
+    const centerX = d.x + width / 2;
+    const centerY = d.y + width / 2;
     onHerTransformChange?.({
       ...herT,
       x: (centerX / herRect.width) * 100,
       y: (centerY / herRect.height) * 100
     });
-    setHerRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [herRect, herRnd.width, herRnd.height, herT, onHerTransformChange]);
+  }, [herRect, herT, onHerTransformChange]);
 
   const onHerResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
     if (!herRect) return;
     const newWidth = ref.offsetWidth;
-    const newHeight = newWidth;
     const newWidthPct = (newWidth / herRect.width) * 100;
     const centerX = rndPosition.x + newWidth / 2;
-    const centerY = rndPosition.y + newHeight / 2;
+    const centerY = rndPosition.y + newWidth / 2;
     onHerTransformChange?.({
       ...herT,
       widthPct: newWidthPct,
       x: (centerX / herRect.width) * 100,
       y: (centerY / herRect.height) * 100
     });
-    setHerRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
   }, [herRect, herT, onHerTransformChange]);
+
+  // Compute pixel values for his
+  const hisWidth = hisRect ? (hisT.widthPct / 100) * hisRect.width : 0;
+  const hisHeight = hisWidth;
+  const hisX = hisRect ? (hisT.x / 100) * hisRect.width - hisWidth / 2 : 0;
+  const hisY = hisRect ? (hisT.y / 100) * hisRect.height - hisHeight / 2 : 0;
+
+  // Compute pixel values for her
+  const herWidth = herRect ? (herT.widthPct / 100) * herRect.width : 0;
+  const herHeight = herWidth;
+  const herX = herRect ? (herT.x / 100) * herRect.width - herWidth / 2 : 0;
+  const herY = herRect ? (herT.y / 100) * herRect.height - herHeight / 2 : 0;
 
   const sides = [
     {
@@ -203,10 +186,14 @@ export default function CouplePreview({
       color: hisColor,
       side: hisSide,
       transform: hisT,
-      rnd: hisRnd,
+      width: hisWidth,
+      height: hisHeight,
+      x: hisX,
+      y: hisY,
       mockupRef: hisMockupRef,
+      measureContainer: measureHisContainer,
       onDragStop: onHisDragStop,
-      onResizeStop: onHisResizeStop
+      onResizeStop: onHisResizeStop,
     },
     {
       key: "her",
@@ -215,12 +202,20 @@ export default function CouplePreview({
       color: herColor,
       side: herSide,
       transform: herT,
-      rnd: herRnd,
+      width: herWidth,
+      height: herHeight,
+      x: herX,
+      y: herY,
       mockupRef: herMockupRef,
+      measureContainer: measureHerContainer,
       onDragStop: onHerDragStop,
-      onResizeStop: onHerResizeStop
+      onResizeStop: onHerResizeStop,
     }
   ];
+
+  if (!generatedHisImage || !generatedHerImage) {
+    return null;
+  }
 
   return (
 
@@ -234,7 +229,7 @@ export default function CouplePreview({
       "
     >
 
-      {sides.map(({ key, label, image, color, side, transform, rnd, mockupRef, onDragStop, onResizeStop }) => (
+      {sides.map(({ key, label, image, color, side, transform, width, height, x, y, mockupRef, measureContainer, onDragStop, onResizeStop }) => (
         <div key={key} className="bg-[#171717] rounded-2xl overflow-hidden border border-[#2f2f2f] p-3">
           <div className="relative aspect-square">
             <img
@@ -242,10 +237,11 @@ export default function CouplePreview({
               src={getMockup(productType, color, side)}
               alt={`${label} mockup`}
               className="w-full h-full object-cover"
+              onLoad={measureContainer}
             />
             <Rnd
-              size={{ width: rnd.width, height: rnd.height }}
-              position={{ x: rnd.x, y: rnd.y }}
+              size={{ width, height }}
+              position={{ x, y }}
               lockAspectRatio
               onDragStop={onDragStop}
               onResizeStop={onResizeStop}
@@ -297,6 +293,7 @@ export default function CouplePreview({
                 </div>
               </div>
             </Rnd>
+
           </div>
         </div>
       ))}

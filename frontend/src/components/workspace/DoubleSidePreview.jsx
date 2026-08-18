@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, useLayoutEffect } from "react";
+import { useEffect, useRef, useState, useCallback, useLayoutEffect, useMemo } from "react";
 import { Rnd } from "react-rnd";
 
 export default function DoubleSidePreview({
@@ -18,80 +18,59 @@ export default function DoubleSidePreview({
   const renderKey = [frontImage, backImage, productType, selectedColor].join("|");
   const [loaded, setLoaded] = useState({ key: "", frontMockup: false, frontArtwork: false, backMockup: false, backArtwork: false });
   const reportedKey = useRef("");
-  const rendered = loaded.key === renderKey && loaded.frontMockup && loaded.frontArtwork && loaded.backMockup && loaded.backArtwork;
 
-  useEffect(() => {
-    if (frontImage && backImage && rendered && reportedKey.current !== renderKey) {
-      reportedKey.current = renderKey;
-      onRendered?.();
-    }
-  }, [backImage, frontImage, onRendered, renderKey, rendered]);
-
-  const markLoaded = (part) => setLoaded((current) => {
-    const next = current.key === renderKey
-      ? current
-      : { key: renderKey, frontMockup: false, frontArtwork: false, backMockup: false, backArtwork: false };
-    return { ...next, [part]: true };
-  });
-
-  if (!frontImage || !backImage) {
-    return isLoading ? <div className="mt-8 aspect-square animate-pulse rounded-2xl bg-[#202020]" /> : null;
-  }
-
-  const designStyles = {
-    tshirt: { top: "50%", width: "48%" },
-    hoodie: { top: "42%", width: "27%" },
-    oversized: { top: "42%", width: "55%" },
-    kids: { top: "42%", width: "40%" }
-  };
-  const defaultStyle = designStyles[productType] || designStyles.tshirt;
+  // Memoize default styles
+  const defaultStyle = useMemo(() => {
+    const designStyles = {
+      tshirt: { top: "50%", width: "48%" },
+      hoodie: { top: "50%", width: "27%" },
+      oversized: { top: "50%", width: "55%" },
+      kids: { top: "50%", width: "40%" }
+    };
+    return designStyles[productType] || designStyles.tshirt;
+  }, [productType]);
 
   const defaultY = parseFloat(defaultStyle.top.replace("%", ""));
   const defaultWidthPct = parseFloat(defaultStyle.width.replace("%", ""));
 
-  const frontT = frontTransform || { x: 50, y: defaultY, widthPct: defaultWidthPct, rotation: 0 };
-  const backT = backTransform || { x: 50, y: defaultY, widthPct: defaultWidthPct, rotation: 0 };
+  // Memoize default transforms
+  const defaultFrontT = useMemo(() => ({ x: 50, y: defaultY, widthPct: defaultWidthPct, rotation: 0 }), [defaultY, defaultWidthPct]);
+  const defaultBackT = useMemo(() => ({ x: 50, y: defaultY, widthPct: defaultWidthPct, rotation: 0 }), [defaultY, defaultWidthPct]);
 
-  // Controlled Rnd state (top-left + size in pixels), derived from center percentages
-  const [frontRnd, setFrontRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [backRnd, setBackRnd] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const frontT = frontTransform || defaultFrontT;
+  const backT = backTransform || defaultBackT;
+
+  // Container dimensions — null until measured after mockup images load
   const [frontRect, setFrontRect] = useState(null);
   const [backRect, setBackRect] = useState(null);
-  const frontRndRef = useRef(null);
-  const backRndRef = useRef(null);
   const frontMockupRef = useRef(null);
   const backMockupRef = useRef(null);
 
-  // Measure containers
-  useLayoutEffect(() => {
+  // Measure containers once the mockup images have loaded (guarantees valid height)
+  const measureFrontContainer = useCallback(() => {
     if (!frontMockupRef.current) return;
-    setFrontRect(frontMockupRef.current.getBoundingClientRect());
-  }, [frontMockupRef.current]);
+    const rect = frontMockupRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setFrontRect(rect);
+    }
+  }, []);
 
-  useLayoutEffect(() => {
+  const measureBackContainer = useCallback(() => {
     if (!backMockupRef.current) return;
-    setBackRect(backMockupRef.current.getBoundingClientRect());
-  }, [backMockupRef.current]);
+    const rect = backMockupRef.current.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      setBackRect(rect);
+    }
+  }, []);
 
-  // Derive front Rnd position + size from transform percentages
+  // Also try measuring on mount (handles cached images)
   useLayoutEffect(() => {
-    if (!frontRect) return;
-    const width = (frontT.widthPct / 100) * frontRect.width;
-    const height = width;
-    const centerX = (frontT.x / 100) * frontRect.width;
-    const centerY = (frontT.y / 100) * frontRect.height;
-    setFrontRnd({ x: centerX - width / 2, y: centerY - height / 2, width, height });
-  }, [frontRect, frontT.widthPct, frontT.x, frontT.y]);
+    if (!frontRect) measureFrontContainer();
+  }, [measureFrontContainer, frontRect]);
 
-  // Derive back Rnd position + size from transform percentages
   useLayoutEffect(() => {
-    if (!backRect) return;
-    const width = (backT.widthPct / 100) * backRect.width;
-    const height = width;
-    const centerX = (backT.x / 100) * backRect.width;
-    const centerY = (backT.y / 100) * backRect.height;
-    setBackRnd({ x: centerX - width / 2, y: centerY - height / 2, width, height });
-  }, [backRect, backT.widthPct, backT.x, backT.y]);
+    if (!backRect) measureBackContainer();
+  }, [measureBackContainer, backRect]);
 
   const handleRotationStart = useCallback((e, transform, onChange, mockupEl) => {
     e.stopPropagation();
@@ -122,68 +101,100 @@ export default function DoubleSidePreview({
     window.addEventListener('touchend', stopRotation);
   }, []);
 
+  const markLoaded = (part) => setLoaded((current) => {
+    const next = current.key === renderKey
+      ? current
+      : { key: renderKey, frontMockup: false, frontArtwork: false, backMockup: false, backArtwork: false };
+    return { ...next, [part]: true };
+  });
+
+  // Front drag/resize
   const onFrontDragStop = useCallback((e, d) => {
     if (!frontRect) return;
-    const centerX = d.x + frontRnd.width / 2;
-    const centerY = d.y + frontRnd.height / 2;
+    const width = (frontT.widthPct / 100) * frontRect.width;
+    const centerX = d.x + width / 2;
+    const centerY = d.y + width / 2;
     onFrontTransformChange?.({
       ...frontT,
       x: (centerX / frontRect.width) * 100,
       y: (centerY / frontRect.height) * 100
     });
-    setFrontRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [frontRect, frontRnd.width, frontRnd.height, frontT, onFrontTransformChange]);
+  }, [frontRect, frontT, onFrontTransformChange]);
 
   const onFrontResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
     if (!frontRect) return;
     const newWidth = ref.offsetWidth;
-    const newHeight = newWidth;
     const newWidthPct = (newWidth / frontRect.width) * 100;
     const centerX = rndPosition.x + newWidth / 2;
-    const centerY = rndPosition.y + newHeight / 2;
+    const centerY = rndPosition.y + newWidth / 2;
     onFrontTransformChange?.({
       ...frontT,
       widthPct: newWidthPct,
       x: (centerX / frontRect.width) * 100,
       y: (centerY / frontRect.height) * 100
     });
-    setFrontRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
   }, [frontRect, frontT, onFrontTransformChange]);
 
+  // Back drag/resize
   const onBackDragStop = useCallback((e, d) => {
     if (!backRect) return;
-    const centerX = d.x + backRnd.width / 2;
-    const centerY = d.y + backRnd.height / 2;
+    const width = (backT.widthPct / 100) * backRect.width;
+    const centerX = d.x + width / 2;
+    const centerY = d.y + width / 2;
     onBackTransformChange?.({
       ...backT,
       x: (centerX / backRect.width) * 100,
       y: (centerY / backRect.height) * 100
     });
-    setBackRnd((prev) => ({ ...prev, x: d.x, y: d.y }));
-  }, [backRect, backRnd.width, backRnd.height, backT, onBackTransformChange]);
+  }, [backRect, backT, onBackTransformChange]);
 
   const onBackResizeStop = useCallback((e, dir, ref, delta, rndPosition) => {
     if (!backRect) return;
     const newWidth = ref.offsetWidth;
-    const newHeight = newWidth;
     const newWidthPct = (newWidth / backRect.width) * 100;
     const centerX = rndPosition.x + newWidth / 2;
-    const centerY = rndPosition.y + newHeight / 2;
+    const centerY = rndPosition.y + newWidth / 2;
     onBackTransformChange?.({
       ...backT,
       widthPct: newWidthPct,
       x: (centerX / backRect.width) * 100,
       y: (centerY / backRect.height) * 100
     });
-    setBackRnd({ x: rndPosition.x, y: rndPosition.y, width: newWidth, height: newHeight });
   }, [backRect, backT, onBackTransformChange]);
+
+  // Compute pixel values for front
+  const frontWidth = frontRect ? (frontT.widthPct / 100) * frontRect.width : 0;
+  const frontHeight = frontWidth;
+  const frontX = frontRect ? (frontT.x / 100) * frontRect.width - frontWidth / 2 : 0;
+  const frontY = frontRect ? (frontT.y / 100) * frontRect.height - frontHeight / 2 : 0;
+
+  // Compute pixel values for back
+  const backWidth = backRect ? (backT.widthPct / 100) * backRect.width : 0;
+  const backHeight = backWidth;
+  const backX = backRect ? (backT.x / 100) * backRect.width - backWidth / 2 : 0;
+  const backY = backRect ? (backT.y / 100) * backRect.height - backHeight / 2 : 0;
+
+  const rendered = loaded.key === renderKey && loaded.frontMockup && loaded.frontArtwork && loaded.backMockup && loaded.backArtwork;
+
+  useEffect(() => {
+    if (frontImage && backImage && rendered && reportedKey.current !== renderKey) {
+      reportedKey.current = renderKey;
+      onRendered?.();
+    }
+  }, [backImage, frontImage, onRendered, renderKey, rendered]);
+
+  if (!frontImage || !backImage) {
+    return isLoading ? <div className="mt-8 aspect-square animate-pulse rounded-2xl bg-[#202020]" /> : null;
+  }
+
+  const sides = [
+    { key: "front", label: "Front", image: frontImage, transform: frontT, width: frontWidth, height: frontHeight, x: frontX, y: frontY, mockupRef: frontMockupRef, measureContainer: measureFrontContainer, onDragStop: onFrontDragStop, onResizeStop: onFrontResizeStop },
+    { key: "back", label: "Back", image: backImage, transform: backT, width: backWidth, height: backHeight, x: backX, y: backY, mockupRef: backMockupRef, measureContainer: measureBackContainer, onDragStop: onBackDragStop, onResizeStop: onBackResizeStop }
+  ];
 
   return (
     <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      {[
-        { key: "front", label: "Front", image: frontImage, transform: frontT, rnd: frontRnd, mockupRef: frontMockupRef, rndRef: frontRndRef, onDragStop: onFrontDragStop, onResizeStop: onFrontResizeStop },
-        { key: "back", label: "Back", image: backImage, transform: backT, rnd: backRnd, mockupRef: backMockupRef, rndRef: backRndRef, onDragStop: onBackDragStop, onResizeStop: onBackResizeStop }
-      ].map(({ key, label, image, transform, rnd, mockupRef, rndRef, onDragStop, onResizeStop }) => (
+      {sides.map(({ key, label, image, transform, width, height, x, y, mockupRef, measureContainer, onDragStop, onResizeStop }) => (
         <div key={key} className="overflow-hidden rounded-2xl border border-[#2f2f2f] bg-[#171717] p-3">
           <p className="mb-2 text-sm font-medium text-zinc-300">{label}</p>
           <div className="relative aspect-square">
@@ -192,13 +203,12 @@ export default function DoubleSidePreview({
               src={getMockup(productType, selectedColor, key)}
               alt={`${label} mockup`}
               className="h-full w-full object-cover"
-              onLoad={() => markLoaded(`${key}Mockup`)}
+              onLoad={() => { markLoaded(`${key}Mockup`); measureContainer(); }}
               onError={() => onRenderError?.(`The ${label.toLowerCase()} product mockup could not be loaded.`)}
             />
             <Rnd
-              ref={rndRef}
-              size={{ width: rnd.width, height: rnd.height }}
-              position={{ x: rnd.x, y: rnd.y }}
+              size={{ width, height }}
+              position={{ x, y }}
               lockAspectRatio
               onDragStop={onDragStop}
               onResizeStop={onResizeStop}
@@ -235,8 +245,8 @@ export default function DoubleSidePreview({
                 <div
                   className="absolute left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-cyan-400 border-2 border-white cursor-pointer hover:bg-cyan-300 touch-none flex items-center justify-center"
                   style={{ pointerEvents: "auto", userSelect: "none", top: `-30px` }}
-                  onMouseDown={(e) => handleRotationStart(e, transform, (val) => onFrontTransformChange?.(val) || onBackTransformChange?.(val), mockupRef.current)}
-                  onTouchStart={(e) => handleRotationStart(e, transform, (val) => onFrontTransformChange?.(val) || onBackTransformChange?.(val), mockupRef.current)}
+                  onMouseDown={(e) => handleRotationStart(e, transform, key === "front" ? onFrontTransformChange : onBackTransformChange, mockupRef.current)}
+                  onTouchStart={handleRotationStart}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 4v6h-6" />
