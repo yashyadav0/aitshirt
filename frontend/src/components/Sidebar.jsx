@@ -23,6 +23,8 @@ import {
   Shirt,
   TicketPercent,
   SlidersHorizontal,
+  Image,
+  PackageSearch,
   LogOut
 } from "lucide-react";
 
@@ -149,6 +151,16 @@ export default function Sidebar() {
       to: "/admin-presets",
       label: "Presets",
       icon: SlidersHorizontal
+    },
+    {
+      to: "/admin-mockups",
+      label: "Mockups",
+      icon: Image
+    },
+    {
+      to: "/admin-inventory",
+      label: "Inventory",
+      icon: PackageSearch
     }
   ];
 

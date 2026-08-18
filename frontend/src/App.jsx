@@ -50,6 +50,12 @@ import AdminCoupons
 import AdminPresets
   from "./pages/AdminPresets";
 
+import AdminMockups
+  from "./pages/AdminMockups";
+
+import AdminInventory
+  from "./pages/AdminInventory";
+
 import Sidebar
   from "./components/Sidebar";
 
@@ -158,6 +164,24 @@ function AppShell() {
               element={
                 <AdminRoute>
                   <AdminPresets />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-mockups"
+              element={
+                <AdminRoute>
+                  <AdminMockups />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-inventory"
+              element={
+                <AdminRoute>
+                  <AdminInventory />
                 </AdminRoute>
               }
             />
