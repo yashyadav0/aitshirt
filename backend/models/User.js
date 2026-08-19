@@ -1,6 +1,8 @@
 const mongoose =
   require("mongoose");
 
+const { getTierConfig } = require("../config/tiers");
+
 const userSchema =
   new mongoose.Schema({
 
@@ -36,6 +38,22 @@ const userSchema =
       default: false
     },
 
+    // 🎫 Tier / Subscription
+    tier: {
+      type: String,
+      default: "free",
+      enum: ["free", "pro", "premium"]
+    },
+
+    weeklyLimit: {
+      type: Number,
+      default: 5
+    },
+
+    tierAssignedAt: {
+      type: Date
+    },
+
     // 🎁 Prompt Credits
     weeklyPromptsLeft: {
       type: Number,
@@ -60,6 +78,14 @@ const userSchema =
   }, {
     timestamps: true
   });
+
+// Pre-save: initialize weeklyLimit from tier if not set (new user)
+userSchema.pre("save", function (next) {
+  if (this.isNew && !this.weeklyLimit) {
+    this.weeklyLimit = getTierConfig(this.tier).weeklyLimit;
+  }
+  next();
+});
 
 module.exports =
   mongoose.model(

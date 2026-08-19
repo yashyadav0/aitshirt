@@ -14,6 +14,10 @@ import {
   removeBackground
 } from "@imgly/background-removal";
 
+import {
+  useAuth
+} from "../auth/AuthContext";
+
 import DesignPreferences
 from "../components/workspace/DesignPreferences";
 
@@ -32,6 +36,17 @@ from "../components/workspace/GenerationLoader";
 
 import GenerateButton
 from "../components/workspace/GenerateButton";
+
+import UsageIndicator
+from "../components/workspace/UsageIndicator";
+
+import {
+  hasQuota
+} from "../utils/quota";
+
+import {
+  showError
+} from "../utils/toast";
 
 import ReferenceUploader
 from "../components/workspace/ReferenceUploader";
@@ -77,6 +92,12 @@ import {
 } from "../config/mockups";
 
 export default function AIWorkspace() {
+
+  const {
+    user,
+    profile,
+    refreshUser
+  } = useAuth();
 
   // =====================================
   // STATES
@@ -491,6 +512,27 @@ const startListening = () => {
 
       try {
 
+        // =====================================
+        // CLIENT-SIDE QUOTA PRE-CHECK
+        // =====================================
+
+        const authUser =
+          user || profile;
+
+        if (
+          authUser &&
+          !hasQuota(authUser)
+        ) {
+
+          setLoading(false);
+
+          showError(
+            "You've used all your prompts. Upgrade your plan or wait for the weekly reset."
+          );
+
+          return;
+        }
+
         setLoading(true);
 
         setGeneratedImage("");
@@ -636,6 +678,15 @@ const startListening = () => {
               }
             }
           );
+
+
+        // =====================================
+        // SYNC QUOTA FROM RESPONSE
+        // =====================================
+
+        if (res.data?.quota) {
+          refreshUser();
+        }
 
 
         const responsePreferences =
@@ -1005,6 +1056,24 @@ const startListening = () => {
 
         console.log(err);
 
+        const status =
+          err?.response?.status;
+
+        if (status === 409) {
+
+          showError(
+            err?.response?.data?.error ||
+            "You've reached your prompt limit."
+          );
+
+        } else if (
+          err?.response?.data?.error
+        ) {
+
+          showError(
+            err.response.data.error
+          );
+        }
       } finally {
 
         setLoading(false);
@@ -1204,28 +1273,32 @@ const startListening = () => {
               </div>
 
               <div className="mt-3 flex items-center justify-between gap-3">
-                <button
-                  onClick={startListening}
-                  className={`
-                    flex
-                    h-12
-                    w-12
-                    items-center
-                    justify-center
-                    rounded-2xl
-                    border
-                    border-[#333]
-                    transition
-                    ${
-                      isListening
-                        ? "bg-red-500 text-white"
-                        : "bg-[#202020] text-zinc-300 hover:text-white"
-                    }
-                  `}
-                  aria-label="Voice input"
-                >
-                  <Mic size={20} />
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={startListening}
+                    className={`
+                      flex
+                      h-12
+                      w-12
+                      items-center
+                      justify-center
+                      rounded-2xl
+                      border
+                      border-[#333]
+                      transition
+                      ${
+                        isListening
+                          ? "bg-red-500 text-white"
+                          : "bg-[#202020] text-zinc-300 hover:text-white"
+                      }
+                    `}
+                    aria-label="Voice input"
+                  >
+                    <Mic size={20} />
+                  </button>
+
+                  <UsageIndicator user={user || profile} />
+                </div>
 
                 <GenerateButton
                   loading={loading}

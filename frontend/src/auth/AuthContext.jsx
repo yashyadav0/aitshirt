@@ -85,6 +85,10 @@ export function AuthProvider({
     }
   }
 
+  async function refreshUser() {
+    return loadUser();
+  }
+
   useEffect(() => {
 
     loadUser();
@@ -132,7 +136,8 @@ export function AuthProvider({
           Boolean(user),
         loadUser,
         logout,
-        saveSession
+        saveSession,
+        refreshUser
       }),
       [
         user,

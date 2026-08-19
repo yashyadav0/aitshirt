@@ -6,6 +6,9 @@ const Order =
 const Cart =
   require("../models/Cart");
 
+const User =
+  require("../models/User");
+
 const authMiddleware =
   require("../middleware/authMiddleware");
 
@@ -108,6 +111,32 @@ router.post(
         userId:
           req.user.id
       });
+
+
+      // 🎁 POST-ORDER REWARD — grant extra prompts on every paid order
+      // (safe, non-destructive; admin can still assign named tiers manually)
+
+      try {
+
+        const buyer =
+          await User.findById(
+            req.user.id
+          );
+
+        if (buyer) {
+          buyer.extraPrompts =
+            (buyer.extraPrompts || 0) + 10;
+
+          await buyer.save();
+        }
+
+      } catch (rewardErr) {
+
+        console.log(
+          "POST-ORDER REWARD ERROR:",
+          rewardErr
+        );
+      }
 
 
       // ✅ RESPONSE

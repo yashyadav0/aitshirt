@@ -25,6 +25,10 @@ const authMiddleware =
 const adminMiddleware =
   require("../middleware/adminMiddleware");
 
+const {
+  getTierConfig
+} = require("../config/tiers");
+
 
 // =====================================
 // 📊 DASHBOARD
@@ -396,6 +400,102 @@ router.put(
         error:
           err.message
       });
+    }
+  }
+);
+
+
+// =====================================
+// ✏️ UPDATE USER (tier / credits / role / block)
+// =====================================
+
+router.put(
+
+  "/users/:id",
+
+  authMiddleware,
+
+  adminMiddleware,
+
+  async (req, res) => {
+
+    try {
+
+      const user =
+        await User.findById(
+          req.params.id
+        );
+
+      if (!user) {
+        return res.status(404)
+          .json({
+            error: "User not found"
+          });
+      }
+
+      const {
+        tier,
+        weeklyLimit,
+        extraPrompts,
+        promptCreditBalance,
+        weeklyPromptsLeft,
+        isBlocked,
+        role
+      } = req.body;
+
+      // 🎫 Tier
+      if (tier && ["free", "pro", "premium"].includes(tier)) {
+        user.tier = tier;
+        user.tierAssignedAt = new Date();
+        // Auto-set weeklyLimit from tier unless explicitly overridden
+        if (weeklyLimit === undefined) {
+          user.weeklyLimit = getTierConfig(tier).weeklyLimit;
+        }
+      }
+
+      // 🔢 Explicit weekly limit
+      if (weeklyLimit !== undefined) {
+        user.weeklyLimit = Number(weeklyLimit) || 0;
+      }
+
+      if (extraPrompts !== undefined) {
+        user.extraPrompts = Number(extraPrompts) || 0;
+      }
+
+      if (promptCreditBalance !== undefined) {
+        user.promptCreditBalance = Number(promptCreditBalance) || 0;
+      }
+
+      if (weeklyPromptsLeft !== undefined) {
+        user.weeklyPromptsLeft = Number(weeklyPromptsLeft) || 0;
+      }
+
+      if (typeof isBlocked === "boolean") {
+        user.isBlocked = isBlocked;
+      }
+
+      if (role && ["user", "admin"].includes(role)) {
+        user.role = role;
+      }
+
+      await user.save();
+
+      res.json({
+        success: true,
+        user
+      });
+
+    } catch (err) {
+
+      console.log(
+        "UPDATE USER ERROR:",
+        err
+      );
+
+      res.status(500)
+        .json({
+          error: err.message
+        });
     }
   }
 );

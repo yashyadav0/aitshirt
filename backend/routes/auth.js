@@ -35,7 +35,12 @@ function publicUser(user) {
     email: user.email,
     role: user.role,
     phone: user.phone,
-    phoneVerified: user.phoneVerified
+    phoneVerified: user.phoneVerified,
+    tier: user.tier || "free",
+    weeklyLimit: user.weeklyLimit || 5,
+    weeklyPromptsLeft: user.weeklyPromptsLeft || 0,
+    extraPrompts: user.extraPrompts || 0,
+    promptCreditBalance: user.promptCreditBalance || 0
   };
 }
 

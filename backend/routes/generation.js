@@ -13,8 +13,18 @@ const axios =
 const Generation =
   require("../models/Generation");
 
+const User =
+  require("../models/User");
+
 const authMiddleware =
   require("../middleware/authMiddleware");
+
+const {
+  resetIfNeeded,
+  hasQuota,
+  consumeQuota,
+  getQuotaSummary
+} = require("../utils/quota");
 
 const {
   buildPreferenceEnrichedPrompt,
@@ -876,7 +886,7 @@ router.post(
 
   "/create",
 
-  //authMiddleware, remove comment done for testing 
+  authMiddleware,
 
   upload.array(
     "referenceImages"
@@ -885,6 +895,33 @@ router.post(
   async (req, res) => {
 
     try {
+
+      // =====================================
+      // AUTH + QUOTA ENFORCEMENT
+      // =====================================
+
+      const user =
+        await User.findById(
+          req.user.id
+        );
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: "User not found"
+        });
+      }
+
+      await resetIfNeeded(user);
+
+      if (!hasQuota(user)) {
+        return res.status(409).json({
+          success: false,
+          code: "QUOTA_EXCEEDED",
+          error: "You've reached your weekly prompt limit. Upgrade your plan or wait for the weekly reset.",
+          quota: getQuotaSummary(user)
+        });
+      }
 
       const {
 
@@ -1050,6 +1087,8 @@ IMPORTANT:
         );
 
 
+        await consumeQuota(user);
+
         return res.json({
 
           success: true,
@@ -1059,7 +1098,10 @@ IMPORTANT:
           preferences,
 
           enrichedPrompt:
-            enhancedPrompt
+            enhancedPrompt,
+
+          quota:
+            getQuotaSummary(user)
         });
       }
 
@@ -1176,6 +1218,8 @@ ${doubleReferenceInstruction}
         );
 
 
+        await consumeQuota(user);
+
         return res.json({
 
           success: true,
@@ -1187,7 +1231,10 @@ ${doubleReferenceInstruction}
           preferences,
 
           enrichedPrompt:
-            "Front and back generated as separate designs"
+            "Front and back generated as separate designs",
+
+          quota:
+            getQuotaSummary(user)
         });
       }
 
@@ -1295,6 +1342,8 @@ console.log(
 );
 
 
+await consumeQuota(user);
+
 return res.json({
 
   success: true,
@@ -1308,7 +1357,10 @@ return res.json({
   preferences,
 
   enrichedPrompt:
-    enhancedPrompt
+    enhancedPrompt,
+
+  quota:
+    getQuotaSummary(user)
 });
 
     } catch (err) {
