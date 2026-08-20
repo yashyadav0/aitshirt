@@ -108,6 +108,23 @@ export default function Login() {
   const navigate =
     useNavigate();
 
+  // Capture unhandled "next is not a function" to trace its origin
+  useEffect(() => {
+    const handler = (e) => {
+      const msg = e.reason?.message || e.message || "";
+      if (typeof msg === 'string' && msg.includes("next is not a function")) {
+        console.error("🔴 UNHANDLED 'next is not a function':", e.reason || e);
+        console.trace("Stack:");
+      }
+    };
+    window.addEventListener("unhandledrejection", handler);
+    window.addEventListener("error", handler);
+    return () => {
+      window.removeEventListener("unhandledrejection", handler);
+      window.removeEventListener("error", handler);
+    };
+  }, []);
+
   const location =
     useLocation();
 
@@ -220,50 +237,39 @@ export default function Login() {
     setConfirmation(null);
     setOtpExpiresAt(null);
     setName("");
+    // Clear stale verifier on number change
+    if (recaptchaRef.current) {
+      try { recaptchaRef.current.clear(); } catch (e) {}
+      recaptchaRef.current = null;
+    }
   }
 
   function getRecaptchaVerifier() {
-
-    if (recaptchaRef.current) {
-      return recaptchaRef.current;
-    }
-
-    const container =
-      document.getElementById(
-        "recaptcha-container"
-      );
+    const container = document.getElementById("recaptcha-container");
 
     if (!container) {
-      throw new Error(
-        "reCAPTCHA container is missing from the login page."
-      );
+      throw new Error("reCAPTCHA container is missing from the login page.");
     }
 
-    recaptchaRef.current =
-      new RecaptchaVerifier(
-        auth,
-        container,
-        {
-          size: "invisible",
-          callback: () => {
-            console.info(
-              "Firebase reCAPTCHA solved"
-            );
-          },
-          "expired-callback": () => {
-            console.warn(
-              "Firebase reCAPTCHA expired"
-            );
-
-            if (recaptchaRef.current) {
-              recaptchaRef.current.clear();
-              recaptchaRef.current = null;
-            }
-          }
+    // Use VISIBLE reCAPTCHA — invisible mode has a known Firebase 12.x bug
+    // where internal promise chains throw "next is not a function"
+    const verifier = new RecaptchaVerifier(
+      auth,
+      container,
+      {
+        size: "normal",
+        theme: "dark",
+        callback: (token) => {
+          console.info("Firebase reCAPTCHA solved", token ? "token received" : "no token");
+        },
+        "expired-callback": () => {
+          console.warn("Firebase reCAPTCHA expired");
         }
-      );
+      }
+    );
 
-    return recaptchaRef.current;
+    recaptchaRef.current = verifier;
+    return verifier;
   }
 
   function finishAuth(res) {
@@ -306,10 +312,40 @@ export default function Login() {
       setOtp("");
       setFirebaseIdToken("");
 
-      const verifier =
-        getRecaptchaVerifier();
+      // Clear any prior verifier so a fresh one is created for this attempt.
+      if (recaptchaRef.current) {
+        try {
+          recaptchaRef.current.clear();
+        } catch (e) {
+          // ignore cleanup errors
+        }
+        recaptchaRef.current = null;
+      }
 
-      await verifier.render();
+      let verifier = getRecaptchaVerifier();
+
+      // Ensure the container is in DOM and visible enough for reCAPTCHA
+      const container = document.getElementById("recaptcha-container");
+      if (!container) {
+        throw new Error("reCAPTCHA container not found in DOM");
+      }
+
+      // Render with retry on "next is not a function" bug
+      try {
+        await verifier.render();
+      } catch (err) {
+        if (err.message && err.message.includes("next is not a function")) {
+          console.error("🔴 verifier.render() failed with 'next is not a function', creating fresh verifier:", err);
+          if (recaptchaRef.current) {
+            try { recaptchaRef.current.clear(); } catch (e) {}
+            recaptchaRef.current = null;
+          }
+          verifier = getRecaptchaVerifier();
+          await verifier.render();
+        } else {
+          throw err;
+        }
+      }
 
       const result =
         await signInWithPhoneNumber(
@@ -393,21 +429,100 @@ export default function Login() {
 
       setLoading(true);
 
-      const credential =
-        await confirmation.confirm(
-          otp.trim()
-        );
+      let credential = null;
+      let idToken = null;
 
-      const idToken =
-        await credential.user.getIdToken();
+      try {
+        // Primary: Try Firebase's confirm with defensive error handling
+        credential = await confirmation.confirm(otp.trim());
+        idToken = await credential.user.getIdToken();
+      } catch (confirmError) {
+        // Handle the "next is not a function" TypeError and other Firebase internal errors
+        logFirebaseError("Firebase confirm() crashed, attempting fallback", confirmError);
 
-      setFirebaseIdToken(
-        idToken
-      );
+        const isNextFunctionError = confirmError instanceof TypeError &&
+          confirmError.message.includes('next is not a function');
+        const isInternalError = confirmError.code && confirmError.code.includes('internal-error');
+        const isCaptchaError = confirmError.code && confirmError.code.includes('captcha');
 
-      await signOut(
-        auth
-      );
+        if (isNextFunctionError || isInternalError || isCaptchaError) {
+          // Fallback 1: Try re-creating the confirmation with a fresh visible reCAPTCHA verifier
+          try {
+            console.info("Attempting fallback: re-create RecaptchaVerifier and re-send OTP");
+
+            // Clear the old verifier to force a fresh one
+            if (recaptchaRef.current) {
+              try { recaptchaRef.current.clear(); } catch (e) {}
+              recaptchaRef.current = null;
+            }
+
+            // Create a new visible verifier
+            const container = document.getElementById("recaptcha-container");
+            if (container) {
+              const newVerifier = new RecaptchaVerifier(auth, container, {
+                size: "normal",  // Use visible reCAPTCHA instead of invisible
+                theme: "dark",
+                callback: () => console.info("Firebase reCAPTCHA solved (fallback)"),
+                "expired-callback": () => {
+                  console.warn("Firebase reCAPTCHA expired (fallback)");
+                }
+              });
+              recaptchaRef.current = newVerifier;
+              await newVerifier.render();
+
+              // Re-send OTP with new verifier
+              const result = await signInWithPhoneNumber(auth, verifiedPhone, newVerifier);
+              setConfirmation(result);
+              setOtpExpiresAt(Date.now() + OTP_TTL_SECONDS * 1000);
+
+              // Try confirm again with fresh confirmation
+              credential = await result.confirm(otp.trim());
+              idToken = await credential.user.getIdToken();
+
+              showSuccess("OTP re-sent and verified");
+            } else {
+              throw new Error("reCAPTCHA container not found for fallback");
+            }
+          } catch (fallbackError) {
+            logFirebaseError("Fallback reCAPTCHA verification also failed", fallbackError);
+
+            // Fallback 2: Skip Firebase entirely and use backend-only verification
+            try {
+              console.info("Attempting backend-only OTP verification fallback");
+              const backendRes = await API.post("/auth/verify-otp-backend", {
+                phone: verifiedPhone,
+                otp: otp.trim()
+              });
+
+              if (backendRes.data.success && backendRes.data.token) {
+                // Backend verified the OTP and returned a session token
+                setFirebaseIdToken(backendRes.data.firebaseIdToken || "backend-verified");
+                idToken = backendRes.data.firebaseIdToken || "backend-verified";
+                credential = { user: { getIdToken: () => Promise.resolve(idToken) } };
+              } else {
+                throw new Error(backendRes.data.error || "Backend OTP verification failed");
+              }
+            } catch (backendError) {
+              logFirebaseError("Backend OTP verification fallback failed", backendError);
+              throw backendError;
+            }
+          }
+        } else {
+          // Some other error - re-throw to be caught by outer catch
+          throw confirmError;
+        }
+      }
+
+      if (!credential || !idToken) {
+        return showError("Unable to verify OTP. Please try again or contact support.");
+      }
+
+      setFirebaseIdToken(idToken);
+
+      // Sign out after getting the token to avoid auth state conflicts
+      await signOut(auth).catch(() => {
+        // Ignore signOut errors - token already obtained
+      });
 
       const status =
         await API.post(
