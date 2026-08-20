@@ -80,11 +80,11 @@ const userSchema =
   });
 
 // Pre-save: initialize weeklyLimit from tier if not set (new user)
-userSchema.pre("save", function (next) {
+// Modern Mongoose: no `next` callback needed for sync middleware
+userSchema.pre("save", function () {
   if (this.isNew && !this.weeklyLimit) {
     this.weeklyLimit = getTierConfig(this.tier).weeklyLimit;
   }
-  next();
 });
 
 module.exports =
