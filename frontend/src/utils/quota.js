@@ -1,22 +1,27 @@
-export function isUnlimitedTier(tier) {
-  return tier === "premium";
-}
-
 export function hasQuota(user) {
-  if (!user) return true;
-  if (isUnlimitedTier(user.tier)) return true;
+  if (!user) return false;
 
-  return (
-    (user.weeklyPromptsLeft || 0) > 0 ||
-    (user.extraPrompts || 0) > 0 ||
-    (user.promptCreditBalance || 0) > 0
-  );
+  // Admin/unlimited tier
+  if (user.tier === "premium" || user.weeklyLimit === Infinity) return true;
+
+  const weeklyLeft = user.weeklyPromptsLeft || 0;
+  const extra = user.extraPrompts || 0;
+  const credits = user.promptCreditBalance || 0;
+
+  return weeklyLeft > 0 || extra > 0 || credits > 0;
 }
 
-export function getUsageLabel(user) {
-  if (!user) return "";
-  if (isUnlimitedTier(user.tier)) return "Unlimited";
-  const left = user.weeklyPromptsLeft || 0;
-  const limit = user.weeklyLimit || 5;
-  return `${left}/${limit} left`;
+export function getQuotaSummary(user) {
+  if (!user) return null;
+
+  const isUnlimited = user.tier === "premium" || user.weeklyLimit === Infinity;
+
+  return {
+    tier: user.tier || "free",
+    weeklyLimit: isUnlimited ? Infinity : (user.weeklyLimit || 5),
+    weeklyPromptsLeft: user.weeklyPromptsLeft || 0,
+    extraPrompts: user.extraPrompts || 0,
+    promptCreditBalance: user.promptCreditBalance || 0,
+    isUnlimited
+  };
 }

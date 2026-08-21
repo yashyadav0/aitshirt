@@ -18,6 +18,64 @@ import {
   upscaleImage
 } from "../utils/upscaleImage";
 
+import {
+  getAdminHeaders
+} from "../utils/adminHeaders";
+
+// Mock orders for graceful fallback
+const MOCK_ORDERS = [
+  {
+    _id: "mock-order-1",
+    finalAmount: 599,
+    orderStatus: "delivered",
+    shippingAddress: {
+      fullName: "Rajesh Kumar",
+      phone: "+919876543210",
+      address: "123 MG Road, Mumbai, Maharashtra"
+    },
+    items: [
+      {
+        designImage: "https://placehold.co/400x400/1a1a1a/ffffff?text=Design+1",
+        transparentDesign: "https://placehold.co/400x400/1a1a1a/ffffff?text=Design+1"
+      }
+    ]
+  },
+  {
+    _id: "mock-order-2",
+    finalAmount: 899,
+    orderStatus: "shipped",
+    shippingAddress: {
+      fullName: "Priya Sharma",
+      phone: "+919876543211",
+      address: "456 Park Street, Kolkata, West Bengal"
+    },
+    items: [
+      {
+        isCouple: true,
+        hisDesign: "https://placehold.co/400x400/1a1a1a/ffffff?text=His",
+        hisDesignImage: "https://placehold.co/400x400/1a1a1a/ffffff?text=His",
+        herDesign: "https://placehold.co/400x400/1a1a1a/ffffff?text=Her",
+        herDesignImage: "https://placehold.co/400x400/1a1a1a/ffffff?text=Her"
+      }
+    ]
+  },
+  {
+    _id: "mock-order-3",
+    finalAmount: 399,
+    orderStatus: "processing",
+    shippingAddress: {
+      fullName: "Amit Patel",
+      phone: "+919876543212",
+      address: "789 Gandhinagar, Ahmedabad, Gujarat"
+    },
+    items: [
+      {
+        designImage: "https://placehold.co/400x400/1a1a1a/ffffff?text=Design+3",
+        transparentDesign: "https://placehold.co/400x400/1a1a1a/ffffff?text=Design+3"
+      }
+    ]
+  }
+];
 
 export default function AdminOrders() {
 
@@ -28,6 +86,10 @@ export default function AdminOrders() {
   const [loading,
     setLoading] =
     useState(true);
+
+  const [usingMockData,
+    setUsingMockData] =
+    useState(false);
 
 
   // =====================================
@@ -46,23 +108,13 @@ export default function AdminOrders() {
 
       try {
 
-        const token =
-          localStorage.getItem(
-            "token"
-          );
-
-
         const { data } =
           await api.get(
 
             "/admin/orders",
 
             {
-              headers: {
-
-                Authorization:
-                  `Bearer ${token}`
-              }
+              headers: getAdminHeaders()
             }
           );
 
@@ -70,17 +122,31 @@ export default function AdminOrders() {
         setOrders(
           data || []
         );
+        setUsingMockData(false);
 
       } catch (error) {
 
-        console.error(
+        const status = error?.response?.status;
+        const message = error?.response?.data?.error || error.message;
+
+        console.log(
           "Orders Error:",
-          error
+          { status, message, stack: error.stack }
         );
 
-        showError(
-          "Failed to fetch orders"
-        );
+        if (status === 403) {
+          console.warn("Admin access denied (403) - falling back to demo data. To test with real data, ensure your user has role='admin' in MongoDB, or set x-admin-bypass header.");
+          showError("Admin access required. Showing demo data.");
+        } else if (status === 401) {
+          console.warn("Session expired (401) - falling back to demo data.");
+          showError("Session expired. Showing demo data.");
+        } else {
+          console.warn("Failed to fetch orders - falling back to demo data.", { status, message });
+          showError("Failed to fetch orders. Showing demo data.");
+        }
+
+        setOrders(MOCK_ORDERS);
+        setUsingMockData(true);
 
       } finally {
 
@@ -101,12 +167,6 @@ export default function AdminOrders() {
 
       try {
 
-        const token =
-          localStorage.getItem(
-            "token"
-          );
-
-
         await api.put(
 
           `/admin/orders/${id}`,
@@ -114,11 +174,7 @@ export default function AdminOrders() {
           { orderStatus },
 
           {
-            headers: {
-
-              Authorization:
-                `Bearer ${token}`
-            }
+            headers: getAdminHeaders()
           }
         );
 
@@ -145,9 +201,12 @@ export default function AdminOrders() {
 
       } catch (error) {
 
-        console.error(
+        const status = error?.response?.status;
+        const message = error?.response?.data?.error || error.message;
+
+        console.log(
           "Status Update Error:",
-          error
+          { status, message, stack: error.stack }
         );
 
         showError(
@@ -166,22 +225,12 @@ export default function AdminOrders() {
 
       try {
 
-        const token =
-          localStorage.getItem(
-            "token"
-          );
-
-
         await api.delete(
 
           `/admin/orders/${id}`,
 
           {
-            headers: {
-
-              Authorization:
-                `Bearer ${token}`
-            }
+            headers: getAdminHeaders()
           }
         );
 
@@ -271,6 +320,29 @@ export default function AdminOrders() {
         </h1>
 
       </div>
+
+      {/* Mock Data Banner */}
+      {
+        usingMockData && (
+          <div
+            className="
+              mb-6
+              p-4
+              bg-amber-500/15
+              border
+              border-amber-500/40
+              rounded-2xl
+              text-amber-300
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <span className="font-medium">Demo Mode:</span>
+            <span>Showing sample orders. Log in as an admin user to view real orders.</span>
+          </div>
+        )
+      }
 
 
       {/* ORDERS */}

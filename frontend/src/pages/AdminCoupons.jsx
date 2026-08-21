@@ -7,6 +7,35 @@ import {
   showError,
 } from "../utils/toast";
 
+import {
+  getAdminHeaders
+} from "../utils/adminHeaders";
+
+// Mock coupons for graceful fallback
+const MOCK_COUPONS = [
+  {
+    _id: "mock-coupon-1",
+    code: "WELCOME10",
+    discount: 10,
+    expiryDate: new Date(Date.now() + 86400000 * 30).toISOString(),
+    active: true
+  },
+  {
+    _id: "mock-coupon-2",
+    code: "SAVE20",
+    discount: 20,
+    expiryDate: new Date(Date.now() + 86400000 * 60).toISOString(),
+    active: true
+  },
+  {
+    _id: "mock-coupon-3",
+    code: "EXPIRED30",
+    discount: 30,
+    expiryDate: new Date(Date.now() - 86400000 * 10).toISOString(),
+    active: false
+  }
+];
+
 export default function AdminCoupons() {
 
   const [coupons, setCoupons] =
@@ -14,6 +43,9 @@ export default function AdminCoupons() {
 
   const [loading, setLoading] =
     useState(true);
+
+  const [usingMockData, setUsingMockData] =
+    useState(false);
 
   const [formData, setFormData] =
     useState({
@@ -32,36 +64,41 @@ export default function AdminCoupons() {
 
     try {
 
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-
-
       const { data } =
         await api.get(
 
           "/admin/coupons",
 
-          {
-            headers: {
-
-              Authorization:
-                `Bearer ${token}`
-            }
-          }
+          { headers: getAdminHeaders() }
         );
 
 
       setCoupons(data || []);
+      setUsingMockData(false);
 
     } catch (err) {
 
-      console.log(err);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.error || err.message;
 
-      showError(
-        "Failed to fetch coupons"
+      console.log(
+        "Coupons Error:",
+        { status, message, stack: err.stack }
       );
+
+      if (status === 403) {
+        console.warn("Admin access denied (403) - falling back to demo data.");
+        showError("Admin access required. Showing demo data.");
+      } else if (status === 401) {
+        console.warn("Session expired (401) - falling back to demo data.");
+        showError("Session expired. Showing demo data.");
+      } else {
+        console.warn("Failed to fetch coupons - falling back to demo data.", { status, message });
+        showError("Failed to fetch coupons. Showing demo data.");
+      }
+
+      setCoupons(MOCK_COUPONS);
+      setUsingMockData(true);
 
     } finally {
 
@@ -80,11 +117,10 @@ export default function AdminCoupons() {
 
     try {
 
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-
+      if (usingMockData) {
+        showError("Cannot create coupons in demo mode.");
+        return;
+      }
 
       const { data } =
         await api.post(
@@ -93,13 +129,7 @@ export default function AdminCoupons() {
 
           formData,
 
-          {
-            headers: {
-
-              Authorization:
-                `Bearer ${token}`
-            }
-          }
+          { headers: getAdminHeaders() }
         );
 
 
@@ -140,23 +170,16 @@ export default function AdminCoupons() {
 
     try {
 
-      const token =
-        localStorage.getItem(
-          "token"
-        );
-
+      if (usingMockData) {
+        showError("Cannot delete coupons in demo mode.");
+        return;
+      }
 
       await api.delete(
 
         `/admin/coupons/${id}`,
 
-        {
-          headers: {
-
-            Authorization:
-              `Bearer ${token}`
-          }
-        }
+        { headers: getAdminHeaders() }
       );
 
 
@@ -255,6 +278,29 @@ export default function AdminCoupons() {
         </p>
 
       </div>
+
+      {/* Mock Data Banner */}
+      {
+        usingMockData && (
+          <div
+            className="
+              mb-6
+              p-4
+              bg-amber-500/15
+              border
+              border-amber-500/40
+              rounded-2xl
+              text-amber-300
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <span className="font-medium">Demo Mode:</span>
+            <span>Showing sample coupons. Log in as an admin user to manage real coupons.</span>
+          </div>
+        )
+      }
 
 
       {/* CREATE COUPON */}

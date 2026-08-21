@@ -10,11 +10,48 @@ import {
 
 import API from "../api";
 
+import {
+  showError
+} from "../utils/toast";
+
+import {
+  getAdminHeaders
+} from "../utils/adminHeaders";
+
+// Mock presets for graceful fallback
+const MOCK_PRESETS = [
+  {
+    _id: "mock-preset-1",
+    name: "Anime Style",
+    emoji: "🎨",
+    prompt: "A vibrant anime-style illustration with bold colors and clean linework",
+    enabled: true
+  },
+  {
+    _id: "mock-preset-2",
+    name: "Watercolor",
+    emoji: "🖌️",
+    prompt: "A soft watercolor painting with flowing gradients and organic textures",
+    enabled: true
+  },
+  {
+    _id: "mock-preset-3",
+    name: "Retro 80s",
+    emoji: "🌟",
+    prompt: "An 80s retro synthwave aesthetic with neon grids and sunset gradients",
+    enabled: false
+  }
+];
+
 export default function AdminPresets() {
 
   const [presets,
     setPresets] =
     useState([]);
+
+  const [usingMockData,
+    setUsingMockData] =
+    useState(false);
 
   const [form,
     setForm] =
@@ -38,17 +75,46 @@ export default function AdminPresets() {
   const loadPresets =
     async () => {
 
-      const res =
-        await API.get(
-          "/presets/admin",
-          {
-            headers
-          }
+      try {
+
+        const res =
+          await API.get(
+            "/presets/admin",
+            {
+              headers: getAdminHeaders()
+            }
+          );
+
+        setPresets(
+          res.data
+        );
+        setUsingMockData(false);
+
+      } catch (err) {
+
+        const status = err?.response?.status;
+        const message = err?.response?.data?.error || err.message;
+
+        console.log(
+          "Presets Error:",
+          { status, message, stack: err.stack }
         );
 
-      setPresets(
-        res.data
-      );
+        if (status === 403) {
+          console.warn("Admin access denied (403) - falling back to demo data.");
+          showError("Admin access required. Showing demo data.");
+        } else if (status === 401) {
+          console.warn("Session expired (401) - falling back to demo data.");
+          showError("Session expired. Showing demo data.");
+        } else {
+          console.warn("Failed to load presets - falling back to demo data.", { status, message });
+          showError("Failed to load presets. Showing demo data.");
+        }
+
+        setPresets(MOCK_PRESETS);
+        setUsingMockData(true);
+
+      }
     };
 
   useEffect(() => {
@@ -67,11 +133,16 @@ export default function AdminPresets() {
         return;
       }
 
+      if (usingMockData) {
+        showError("Cannot create presets in demo mode.");
+        return;
+      }
+
       await API.post(
         "/presets",
         form,
         {
-          headers
+          headers: getAdminHeaders()
         }
       );
 
@@ -91,6 +162,11 @@ export default function AdminPresets() {
       changes
     ) => {
 
+      if (usingMockData) {
+        showError("Cannot update presets in demo mode.");
+        return;
+      }
+
       await API.put(
         `/presets/${preset._id}`,
         {
@@ -98,7 +174,7 @@ export default function AdminPresets() {
           ...changes
         },
         {
-          headers
+          headers: getAdminHeaders()
         }
       );
 
@@ -108,10 +184,15 @@ export default function AdminPresets() {
   const deletePreset =
     async (id) => {
 
+      if (usingMockData) {
+        showError("Cannot delete presets in demo mode.");
+        return;
+      }
+
       await API.delete(
         `/presets/${id}`,
         {
-          headers
+          headers: getAdminHeaders()
         }
       );
 
@@ -147,6 +228,29 @@ export default function AdminPresets() {
             Preset Management
           </h1>
         </div>
+
+        {/* Mock Data Banner */}
+        {
+          usingMockData && (
+            <div
+              className="
+                mb-6
+                p-4
+                bg-amber-500/15
+                border
+                border-amber-500/40
+                rounded-2xl
+                text-amber-300
+                flex
+                items-center
+                gap-3
+              "
+            >
+              <span className="font-medium">Demo Mode:</span>
+              <span>Showing sample presets. Log in as an admin user to manage real presets.</span>
+            </div>
+          )
+        }
 
         <section
           className="

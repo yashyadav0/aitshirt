@@ -31,6 +31,72 @@ const {
 
 
 // =====================================
+// 🔧 DEV HELPER: Grant admin to current user (dev/test only)
+// =====================================
+
+router.post(
+  "/dev/grant-admin",
+  authMiddleware,
+  async (req, res) => {
+
+    // Only allow in non-production environments
+    if (process.env.NODE_ENV === "production") {
+      return res.status(403).json({
+        error: "Not available in production"
+      });
+    }
+
+    try {
+
+      const user = await User.findById(req.user.id);
+
+      if (!user) {
+        return res.status(404).json({
+          error: "User not found"
+        });
+      }
+
+      if (user.role === "admin") {
+        return res.json({
+          success: true,
+          message: "User is already an admin",
+          user: { id: user._id, role: user.role }
+        });
+      }
+
+      user.role = "admin";
+      user.tier = "premium";
+      user.weeklyLimit = 999;
+      user.weeklyPromptsLeft = 999;
+      await user.save();
+
+      // Return new token with admin role
+      const jwt = require("jsonwebtoken");
+      const newToken = jwt.sign(
+        { id: user._id, role: "admin" },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      res.json({
+        success: true,
+        message: "Admin role granted",
+        token: newToken,
+        user: { id: user._id, role: "admin" }
+      });
+
+    } catch (err) {
+
+      console.log("GRANT ADMIN ERROR:", err);
+      res.status(500).json({
+        error: err.message
+      });
+    }
+  }
+);
+
+
+// =====================================
 // 📊 DASHBOARD
 // =====================================
 

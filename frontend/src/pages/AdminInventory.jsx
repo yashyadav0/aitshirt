@@ -26,6 +26,33 @@ import {
   dismissToast
 } from "../utils/toast";
 
+import {
+  getAdminHeaders
+} from "../utils/adminHeaders";
+
+// Mock products for graceful fallback
+const MOCK_INVENTORY_PRODUCTS = [
+  {
+    _id: "mock-inv-1",
+    name: "Classic Cotton T-Shirt",
+    variants: [
+      { color: "Black", size: "S", stock: 12 },
+      { color: "Black", size: "M", stock: 8 },
+      { color: "White", size: "L", stock: 15 },
+      { color: "Navy", size: "XL", stock: 0 }
+    ]
+  },
+  {
+    _id: "mock-inv-2",
+    name: "Oversized Hoodie",
+    variants: [
+      { color: "Grey", size: "M", stock: 5 },
+      { color: "Grey", size: "L", stock: 3 },
+      { color: "Black", size: "XL", stock: 2 }
+    ]
+  }
+];
+
 export default function AdminInventory() {
 
   const [products,
@@ -35,6 +62,10 @@ export default function AdminInventory() {
   const [loading,
     setLoading] =
     useState(true);
+
+  const [usingMockData,
+    setUsingMockData] =
+    useState(false);
 
   const [saving,
     setSaving] =
@@ -51,11 +82,31 @@ export default function AdminInventory() {
     async () => {
       try {
         const res =
-          await API.get("/admin/products", { headers });
+          await API.get("/admin/products", { headers: getAdminHeaders() });
         setProducts(res.data || []);
+        setUsingMockData(false);
       } catch (err) {
-        console.error("Fetch products failed:", err);
-        showError("Failed to load products");
+        const status = err?.response?.status;
+        const message = err?.response?.data?.error || err.message;
+
+        console.log(
+          "Inventory Products Error:",
+          { status, message, stack: err.stack }
+        );
+
+        if (status === 403) {
+          console.warn("Admin access denied (403) - falling back to demo data.");
+          showError("Admin access required. Showing demo data.");
+        } else if (status === 401) {
+          console.warn("Session expired (401) - falling back to demo data.");
+          showError("Session expired. Showing demo data.");
+        } else {
+          console.warn("Failed to load products - falling back to demo data.", { status, message });
+          showError("Failed to load products. Showing demo data.");
+        }
+
+        setProducts(MOCK_INVENTORY_PRODUCTS);
+        setUsingMockData(true);
       } finally {
         setLoading(false);
       }
@@ -136,6 +187,29 @@ export default function AdminInventory() {
             instantly — no backend migration needed.
           </p>
         </div>
+
+        {/* Mock Data Banner */}
+        {
+          usingMockData && (
+            <div
+              className="
+                mb-6
+                p-4
+                bg-amber-500/15
+                border
+                border-amber-500/40
+                rounded-2xl
+                text-amber-300
+                flex
+                items-center
+                gap-3
+              "
+            >
+              <span className="font-medium">Demo Mode:</span>
+              <span>Showing sample inventory. Log in as an admin user to manage real stock.</span>
+            </div>
+          )
+        }
 
         {/* Summary */}
         <div className="grid gap-3 sm:grid-cols-3 mb-6">

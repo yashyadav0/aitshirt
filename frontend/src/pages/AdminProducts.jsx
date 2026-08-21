@@ -12,6 +12,37 @@ import {
   showError,
 } from "../utils/toast";
 
+import {
+  getAdminHeaders
+} from "../utils/adminHeaders";
+
+// Mock products for graceful fallback
+const MOCK_PRODUCTS = [
+  {
+    _id: "mock-product-1",
+    name: "Classic Cotton T-Shirt",
+    category: "Men",
+    price: 499,
+    featured: true,
+    image: "https://placehold.co/400x400/1a1a1a/ffffff?text=T-Shirt"
+  },
+  {
+    _id: "mock-product-2",
+    name: "Oversized Hoodie",
+    category: "Women",
+    price: 799,
+    featured: false,
+    image: "https://placehold.co/400x400/1a1a1a/ffffff?text=Hoodie"
+  },
+  {
+    _id: "mock-product-3",
+    name: "Kids Graphic Tee",
+    category: "Kids",
+    price: 399,
+    featured: true,
+    image: "https://placehold.co/400x400/1a1a1a/ffffff?text=Kids+Tee"
+  }
+];
 
 export default function AdminProducts() {
 
@@ -22,6 +53,10 @@ export default function AdminProducts() {
   const [loading,
     setLoading] =
     useState(true);
+
+  const [usingMockData,
+    setUsingMockData] =
+    useState(false);
 
 
   // =====================================
@@ -34,21 +69,39 @@ export default function AdminProducts() {
 
       const { data } =
         await api.get(
-          "/admin/products"
+          "/admin/products",
+          { headers: getAdminHeaders() }
         );
 
 
       setProducts(
         data || []
       );
+      setUsingMockData(false);
 
     } catch (err) {
 
-      console.log(err);
+      const status = err?.response?.status;
+      const message = err?.response?.data?.error || err.message;
 
-      showError(
-        "Failed to fetch products"
+      console.log(
+        "Products Error:",
+        { status, message, stack: err.stack }
       );
+
+      if (status === 403) {
+        console.warn("Admin access denied (403) - falling back to demo data.");
+        showError("Admin access required. Showing demo data.");
+      } else if (status === 401) {
+        console.warn("Session expired (401) - falling back to demo data.");
+        showError("Session expired. Showing demo data.");
+      } else {
+        console.warn("Failed to fetch products - falling back to demo data.", { status, message });
+        showError("Failed to fetch products. Showing demo data.");
+      }
+
+      setProducts(MOCK_PRODUCTS);
+      setUsingMockData(true);
 
     } finally {
 
@@ -116,7 +169,8 @@ export default function AdminProducts() {
     try {
 
       await api.delete(
-        `/admin/products/${id}`
+        `/admin/products/${id}`,
+        { headers: getAdminHeaders() }
       );
 
 
@@ -227,6 +281,29 @@ export default function AdminProducts() {
         </p>
 
       </div>
+
+      {/* Mock Data Banner */}
+      {
+        usingMockData && (
+          <div
+            className="
+              mb-6
+              p-4
+              bg-amber-500/15
+              border
+              border-amber-500/40
+              rounded-2xl
+              text-amber-300
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <span className="font-medium">Demo Mode:</span>
+            <span>Showing sample products. Log in as an admin user to manage real products.</span>
+          </div>
+        )
+      }
 
 
       {/* PRODUCTS GRID */}

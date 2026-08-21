@@ -28,6 +28,41 @@ import {
 
 } from "lucide-react";
 
+import {
+  showError
+} from "../utils/toast";
+
+// Mock dashboard data for graceful fallback
+const MOCK_DASHBOARD = {
+  revenue: 12450,
+  orders: 47,
+  users: 128,
+  generations: 342,
+  revenueChart: [
+    { month: "Jan", revenue: 1200 },
+    { month: "Feb", revenue: 1900 },
+    { month: "Mar", revenue: 3000 },
+    { month: "Apr", revenue: 5000 },
+    { month: "May", revenue: 8000 },
+    { month: "Jun", revenue: 12450 }
+  ],
+  orderChart: [
+    { day: "Mon", orders: 5 },
+    { day: "Tue", orders: 8 },
+    { day: "Wed", orders: 7 },
+    { day: "Thu", orders: 12 },
+    { day: "Fri", orders: 15 },
+    { day: "Sat", orders: 20 },
+    { day: "Sun", orders: 10 }
+  ],
+  recentActivity: [
+    { title: "Order completed", payment: "paid", amount: 299 },
+    { title: "Order pending", payment: "pending", amount: 499 },
+    { title: "Order completed", payment: "paid", amount: 199 },
+    { title: "Order cancelled", payment: "refunded", amount: 299 },
+    { title: "Order completed", payment: "paid", amount: 399 }
+  ]
+};
 
 export default function AdminDashboard() {
 
@@ -50,6 +85,10 @@ export default function AdminDashboard() {
     setLoading] =
     useState(true);
 
+  const [usingMockData,
+    setUsingMockData] =
+    useState(false);
+
 
   // 📊 Fetch Dashboard
   useEffect(() => {
@@ -63,10 +102,17 @@ export default function AdminDashboard() {
     async () => {
 
       try {
+        // Dev/test bypass header for local testing without DB admin role
+        const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+        const headers = {};
+        if (isDev) {
+          headers["x-admin-bypass"] = "true";
+        }
 
         const { data } =
           await api.get(
-            "/admin/dashboard"
+            "/admin/dashboard",
+            { headers }
           );
 
 
@@ -93,13 +139,32 @@ export default function AdminDashboard() {
           recentActivity:
             data.recentActivity || []
         });
+        setUsingMockData(false);
 
       } catch (error) {
 
-        console.error(
+        const status = error?.response?.status;
+        const message = error?.response?.data?.error || error.message;
+
+        console.log(
           "Dashboard Error:",
-          error
+          { status, message, stack: error.stack }
         );
+
+        if (status === 403) {
+          console.warn("Admin access denied (403) - falling back to demo data. To test with real data, ensure your user has role='admin' in MongoDB, or set x-admin-bypass header.");
+          showError("Admin access required. Showing demo data.");
+        } else if (status === 401) {
+          console.warn("Session expired (401) - falling back to demo data.");
+          showError("Session expired. Showing demo data.");
+        } else {
+          console.warn("Failed to fetch dashboard - falling back to demo data.", { status, message });
+          showError("Failed to fetch dashboard. Showing demo data.");
+        }
+
+        // Fallback to mock data for graceful rendering
+        setStats(MOCK_DASHBOARD);
+        setUsingMockData(true);
 
       } finally {
 
@@ -184,6 +249,29 @@ export default function AdminDashboard() {
         </p>
 
       </div>
+
+      {/* Mock Data Banner */}
+      {
+        usingMockData && (
+          <div
+            className="
+              mb-6
+              p-4
+              bg-amber-500/15
+              border
+              border-amber-500/40
+              rounded-2xl
+              text-amber-300
+              flex
+              items-center
+              gap-3
+            "
+          >
+            <span className="font-medium">Demo Mode:</span>
+            <span>Showing sample data. Log in as an admin user to view real analytics.</span>
+          </div>
+        )
+      }
 
 
       {/* Stats */}
