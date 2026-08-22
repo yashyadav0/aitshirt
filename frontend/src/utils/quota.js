@@ -1,9 +1,7 @@
 export function hasQuota(user) {
   if (!user) return false;
 
-  // Admin/unlimited tier
-  if (user.tier === "premium" || user.weeklyLimit === Infinity) return true;
-
+  // No unlimited tier anymore (VIP = 100/week)
   const weeklyLeft = user.weeklyPromptsLeft || 0;
   const extra = user.extraPrompts || 0;
   const credits = user.promptCreditBalance || 0;
@@ -14,14 +12,13 @@ export function hasQuota(user) {
 export function getQuotaSummary(user) {
   if (!user) return null;
 
-  const isUnlimited = user.tier === "premium" || user.weeklyLimit === Infinity;
-
+  // No unlimited tier - VIP is 100/week max
   return {
-    tier: user.tier || "free",
-    weeklyLimit: isUnlimited ? Infinity : (user.weeklyLimit || 5),
+    tier: user.tier || "normal",
+    weeklyLimit: user.weeklyLimit || 7,
     weeklyPromptsLeft: user.weeklyPromptsLeft || 0,
     extraPrompts: user.extraPrompts || 0,
     promptCreditBalance: user.promptCreditBalance || 0,
-    isUnlimited
+    isUnlimited: false
   };
 }

@@ -1137,10 +1137,15 @@ IMPORTANT:
           preferences.selectedColor
           || preferences.color
           || "white";
-        const frontProduct =
-          preferences.productType === "hoodie"
-            ? "hoodie"
-            : "t-shirt";
+
+        // Map all product types for AI prompt optimization
+        const productTypeMap = {
+          tshirt: "t-shirt",
+          hoodie: "hoodie",
+          oversized: "oversized t-shirt",
+          kids: "kids t-shirt"
+        };
+        const frontProduct = productTypeMap[preferences.productType] || "t-shirt";
 
 
         const frontFinalPrompt = `

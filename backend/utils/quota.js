@@ -1,4 +1,4 @@
-const { getTierConfig, isUnlimited } = require("../config/tiers");
+const { getTierConfig } = require("../config/tiers");
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -14,7 +14,7 @@ async function resetIfNeeded(user) {
 }
 
 function hasQuota(user) {
-  if (isUnlimited(user.tier)) return true;
+  // No unlimited tier - VIP is 100/week max
   return (
     (user.weeklyPromptsLeft || 0) > 0 ||
     (user.extraPrompts || 0) > 0 ||
@@ -23,8 +23,7 @@ function hasQuota(user) {
 }
 
 async function consumeQuota(user) {
-  if (isUnlimited(user.tier)) return true;
-
+  // No unlimited tier - VIP is 100/week max
   if ((user.weeklyPromptsLeft || 0) > 0) {
     user.weeklyPromptsLeft -= 1;
   } else if ((user.extraPrompts || 0) > 0) {
@@ -41,12 +40,12 @@ async function consumeQuota(user) {
 
 function getQuotaSummary(user) {
   return {
-    tier: user.tier || "free",
+    tier: user.tier || "normal",
     weeklyLimit: user.weeklyLimit || getTierConfig(user.tier).weeklyLimit,
     weeklyPromptsLeft: user.weeklyPromptsLeft || 0,
     extraPrompts: user.extraPrompts || 0,
     promptCreditBalance: user.promptCreditBalance || 0,
-    isUnlimited: isUnlimited(user.tier)
+    isUnlimited: false
   };
 }
 

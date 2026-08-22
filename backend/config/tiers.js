@@ -1,19 +1,19 @@
 const TIERS = {
-  free: {
-    label: "Free",
-    weeklyLimit: 5
+  normal: {
+    label: "Normal",
+    weeklyLimit: 7
   },
-  pro: {
-    label: "Pro",
-    weeklyLimit: 50
+  recurring: {
+    label: "Recurring",
+    weeklyLimit: 20
   },
-  premium: {
-    label: "Premium",
-    weeklyLimit: Infinity
+  vip: {
+    label: "VIP",
+    weeklyLimit: 100
   }
 };
 
-const DEFAULT_TIER = "free";
+const DEFAULT_TIER = "normal";
 
 function getTierConfig(tier) {
   return TIERS[tier] || TIERS[DEFAULT_TIER];

@@ -199,12 +199,12 @@ router.post("/otp-login", async (req, res) => {
     // Defensive: ensure tier fields exist and are valid before save.
     // Old documents may have tier in unexpected format (e.g. "Free", null)
     // which fails the enum validation on save → 500 error.
-    const VALID_TIERS = ["free", "pro", "premium"];
-    const normalizedTier = String(user.tier || "free").toLowerCase();
-    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "free";
+    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const normalizedTier = String(user.tier || "normal").toLowerCase();
+    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 
-    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 5;
-    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 5;
+    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 7;
+    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 7;
     if (user.extraPrompts === undefined || user.extraPrompts === null) user.extraPrompts = 0;
     if (user.promptCreditBalance === undefined || user.promptCreditBalance === null) user.promptCreditBalance = 0;
     if (!user.lastPromptReset) user.lastPromptReset = new Date();
@@ -269,12 +269,12 @@ router.post("/firebase-login", async (req, res) => {
     }
 
     // Defensive: ensure tier fields exist and are valid before save.
-    const VALID_TIERS = ["free", "pro", "premium"];
-    const normalizedTier = String(user.tier || "free").toLowerCase();
-    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "free";
+    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const normalizedTier = String(user.tier || "normal").toLowerCase();
+    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 
-    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 5;
-    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 5;
+    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 7;
+    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 7;
     if (user.extraPrompts === undefined || user.extraPrompts === null) user.extraPrompts = 0;
     if (user.promptCreditBalance === undefined || user.promptCreditBalance === null) user.promptCreditBalance = 0;
     if (!user.lastPromptReset) user.lastPromptReset = new Date();
@@ -343,12 +343,12 @@ router.post("/verify-otp-backend", async (req, res) => {
     }
 
     // Defensive: ensure tier fields exist and are valid before save.
-    const VALID_TIERS = ["free", "pro", "premium"];
-    const normalizedTier = String(user.tier || "free").toLowerCase();
-    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "free";
+    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const normalizedTier = String(user.tier || "normal").toLowerCase();
+    user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 
-    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 5;
-    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 5;
+    if (!user.weeklyLimit || user.weeklyLimit <= 0) user.weeklyLimit = 7;
+    if (user.weeklyPromptsLeft === undefined || user.weeklyPromptsLeft === null) user.weeklyPromptsLeft = 7;
     if (user.extraPrompts === undefined || user.extraPrompts === null) user.extraPrompts = 0;
     if (user.promptCreditBalance === undefined || user.promptCreditBalance === null) user.promptCreditBalance = 0;
     if (!user.lastPromptReset) user.lastPromptReset = new Date();
@@ -411,9 +411,9 @@ router.post("/register", async (req, res) => {
         name: name.trim(),
         phoneVerified: true,
         role: "user",
-        tier: "free",
-        weeklyLimit: 5,
-        weeklyPromptsLeft: 5,
+        tier: "normal",
+        weeklyLimit: 7,
+        weeklyPromptsLeft: 7,
         extraPrompts: 0,
         promptCreditBalance: 0,
         lastPromptReset: new Date()
@@ -472,9 +472,9 @@ router.post("/complete-profile", async (req, res) => {
         new User({
           phone,
           role: "user",
-          tier: "free",
-          weeklyLimit: 5,
-          weeklyPromptsLeft: 5,
+          tier: "normal",
+          weeklyLimit: 7,
+          weeklyPromptsLeft: 7,
           extraPrompts: 0,
           promptCreditBalance: 0,
           lastPromptReset: new Date()

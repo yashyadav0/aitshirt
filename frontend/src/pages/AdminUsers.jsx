@@ -17,9 +17,9 @@ import {
 } from "../utils/toast";
 
 const TIER_OPTIONS = [
-  "free",
-  "pro",
-  "premium"
+  "normal",
+  "recurring",
+  "vip"
 ];
 
 // Mock fallback data for graceful rendering when API fails

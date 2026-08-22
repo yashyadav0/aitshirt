@@ -41,13 +41,13 @@ const userSchema =
     // 🎫 Tier / Subscription
     tier: {
       type: String,
-      default: "free",
-      enum: ["free", "pro", "premium"]
+      default: "normal",
+      enum: ["normal", "recurring", "vip"]
     },
 
     weeklyLimit: {
       type: Number,
-      default: 5
+      default: 7
     },
 
     tierAssignedAt: {
@@ -57,7 +57,7 @@ const userSchema =
     // 🎁 Prompt Credits
     weeklyPromptsLeft: {
       type: Number,
-      default: 5
+      default: 7
     },
 
     extraPrompts: {

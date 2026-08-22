@@ -127,6 +127,15 @@ router.post(
           buyer.extraPrompts =
             (buyer.extraPrompts || 0) + 10;
 
+          // 🔁 Auto-promote to "recurring" tier after first order
+          // (only if they're still on "normal" tier)
+          if (buyer.tier === "normal") {
+            buyer.tier = "recurring";
+            buyer.weeklyLimit = 20;
+            buyer.weeklyPromptsLeft = 20;
+            buyer.tierAssignedAt = new Date();
+          }
+
           await buyer.save();
         }
 
