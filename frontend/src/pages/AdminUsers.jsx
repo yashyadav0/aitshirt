@@ -19,8 +19,7 @@ import {
 const TIER_OPTIONS = [
   "normal",
   "recurring",
-  "vip",
-  "premium"
+  "vip"
 ];
 
 // Mock fallback data for graceful rendering when API fails
