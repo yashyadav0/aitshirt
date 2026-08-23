@@ -1054,7 +1054,7 @@ const startListening = () => {
 
       } catch (err) {
 
-        console.log(err);
+        console.log("GENERATION ERROR:", err);
 
         const status =
           err?.response?.status;
@@ -1073,6 +1073,8 @@ const startListening = () => {
           showError(
             err.response.data.error
           );
+        } else if (status === 500) {
+          showError("Generation failed. Please try again.");
         }
       } finally {
 

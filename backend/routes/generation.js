@@ -32,6 +32,13 @@ const {
 } = require("../config/designPreferences");
 
 
+// Validate required environment variables
+if (!process.env.GEMINI_API_KEY) {
+  console.error("❌ CRITICAL: GEMINI_API_KEY environment variable is not set!");
+  console.error("   Please set GEMINI_API_KEY in Render environment variables.");
+}
+
+
 const router =
   express.Router();
 
@@ -361,6 +368,11 @@ async function generateImage(
       finalPrompt
     );
 
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("❌ GEMINI_API_KEY is not set! Cannot generate image.");
+      return null;
+    }
+
 
     // =====================================
     // LIMIT REFERENCE IMAGES
@@ -516,6 +528,17 @@ async function generateImage(
       err.response?.data
       || err.message
     );
+
+    // More detailed error for debugging
+    if (err.response?.data) {
+      console.log("GEMINI API ERROR DETAILS:", JSON.stringify(err.response.data, null, 2));
+    }
+    if (err.response?.status) {
+      console.log("GEMINI API HTTP STATUS:", err.response.status);
+    }
+    if (err.code) {
+      console.log("ERROR CODE:", err.code);
+    }
 
     return null;
   }
@@ -1379,6 +1402,18 @@ return res.json({
         || err.message
       );
 
+      // More detailed error for debugging
+      if (err.response?.data) {
+        console.log("ERROR DETAILS:", JSON.stringify(err.response.data, null, 2));
+      }
+      if (err.response?.status) {
+        console.log("ERROR HTTP STATUS:", err.response.status);
+      }
+      if (err.code) {
+        console.log("ERROR CODE:", err.code);
+      }
+      console.log("ERROR STACK:", err.stack);
+
 
       return res.status(500)
         .json({
@@ -1386,7 +1421,7 @@ return res.json({
           success: false,
 
           error:
-            "Generation failed"
+            err.response?.data?.error?.message || err.message || "Generation failed"
         });
     }
   }
