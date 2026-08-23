@@ -42,7 +42,7 @@ const userSchema =
     tier: {
       type: String,
       default: "normal",
-      enum: ["normal", "recurring", "vip"]
+      enum: ["normal", "recurring", "vip", "premium"]
     },
 
     weeklyLimit: {

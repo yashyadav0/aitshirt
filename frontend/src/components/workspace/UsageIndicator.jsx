@@ -47,7 +47,8 @@ export default function UsageIndicator({ user }) {
   const tierLabels = {
     normal: "Normal",
     recurring: "Recurring",
-    vip: "VIP"
+    vip: "VIP",
+    premium: "Premium"
   };
 
   return (

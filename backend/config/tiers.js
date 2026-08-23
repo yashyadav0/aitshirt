@@ -10,6 +10,10 @@ const TIERS = {
   vip: {
     label: "VIP",
     weeklyLimit: 100
+  },
+  premium: {
+    label: "Premium",
+    weeklyLimit: 999
   }
 };
 

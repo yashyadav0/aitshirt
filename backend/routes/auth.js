@@ -29,10 +29,10 @@ function createToken(user) {
 
 function publicUser(user) {
   // Defensive: ensure tier fields exist even on old user documents
-  const tier = user.tier || "free";
+  const tier = user.tier || "normal";
   const weeklyLimit = (typeof user.weeklyLimit === "number" && user.weeklyLimit > 0)
     ? user.weeklyLimit
-    : 5;
+    : 7;
 
   return {
     id: user._id,
@@ -199,7 +199,7 @@ router.post("/otp-login", async (req, res) => {
     // Defensive: ensure tier fields exist and are valid before save.
     // Old documents may have tier in unexpected format (e.g. "Free", null)
     // which fails the enum validation on save → 500 error.
-    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const VALID_TIERS = ["normal", "recurring", "vip", "premium"];
     const normalizedTier = String(user.tier || "normal").toLowerCase();
     user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 
@@ -269,7 +269,7 @@ router.post("/firebase-login", async (req, res) => {
     }
 
     // Defensive: ensure tier fields exist and are valid before save.
-    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const VALID_TIERS = ["normal", "recurring", "vip", "premium"];
     const normalizedTier = String(user.tier || "normal").toLowerCase();
     user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 
@@ -343,7 +343,7 @@ router.post("/verify-otp-backend", async (req, res) => {
     }
 
     // Defensive: ensure tier fields exist and are valid before save.
-    const VALID_TIERS = ["normal", "recurring", "vip"];
+    const VALID_TIERS = ["normal", "recurring", "vip", "premium"];
     const normalizedTier = String(user.tier || "normal").toLowerCase();
     user.tier = VALID_TIERS.includes(normalizedTier) ? normalizedTier : "normal";
 

@@ -19,7 +19,8 @@ import {
 const TIER_OPTIONS = [
   "normal",
   "recurring",
-  "vip"
+  "vip",
+  "premium"
 ];
 
 // Mock fallback data for graceful rendering when API fails
@@ -43,8 +44,8 @@ const MOCK_USERS = [
     email: "john@example.com",
     role: "user",
     isBlocked: false,
-    tier: "free",
-    weeklyLimit: 5,
+    tier: "normal",
+    weeklyLimit: 7,
     weeklyPromptsLeft: 3,
     extraPrompts: 2,
     promptCreditBalance: 5,
@@ -56,8 +57,8 @@ const MOCK_USERS = [
     email: "jane@example.com",
     role: "user",
     isBlocked: true,
-    tier: "pro",
-    weeklyLimit: 50,
+    tier: "recurring",
+    weeklyLimit: 20,
     weeklyPromptsLeft: 12,
     extraPrompts: 10,
     promptCreditBalance: 0,

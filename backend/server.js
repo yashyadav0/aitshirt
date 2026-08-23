@@ -189,9 +189,9 @@ mongoose.connect(process.env.MONGO_URI, {
         } else {
           // Upgrade existing user to admin
           devUser.role = "admin";
-          devUser.tier = "vip";
-          devUser.weeklyLimit = 100;
-          devUser.weeklyPromptsLeft = 100;
+          devUser.tier = "premium";
+          devUser.weeklyLimit = 999;
+          devUser.weeklyPromptsLeft = 999;
           await devUser.save();
           console.log("✅ Upgraded existing user to admin:", devEmail);
         }
@@ -216,9 +216,9 @@ mongoose.connect(process.env.MONGO_URI, {
         console.log("✅ Admin bootstrap: user already admin:", bootstrapUser.phone);
       } else {
         bootstrapUser.role = "admin";
-        bootstrapUser.tier = "vip";
-        bootstrapUser.weeklyLimit = 100;
-        bootstrapUser.weeklyPromptsLeft = 100;
+        bootstrapUser.tier = "premium";
+        bootstrapUser.weeklyLimit = 999;
+        bootstrapUser.weeklyPromptsLeft = 999;
         await bootstrapUser.save();
         console.log("✅ Admin bootstrap: promoted user to admin:", bootstrapUser.phone);
       }

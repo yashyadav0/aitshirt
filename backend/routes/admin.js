@@ -510,7 +510,7 @@ router.put(
       } = req.body;
 
       // 🎫 Tier
-      if (tier && ["normal", "recurring", "vip"].includes(tier)) {
+      if (tier && ["normal", "recurring", "vip", "premium"].includes(tier)) {
         user.tier = tier;
         user.tierAssignedAt = new Date();
         // Auto-set weeklyLimit from tier unless explicitly overridden
