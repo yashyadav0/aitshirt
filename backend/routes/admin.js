@@ -65,7 +65,7 @@ router.post(
       }
 
       user.role = "admin";
-      user.tier = "premium";
+      user.tier = "vip";
       user.weeklyLimit = 999;
       user.weeklyPromptsLeft = 999;
       await user.save();
@@ -945,5 +945,92 @@ router.delete(
     }
   }
 );
+// =====================================
+// 💰 PRICING MANAGEMENT
+// =====================================
+
+const {
+  getAllPricing,
+  getPricingByKey,
+  updatePrice
+} = require("../config/pricing");
+
+// GET all pricing
+router.get(
+  "/pricing",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const pricing = getAllPricing();
+      res.json({ success: true, pricing });
+    } catch (err) {
+      console.log("GET PRICING ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// UPDATE single price
+router.put(
+  "/pricing/:key",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { price } = req.body;
+
+      if (price === undefined || price === null) {
+        return res.status(400).json({ error: "Price is required" });
+      }
+
+      const updated = updatePrice(key, price);
+
+      if (!updated) {
+        return res.status(404).json({ error: "Pricing key not found" });
+      }
+
+      res.json({ success: true, pricing: updated });
+    } catch (err) {
+      console.log("UPDATE PRICING ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// BULK UPDATE prices
+router.put(
+  "/pricing",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { prices } = req.body; // array of { key, price }
+
+      if (!Array.isArray(prices)) {
+        return res.status(400).json({ error: "Prices array is required" });
+      }
+
+      const updated = [];
+      const errors = [];
+
+      for (const { key, price } of prices) {
+        const result = updatePrice(key, price);
+        if (result) {
+          updated.push(result);
+        } else {
+          errors.push({ key, error: "Invalid pricing key" });
+        }
+      }
+
+      res.json({ success: true, updated, errors });
+    } catch (err) {
+      console.log("BULK UPDATE PRICING ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 module.exports =
   router;

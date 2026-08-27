@@ -178,7 +178,7 @@ mongoose.connect(process.env.MONGO_URI, {
             phone: devPhone,
             phoneVerified: true,
             role: "admin",
-            tier: "premium",
+            tier: "vip",
             weeklyLimit: 999,
             weeklyPromptsLeft: 999,
             extraPrompts: 0,
@@ -203,7 +203,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
   // 🔑 Production Admin Bootstrap
   // Set ADMIN_BOOTSTRAP_PHONE=+91XXXXXXXXXX in Render env vars, redeploy once,
-  // and that account is promoted to admin + premium. Remove the env var afterwards.
+  // and that account is promoted to admin + vip. Remove the env var afterwards.
   if (process.env.ADMIN_BOOTSTRAP_PHONE) {
     try {
       const User = require("./models/User");

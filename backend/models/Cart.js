@@ -152,13 +152,18 @@ const cartSchema =
       // PRICE
       // =====================================
 
+      pricingKey: {
+        type: String,
+        default: "a4-tshirt-single"
+      },
+
       price: {
 
         type:
           Number,
 
         default:
-          699
+          0
       }
 
     },

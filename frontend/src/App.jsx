@@ -56,6 +56,9 @@ import AdminMockups
 import AdminInventory
   from "./pages/AdminInventory";
 
+import AdminPricing
+  from "./pages/AdminPricing";
+
 import Sidebar
   from "./components/Sidebar";
 
@@ -182,6 +185,15 @@ function AppShell() {
               element={
                 <AdminRoute>
                   <AdminInventory />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="/admin-pricing"
+              element={
+                <AdminRoute>
+                  <AdminPricing />
                 </AdminRoute>
               }
             />

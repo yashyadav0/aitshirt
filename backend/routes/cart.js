@@ -7,6 +7,8 @@ const Cart =
 const authMiddleware =
   require("../middleware/authMiddleware");
 
+const { getDefaultPrice, getPricingByKey } = require("../config/pricing");
+
 const router =
   express.Router();
 
@@ -28,6 +30,10 @@ router.post(
       const data =
         req.body;
 
+      // Use pricingKey from frontend, fallback to default
+      const pricingKey = data.pricingKey || "a4-tshirt-single";
+      const price = getDefaultPrice(pricingKey);
+
 
       const cartItem =
         new Cart({
@@ -37,14 +43,11 @@ router.post(
 
           ...data,
 
+          pricingKey,
+
           quantity: 1,
 
-          price:
-            data.isDoubleSide
-              ? 899
-              : data.isCouple
-                ? 1299
-                : 699
+          price
         });
 
 

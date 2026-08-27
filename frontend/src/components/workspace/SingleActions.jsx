@@ -6,6 +6,8 @@ import {
   Heart
 } from "lucide-react";
 
+import { getPricingKey } from "../../config/pricing";
+
 
 export default function SingleActions({
 
@@ -396,12 +398,17 @@ export default function SingleActions({
             "token"
           );
 
+        // Determine pricing key based on product type and design type (single)
+        const pricingKey = getPricingKey(productType, "single");
+
 
         await API.post(
 
           "/cart/add",
 
           {
+
+            pricingKey,
 
             isCouple:
               false,
@@ -428,10 +435,7 @@ export default function SingleActions({
               confirmedDesign.side,
 
             designTransform:
-              confirmedDesign.designTransform,
-
-            price:
-              699
+              confirmedDesign.designTransform
           },
 
           {

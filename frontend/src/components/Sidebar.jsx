@@ -25,6 +25,7 @@ import {
   SlidersHorizontal,
   Image,
   PackageSearch,
+  Tag,
   LogOut
 } from "lucide-react";
 
@@ -159,6 +160,11 @@ export default function Sidebar() {
       to: "/admin-inventory",
       label: "Inventory",
       icon: PackageSearch
+    },
+    {
+      to: "/admin-pricing",
+      label: "Pricing",
+      icon: Tag
     }
   ];
 

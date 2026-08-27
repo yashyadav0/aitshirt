@@ -6,6 +6,8 @@ import {
   Heart
 } from "lucide-react";
 
+import { getPricingKey } from "../../config/pricing";
+
 
 // =====================================
 // ROBUST IMAGE LOADER
@@ -428,12 +430,17 @@ export default function DoubleSideActions({
             "token"
           );
 
+        // Determine pricing key based on product type and design type (double)
+        const pricingKey = getPricingKey(productType, "double");
+
 
         await API.post(
 
           "/cart/add",
 
           {
+
+            pricingKey,
 
             isCouple:
               false,
@@ -475,10 +482,7 @@ export default function DoubleSideActions({
               confirmedDesign.frontTransform,
 
             backTransform:
-              confirmedDesign.backTransform,
-
-            price:
-              899
+              confirmedDesign.backTransform
           },
 
           {
