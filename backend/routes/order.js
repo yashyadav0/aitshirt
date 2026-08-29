@@ -9,6 +9,9 @@ const Cart =
 const User =
   require("../models/User");
 
+const Coupon =
+  require("../models/Coupon");
+
 const authMiddleware =
   require("../middleware/authMiddleware");
 
@@ -31,7 +34,8 @@ router.post(
     try {
 
       const {
-        shippingAddress
+        shippingAddress,
+        couponCode
       } = req.body;
 
 
@@ -60,19 +64,50 @@ router.post(
       }
 
 
-      // 💰 CALCULATE TOTAL
+      // 💰 CALCULATE SUBTOTAL (from cart item prices)
 
-      const total =
+      const subtotal =
         cartItems.reduce(
 
           (acc, item) =>
 
-            acc + (
-              item.price || 999
-            ),
+            acc + (item.price * item.quantity),
 
           0
         );
+
+
+      // 🎟 APPLY COUPON IF PROVIDED
+
+      let discountAmount = 0;
+      let appliedCoupon = null;
+
+      if (couponCode) {
+        const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
+
+        if (coupon) {
+          const validation = coupon.isValid(subtotal);
+
+          if (validation.valid) {
+            discountAmount = coupon.calculateDiscount(subtotal);
+            appliedCoupon = {
+              code: coupon.code,
+              discountType: coupon.discountType,
+              discountValue: coupon.discountValue,
+              discountAmount: Math.round(discountAmount * 100) / 100
+            };
+
+            // Increment usage count
+            coupon.usageCount += 1;
+            await coupon.save();
+          }
+        }
+      }
+
+
+      // 💰 CALCULATE FINAL AMOUNT
+
+      const finalAmount = Math.max(0, subtotal - discountAmount);
 
 
       // 💾 CREATE ORDER
@@ -88,8 +123,11 @@ router.post(
 
           shippingAddress,
 
-          finalAmount:
-            total,
+          // Store both subtotal and final amount for transparency
+          subtotal,
+          discountAmount: Math.round(discountAmount * 100) / 100,
+          appliedCoupon,
+          finalAmount,
 
           paymentStatus:
             "pending",

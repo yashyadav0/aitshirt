@@ -845,15 +845,19 @@ router.post(
 
       const {
         code,
-        discount,
-        expiryDate
+        discountType,
+        discountValue,
+        expiryDate,
+        minOrderAmount,
+        maxDiscount,
+        maxUsage
       } = req.body;
 
 
       const existing =
         await Coupon.findOne({
 
-          code
+          code: code.toUpperCase()
         });
 
 
@@ -874,9 +878,12 @@ router.post(
           code:
             code.toUpperCase(),
 
-          discount,
-
-          expiryDate
+          discountType: discountType || "percentage",
+          discountValue: Number(discountValue),
+          expiryDate,
+          minOrderAmount: Number(minOrderAmount) || 0,
+          maxDiscount: maxDiscount ? Number(maxDiscount) : null,
+          maxUsage: maxUsage ? Number(maxUsage) : null
         });
 
 
@@ -889,6 +896,94 @@ router.post(
 
       console.log(
         "CREATE COUPON ERROR:",
+        err
+      );
+
+      res.status(500)
+        .json({
+
+          error:
+            err.message
+        });
+    }
+  }
+);
+
+
+// =====================================
+// VALIDATE COUPON (for frontend cart/checkout)
+// =====================================
+
+router.post(
+
+  "/coupons/validate",
+
+  authMiddleware, // users can validate coupons
+
+  async (req, res) => {
+
+    try {
+
+      const {
+        code,
+        subtotal
+      } = req.body;
+
+
+      if (!code) {
+        return res.status(400).json({
+          error: "Coupon code is required"
+        });
+      }
+
+
+      const coupon =
+        await Coupon.findOne({
+
+          code: code.toUpperCase()
+        });
+
+
+      if (!coupon) {
+        return res.status(404).json({
+          valid: false,
+          error: "Invalid coupon code"
+        });
+      }
+
+
+      // Check if coupon is valid
+      const validation = coupon.isValid(Number(subtotal) || 0);
+
+      if (!validation.valid) {
+        return res.status(400).json({
+          valid: false,
+          error: validation.reason
+        });
+      }
+
+
+      // Calculate discount
+      const discountAmount = coupon.calculateDiscount(Number(subtotal) || 0);
+
+
+      res.json({
+        valid: true,
+        coupon: {
+          _id: coupon._id,
+          code: coupon.code,
+          discountType: coupon.discountType,
+          discountValue: coupon.discountValue,
+          minOrderAmount: coupon.minOrderAmount,
+          maxDiscount: coupon.maxDiscount
+        },
+        discountAmount: Math.round(discountAmount * 100) / 100 // Round to 2 decimal places
+      });
+
+    } catch (err) {
+
+      console.log(
+        "VALIDATE COUPON ERROR:",
         err
       );
 

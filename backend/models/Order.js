@@ -167,6 +167,24 @@ const orderSchema =
         mongoose.Schema.Types.Mixed
     },
 
+    // 💰 PRICING BREAKDOWN
+    subtotal: {
+      type: Number,
+      default: 0
+    },
+
+    discountAmount: {
+      type: Number,
+      default: 0
+    },
+
+    appliedCoupon: {
+      code: String,
+      discountType: String,
+      discountValue: Number,
+      discountAmount: Number
+    },
+
     finalAmount:
       {
         type: Number,

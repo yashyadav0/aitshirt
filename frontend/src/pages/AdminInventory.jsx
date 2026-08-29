@@ -83,7 +83,16 @@ export default function AdminInventory() {
       try {
         const res =
           await API.get("/admin/products", { headers: getAdminHeaders() });
-        setProducts(res.data || []);
+        // Ensure we get an array and each product has variants array
+        const products = Array.isArray(res.data) ? res.data : [];
+        const normalizedProducts = products.map(p => ({
+          ...p,
+          variants: Array.isArray(p.variants) ? p.variants : [],
+          price: p.price || 0,
+          name: p.name || p.prompt || "Unnamed",
+          image: p.image || p.imageUrl || ""
+        }));
+        setProducts(normalizedProducts);
         setUsingMockData(false);
       } catch (err) {
         const status = err?.response?.status;
@@ -235,160 +244,160 @@ export default function AdminInventory() {
         ) : (
           <div className="space-y-4">
             {products.map((product) => {
+              try {
+                const productLabel = product?.name || product?.prompt || "Unnamed";
+                const productImage = product?.image || product?.imageUrl || "";
+                const variants = Array.isArray(product?.variants) ? product.variants : [];
 
-              const productLabel = product.name || product.prompt || "Unnamed";
-              const productImage = product.image || product.imageUrl || "";
-              const variants = product.variants || [];
+                if (!product?._id || variants.length === 0) return null;
 
-              if (variants.length === 0) return null;
+                return (
+                  <article
+                    key={product._id}
+                    className="rounded-3xl border border-[#2f2f2f] bg-[#171717] overflow-hidden"
+                  >
+                    <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6">
+                      {/* Thumbnail */}
+                      <div className="relative h-32 w-32 md:h-40 md:w-40 flex-shrink-0 rounded-xl overflow-hidden border border-[#2f2f2f] bg-[#101010]">
+                        {productImage ? (
+                          <img src={productImage} alt={productLabel} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-zinc-500">No image</div>
+                        )}
+                      </div>
 
-              return (
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg font-medium truncate">{productLabel}</h2>
+                        <p className="mt-1 text-sm text-zinc-400">Price: ₹{product.price || 999}</p>
 
-                <article
-                  key={product._id}
-                  className="rounded-3xl border border-[#2f2f2f] bg-[#171717] overflow-hidden"
-                >
+                        {/* Variants grid */}
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                          {variants.map((variant, idx) => {
+                            try {
+                              const effStock = getEffectiveStock(
+                                product._id,
+                                variant?.color,
+                                variant?.size,
+                                variant?.stock || 0
+                              );
+                              const hasOverride = getEffectiveStock(
+                                product._id,
+                                variant?.color,
+                                variant?.size,
+                                variant?.stock || 0
+                              ) !== (variant?.stock || 0);
 
-                  <div className="flex flex-col md:flex-row gap-4 p-4 md:p-6">
+                              const isLow = effStock > 0 && effStock <= 3;
+                              const isOut = effStock <= 0;
+                              const savingThis = saving === `${product._id}::${variant?.color}::${variant?.size}`;
 
-                    {/* Thumbnail */}
-                    <div className="relative h-32 w-32 md:h-40 md:w-40 flex-shrink-0 rounded-xl overflow-hidden border border-[#2f2f2f] bg-[#101010]">
-                      {productImage ? (
-                        <img src={productImage} alt={productLabel} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-zinc-500">No image</div>
-                      )}
-                    </div>
+                              return (
+                                <div
+                                  key={`${product._id}-${idx}`}
+                                  className={`
+                                    rounded-xl border p-3 text-sm
+                                    ${isOut
+                                      ? "border-red-500 bg-red-500/10 text-red-300"
+                                      : isLow
+                                        ? "border-yellow-500 bg-yellow-500/10 text-yellow-300"
+                                        : "border-[#2f2f2f] bg-[#121212] text-zinc-300"}
+                                  `}
+                                >
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <span className="font-medium truncate">{variant?.color || "N/A"}</span>
+                                    <span className="text-xs uppercase tracking-wide">{variant?.size || "N/A"}</span>
+                                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <h2 className="text-lg font-medium truncate">{productLabel}</h2>
-                      <p className="mt-1 text-sm text-zinc-400">Price: ₹{product.price || 999}</p>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-zinc-500 w-16">Stock</span>
 
-                      {/* Variants grid */}
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {variants.map((variant, idx) => {
+                                    <div className="flex items-center gap-1 flex-1">
+                                      <button
+                                        onClick={() =>
+                                          handleQuickAdjust(
+                                            product._id,
+                                            variant?.color,
+                                            variant?.size,
+                                            variant?.stock || 0,
+                                            -1
+                                          )
+                                        }
+                                        disabled={savingThis}
+                                        className="rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-xs hover:bg-[#222] disabled:opacity-50"
+                                      >
+                                        <Minus size={12} />
+                                      </button>
 
-                          const effStock = getEffectiveStock(
-                            product._id,
-                            variant.color,
-                            variant.size,
-                            variant.stock
-                          );
-                          const hasOverride = getEffectiveStock(
-                            product._id,
-                            variant.color,
-                            variant.size,
-                            variant.stock
-                          ) !== variant.stock;
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        value={effStock}
+                                        onChange={(e) =>
+                                          handleStockChange(
+                                            product._id,
+                                            variant?.color,
+                                            variant?.size,
+                                            Number(e.target.value)
+                                          )
+                                        }
+                                        disabled={savingThis}
+                                        className="w-16 rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-center text-sm outline-none disabled:opacity-50"
+                                      />
 
-                          const isLow = effStock > 0 && effStock <= 3;
-                          const isOut = effStock <= 0;
-                          const savingThis = saving === `${product._id}::${variant.color}::${variant.size}`;
+                                      <button
+                                        onClick={() =>
+                                          handleQuickAdjust(
+                                            product._id,
+                                            variant?.color,
+                                            variant?.size,
+                                            variant?.stock || 0,
+                                            +1
+                                          )
+                                        }
+                                        disabled={savingThis}
+                                        className="rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-xs hover:bg-[#222] disabled:opacity-50"
+                                      >
+                                        <Plus size={12} />
+                                      </button>
 
-                          return (
+                                      {hasOverride && (
+                                        <button
+                                          onClick={() =>
+                                            handleRemoveOverride(
+                                              product._id,
+                                              variant?.color,
+                                              variant?.size
+                                            )
+                                          }
+                                          className="ml-2 rounded-lg border border-[#333] p-1.5 text-zinc-500 hover:text-white"
+                                          title="Remove override"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
 
-                            <div
-                              key={idx}
-                              className={`
-                                rounded-xl border p-3 text-sm
-                                ${isOut
-                                  ? "border-red-500 bg-red-500/10 text-red-300"
-                                  : isLow
-                                    ? "border-yellow-500 bg-yellow-500/10 text-yellow-300"
-                                    : "border-[#2f2f2f] bg-[#121212] text-zinc-300"}
-                              `}
-                            >
-
-                              <div className="flex items-center justify-between gap-2 mb-2">
-                                <span className="font-medium truncate">{variant.color}</span>
-                                <span className="text-xs uppercase tracking-wide">{variant.size}</span>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-zinc-500 w-16">Stock</span>
-
-                                <div className="flex items-center gap-1 flex-1">
-                                  <button
-                                    onClick={() =>
-                                      handleQuickAdjust(
-                                        product._id,
-                                        variant.color,
-                                        variant.size,
-                                        variant.stock,
-                                        -1
-                                      )
-                                    }
-                                    disabled={savingThis}
-                                    className="rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-xs hover:bg-[#222] disabled:opacity-50"
-                                  >
-                                    <Minus size={12} />
-                                  </button>
-
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={effStock}
-                                    onChange={(e) =>
-                                      handleStockChange(
-                                        product._id,
-                                        variant.color,
-                                        variant.size,
-                                        Number(e.target.value)
-                                      )
-                                    }
-                                    disabled={savingThis}
-                                    className="w-16 rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-center text-sm outline-none disabled:opacity-50"
-                                  />
-
-                                  <button
-                                    onClick={() =>
-                                      handleQuickAdjust(
-                                        product._id,
-                                        variant.color,
-                                        variant.size,
-                                        variant.stock,
-                                        +1
-                                      )
-                                    }
-                                    disabled={savingThis}
-                                    className="rounded-lg bg-[#0f0f0f] border border-[#333] px-2 py-1 text-xs hover:bg-[#222] disabled:opacity-50"
-                                  >
-                                    <Plus size={12} />
-                                  </button>
-
-                                  {hasOverride && (
-                                    <button
-                                      onClick={() =>
-                                        handleRemoveOverride(
-                                          product._id,
-                                          variant.color,
-                                          variant.size
-                                        )
-                                      }
-                                      className="ml-2 rounded-lg border border-[#333] p-1.5 text-zinc-500 hover:text-white"
-                                      title="Remove override"
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  )}
+                                  <p className="mt-1 text-xs text-zinc-500">
+                                    Backend: {variant?.stock || 0}
+                                    {hasOverride && " · Overridden"}
+                                  </p>
                                 </div>
-                              </div>
-
-                              <p className="mt-1 text-xs text-zinc-500">
-                                Backend: {variant.stock}
-                                {hasOverride && " · Overridden"}
-                              </p>
-
-                            </div>
-                          );
-                        })}
+                              );
+                            } catch (variantErr) {
+                              console.error("Variant render error:", variantErr);
+                              return null;
+                            }
+                          })}
+                        </div>
                       </div>
                     </div>
-
-                  </div>
-
-                </article>
-              );
+                  </article>
+                );
+              } catch (productErr) {
+                console.error("Product render error:", productErr);
+                return null;
+              }
             })}
           </div>
         )}

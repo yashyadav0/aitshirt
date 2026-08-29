@@ -20,7 +20,11 @@ export default function AdminRoute({
     useAuth();
 
   if (loading) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[#0b0b0b] text-white flex items-center justify-center text-2xl">
+        Loading admin access...
+      </div>
+    );
   }
 
   // Priority: localStorage (manual override) > backend profile

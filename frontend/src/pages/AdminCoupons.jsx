@@ -16,23 +16,35 @@ const MOCK_COUPONS = [
   {
     _id: "mock-coupon-1",
     code: "WELCOME10",
-    discount: 10,
+    discountType: "percentage",
+    discountValue: 10,
     expiryDate: new Date(Date.now() + 86400000 * 30).toISOString(),
-    active: true
+    active: true,
+    minOrderAmount: 0,
+    maxDiscount: 500,
+    maxUsage: null
   },
   {
     _id: "mock-coupon-2",
-    code: "SAVE20",
-    discount: 20,
+    code: "FLAT500",
+    discountType: "fixed",
+    discountValue: 500,
     expiryDate: new Date(Date.now() + 86400000 * 60).toISOString(),
-    active: true
+    active: true,
+    minOrderAmount: 1000,
+    maxDiscount: null,
+    maxUsage: null
   },
   {
     _id: "mock-coupon-3",
     code: "EXPIRED30",
-    discount: 30,
+    discountType: "percentage",
+    discountValue: 30,
     expiryDate: new Date(Date.now() - 86400000 * 10).toISOString(),
-    active: false
+    active: false,
+    minOrderAmount: 0,
+    maxDiscount: null,
+    maxUsage: null
   }
 ];
 
@@ -51,8 +63,12 @@ export default function AdminCoupons() {
     useState({
 
       code: "",
-      discount: "",
+      discountType: "percentage",
+      discountValue: "",
       expiryDate: "",
+      minOrderAmount: "",
+      maxDiscount: "",
+      maxUsage: ""
     });
 
 
@@ -122,12 +138,22 @@ export default function AdminCoupons() {
         return;
       }
 
+      const payload = {
+        code: formData.code,
+        discountType: formData.discountType,
+        discountValue: Number(formData.discountValue),
+        expiryDate: formData.expiryDate,
+        minOrderAmount: formData.minOrderAmount ? Number(formData.minOrderAmount) : 0,
+        maxDiscount: formData.maxDiscount ? Number(formData.maxDiscount) : null,
+        maxUsage: formData.maxUsage ? Number(formData.maxUsage) : null
+      };
+
       const { data } =
         await api.post(
 
           "/admin/coupons",
 
-          formData,
+          payload,
 
           { headers: getAdminHeaders() }
         );
@@ -142,8 +168,12 @@ export default function AdminCoupons() {
       setFormData({
 
         code: "",
-        discount: "",
+        discountType: "percentage",
+        discountValue: "",
         expiryDate: "",
+        minOrderAmount: "",
+        maxDiscount: "",
+        maxUsage: ""
       });
 
 
@@ -335,7 +365,7 @@ export default function AdminCoupons() {
 
           className="
             grid
-            md:grid-cols-3
+            md:grid-cols-4
             gap-4
           "
         >
@@ -356,7 +386,7 @@ export default function AdminCoupons() {
                 ...formData,
 
                 code:
-                  e.target.value
+                  e.target.value.toUpperCase()
               })
             }
 
@@ -372,22 +402,46 @@ export default function AdminCoupons() {
           />
 
 
-          {/* DISCOUNT */}
+          {/* DISCOUNT TYPE */}
+
+          <select
+            value={formData.discountType}
+            onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+            className="
+              bg-zinc-800
+              border
+              border-zinc-700
+              rounded-xl
+              px-4
+              py-3
+              outline-none
+            "
+          >
+            <option value="percentage">Percentage %</option>
+            <option value="fixed">Fixed Amount (₹)</option>
+          </select>
+
+
+          {/* DISCOUNT VALUE */}
 
           <input
 
             type="number"
 
-            placeholder="Discount %"
+            placeholder={
+              formData.discountType === "percentage"
+                ? "Discount % (e.g. 10)"
+                : "Amount ₹ (e.g. 500)"
+            }
 
-            value={formData.discount}
+            value={formData.discountValue}
 
             onChange={(e) =>
               setFormData({
 
                 ...formData,
 
-                discount:
+                discountValue:
                   e.target.value
               })
             }
@@ -434,6 +488,103 @@ export default function AdminCoupons() {
           />
 
 
+          {/* MIN ORDER AMOUNT */}
+
+          <input
+
+            type="number"
+
+            placeholder="Min Order ₹ (optional)"
+
+            value={formData.minOrderAmount}
+
+            onChange={(e) =>
+              setFormData({
+
+                ...formData,
+
+                minOrderAmount:
+                  e.target.value
+              })
+            }
+
+            className="
+              bg-zinc-800
+              border
+              border-zinc-700
+              rounded-xl
+              px-4
+              py-3
+              outline-none
+            "
+          />
+
+
+          {/* MAX DISCOUNT (for percentage) */}
+
+          <input
+
+            type="number"
+
+            placeholder="Max Discount ₹ (optional)"
+
+            value={formData.maxDiscount}
+
+            onChange={(e) =>
+              setFormData({
+
+                ...formData,
+
+                maxDiscount:
+                  e.target.value
+              })
+            }
+
+            className="
+              bg-zinc-800
+              border
+              border-zinc-700
+              rounded-xl
+              px-4
+              py-3
+              outline-none
+            "
+            disabled={formData.discountType !== "percentage"}
+          />
+
+
+          {/* MAX USAGE */}
+
+          <input
+
+            type="number"
+
+            placeholder="Max Usage (optional)"
+
+            value={formData.maxUsage}
+
+            onChange={(e) =>
+              setFormData({
+
+                ...formData,
+
+                maxUsage:
+                  e.target.value
+              })
+            }
+
+            className="
+              bg-zinc-800
+              border
+              border-zinc-700
+              rounded-xl
+              px-4
+              py-3
+              outline-none
+            "
+          />
+
+
           {/* BUTTON */}
 
           <button
@@ -441,7 +592,7 @@ export default function AdminCoupons() {
             type="submit"
 
             className="
-              md:col-span-3
+              md:col-span-4
               bg-gradient-to-r
               from-purple-600
               to-cyan-500
@@ -511,7 +662,49 @@ export default function AdminCoupons() {
                   "
                 >
 
-                  Discount
+                  Type
+
+                </th>
+
+
+                <th
+                  className="
+                    text-left
+                    px-6
+                    py-4
+                    text-zinc-400
+                  "
+                >
+
+                  Value
+
+                </th>
+
+
+                <th
+                  className="
+                    text-left
+                    px-6
+                    py-4
+                    text-zinc-400
+                  "
+                >
+
+                  Min Order
+
+                </th>
+
+
+                <th
+                  className="
+                    text-left
+                    px-6
+                    py-4
+                    text-zinc-400
+                  "
+                >
+
+                  Max Discount
 
                 </th>
 
@@ -596,7 +789,26 @@ export default function AdminCoupons() {
                         </td>
 
 
-                        {/* DISCOUNT */}
+                        {/* TYPE */}
+
+                        <td
+                          className="
+                            px-6
+                            py-5
+                            text-cyan-400
+                          "
+                        >
+
+                          {coupon.discountType === "percentage" ? (
+                            <span className="px-2 py-1 bg-cyan-500/20 rounded text-xs">%</span>
+                          ) : (
+                            <span className="px-2 py-1 bg-purple-500/20 rounded text-xs">₹</span>
+                          )}
+
+                        </td>
+
+
+                        {/* VALUE */}
 
                         <td
                           className="
@@ -606,7 +818,39 @@ export default function AdminCoupons() {
                           "
                         >
 
-                          {coupon.discount}%
+                          {coupon.discountType === "percentage"
+                            ? coupon.discountValue + "%"
+                            : "₹" + coupon.discountValue}
+
+                        </td>
+
+
+                        {/* MIN ORDER */}
+
+                        <td
+                          className="
+                            px-6
+                            py-5
+                            text-zinc-400
+                          "
+                        >
+
+                          {coupon.minOrderAmount ? "₹" + coupon.minOrderAmount : "—"}
+
+                        </td>
+
+
+                        {/* MAX DISCOUNT */}
+
+                        <td
+                          className="
+                            px-6
+                            py-5
+                            text-zinc-400
+                          "
+                        >
+
+                          {coupon.maxDiscount ? "₹" + coupon.maxDiscount : "—"}
 
                         </td>
 
@@ -715,7 +959,7 @@ export default function AdminCoupons() {
 
                       <td
 
-                        colSpan="5"
+                        colSpan="8"
 
                         className="
                           text-center

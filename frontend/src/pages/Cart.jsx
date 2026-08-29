@@ -8,7 +8,9 @@ import API from "../api";
 import {
   Trash2,
   Plus,
-  Minus
+  Minus,
+  Tag,
+  X
 } from "lucide-react";
 
 import {
@@ -29,6 +31,26 @@ export default function Cart() {
 
   const [placingOrder,
     setPlacingOrder] =
+    useState(false);
+
+  // =====================================
+  // COUPON STATE
+  // =====================================
+
+  const [couponCode,
+    setCouponCode] =
+    useState("");
+
+  const [appliedCoupon,
+    setAppliedCoupon] =
+    useState(null);
+
+  const [discountAmount,
+    setDiscountAmount] =
+    useState(0);
+
+  const [validatingCoupon,
+    setValidatingCoupon] =
     useState(false);
 
 
@@ -225,6 +247,51 @@ export default function Cart() {
 
 
   // =====================================
+  // VALIDATE COUPON
+  // =====================================
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) return;
+
+    setValidatingCoupon(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+      const res = await API.post(
+        "/admin/coupons/validate",
+        { code: couponCode.trim(), subtotal },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.valid) {
+        setAppliedCoupon(res.data.coupon);
+        setDiscountAmount(res.data.discountAmount);
+        showSuccess(`Coupon applied: ${res.data.coupon.code} - ₹${res.data.discountAmount} off`);
+      } else {
+        showError(res.data.error || "Invalid coupon");
+      }
+    } catch (err) {
+      console.log(err);
+      showError(err.response?.data?.error || "Failed to validate coupon");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  // =====================================
+  // REMOVE COUPON
+  // =====================================
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    showSuccess("Coupon removed");
+  };
+
+  // =====================================
   // PLACE ORDER
   // =====================================
 
@@ -258,13 +325,16 @@ export default function Cart() {
             "token"
           );
 
+        const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
 
         await API.post(
 
           "/orders/place-order",
 
           {
-            shippingAddress
+            shippingAddress,
+            couponCode: appliedCoupon?.code || null
           },
 
           {
@@ -278,6 +348,7 @@ export default function Cart() {
 
 
         setCartItems([]);
+        removeCoupon();
 
 
         showSuccess(
@@ -303,7 +374,17 @@ export default function Cart() {
   // TOTAL
   // =====================================
 
-  const totalPrice =
+  const subtotal =
+    cartItems.reduce(
+
+      (acc, item) =>
+
+        acc + (item.price * item.quantity),
+
+      0
+    );
+
+  const finalTotal = Math.max(0, subtotal - discountAmount);
 
     cartItems.reduce(
 
@@ -437,7 +518,7 @@ export default function Cart() {
                                 "
                               >
 
-                                ₹1299
+                                ₹{item.price}
 
                               </div>
 
@@ -649,7 +730,7 @@ export default function Cart() {
                                 "
                               >
 
-                                ₹899
+                                ₹{item.price}
 
                               </div>
 
@@ -864,7 +945,7 @@ export default function Cart() {
                                "
                              >
 
-                               ₹699
+                               ₹{item.price}
 
                              </div>
 
@@ -1025,7 +1106,7 @@ export default function Cart() {
             }
 
 
-            {/* TOTAL */}
+            {/* TOTAL WITH COUPON */}
 
             <div
               className="
@@ -1043,18 +1124,94 @@ export default function Cart() {
               "
             >
 
-              <div
-                className="
-                  text-xl
-                  sm:text-2xl
-                  font-semibold
-                "
-              >
+              {/* COUPON INPUT */}
+              <div className="mb-4">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between p-3 bg-green-500/20 border border-green-500/40 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Tag size={20} className="text-green-400" />
+                      <div>
+                        <div className="font-semibold text-green-300">{appliedCoupon.code}</div>
+                        <div className="text-sm text-green-400">
+                          {appliedCoupon.discountType === "percentage"
+                            ? `${appliedCoupon.discountValue}% off`
+                            : `₹${appliedCoupon.discountValue} off`}
+                          {appliedCoupon.maxDiscount && appliedCoupon.discountType === "percentage" && ` (max ₹${appliedCoupon.maxDiscount})`}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={removeCoupon}
+                      className="p-2 hover:bg-green-500/20 rounded-lg transition"
+                      aria-label="Remove coupon"
+                    >
+                      <X size={18} className="text-green-400" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter coupon code"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => e.key === "Enter" && validateCoupon()}
+                      className="
+                        flex-1
+                        bg-[#101010]
+                        border
+                        border-[#2f2f35]
+                        rounded-xl
+                        px-4
+                        py-3
+                        outline-none
+                        text-sm
+                        focus:border-cyan-500
+                        transition
+                      "
+                    />
+                    <button
+                      onClick={validateCoupon}
+                      disabled={validatingCoupon || !couponCode.trim()}
+                      className="
+                        bg-gradient-to-r
+                        from-purple-600
+                        to-cyan-500
+                        px-6
+                        py-3
+                        rounded-xl
+                        font-semibold
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                        transition-all
+                      "
+                    >
+                      {validatingCoupon ? "Applying..." : "Apply"}
+                    </button>
+                  </div>
+                )}
+              </div>
 
-                Total:
-                {" "}
-                ₹{totalPrice}
+              {/* PRICE BREAKDOWN */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Subtotal</span>
+                  <span>₹{subtotal}</span>
+                </div>
 
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-400">
+                    <span>Discount ({appliedCoupon?.code})</span>
+                    <span>- ₹{discountAmount}</span>
+                  </div>
+                )}
+
+                <div className="border-t border-black/20 pt-2">
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>₹{finalTotal}</span>
+                  </div>
+                </div>
               </div>
 
             </div>
