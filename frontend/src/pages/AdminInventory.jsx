@@ -140,17 +140,7 @@ export default function AdminInventory() {
     fetchProducts();
   }, []);
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-[#0b0b0b] text-white flex flex-col items-center justify-center gap-4 p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
-        <p className="text-lg">Loading Inventory…</p>
-        <p className="text-sm text-zinc-500">If this takes too long, check your connection or admin access.</p>
-      </main>
-    );
-  }
-
-  // Summary stats
+  // Summary stats - must be before early return to maintain consistent hook count
   const stats =
     useMemo(() => {
       let totalVariants = 0;
@@ -169,6 +159,16 @@ export default function AdminInventory() {
 
       return { totalVariants, lowStock, outOfStock };
     }, [products]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#0b0b0b] text-white flex flex-col items-center justify-center gap-4 p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
+        <p className="text-lg">Loading Inventory…</p>
+        <p className="text-sm text-zinc-500">If this takes too long, check your connection or admin access.</p>
+      </main>
+    );
+  }
 
   const handleStockChange =
     async (productId, color, size, newQty) => {
