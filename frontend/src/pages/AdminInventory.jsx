@@ -10,6 +10,8 @@ import {
   Trash2
 } from "lucide-react";
 
+import ErrorBoundary from "../components/ErrorBoundary";
+
 import API from "../api";
 
 import {
@@ -141,9 +143,10 @@ export default function AdminInventory() {
       let outOfStock = 0;
 
       products.forEach((product) => {
+        if (!product?._id) return;
         (product.variants || []).forEach((variant) => {
           totalVariants++;
-          const eff = getEffectiveStock(product._id, variant.color, variant.size, variant.stock);
+          const eff = getEffectiveStock(product._id, variant?.color, variant?.size, variant?.stock || 0);
           if (eff <= 0) outOfStock++;
           else if (eff <= 3) lowStock++;
         });
@@ -183,7 +186,7 @@ export default function AdminInventory() {
     };
 
   return (
-
+    <ErrorBoundary>
     <main className="min-h-screen bg-[#0b0b0b] text-white px-4 py-20 md:p-8">
 
       <div className="max-w-7xl mx-auto">
@@ -405,5 +408,6 @@ export default function AdminInventory() {
       </div>
 
     </main>
+    </ErrorBoundary>
   );
 }
