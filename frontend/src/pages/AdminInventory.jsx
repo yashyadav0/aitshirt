@@ -82,9 +82,17 @@ export default function AdminInventory() {
 
   const fetchProducts =
     async () => {
+      // Create an AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       try {
         const res =
-          await API.get("/admin/products", { headers: getAdminHeaders() });
+          await API.get("/admin/products", {
+            headers: getAdminHeaders(),
+            signal: controller.signal
+          });
+        clearTimeout(timeoutId);
         // Ensure we get an array and each product has variants array
         const products = Array.isArray(res.data) ? res.data : [];
         const normalizedProducts = products.map(p => ({
@@ -97,15 +105,20 @@ export default function AdminInventory() {
         setProducts(normalizedProducts);
         setUsingMockData(false);
       } catch (err) {
+        clearTimeout(timeoutId);
         const status = err?.response?.status;
         const message = err?.response?.data?.error || err.message;
+        const isTimeout = err.name === 'AbortError' || err.code === 'ECONNABORTED';
 
         console.log(
           "Inventory Products Error:",
-          { status, message, stack: err.stack }
+          { status, message, isTimeout, stack: err.stack }
         );
 
-        if (status === 403) {
+        if (isTimeout) {
+          console.warn("Request timed out - falling back to demo data.");
+          showError("Request timed out. Showing demo data.");
+        } else if (status === 403) {
           console.warn("Admin access denied (403) - falling back to demo data.");
           showError("Admin access required. Showing demo data.");
         } else if (status === 401) {
@@ -129,8 +142,10 @@ export default function AdminInventory() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#0b0b0b] text-white flex items-center justify-center text-2xl">
-        Loading Inventory…
+      <main className="min-h-screen bg-[#0b0b0b] text-white flex flex-col items-center justify-center gap-4 p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-cyan-500 border-t-transparent"></div>
+        <p className="text-lg">Loading Inventory…</p>
+        <p className="text-sm text-zinc-500">If this takes too long, check your connection or admin access.</p>
       </main>
     );
   }
