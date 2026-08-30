@@ -52,6 +52,9 @@ const uploadRoutes =
 const presetRoutes =
   require("./routes/presets");
 
+const inventoryRoutes =
+  require("./routes/inventory");
+
 
 // =====================================
 // APP
@@ -138,6 +141,11 @@ app.use(
 app.use(
   "/api/presets",
   presetRoutes
+);
+
+app.use(
+  "/api/inventory",
+  inventoryRoutes
 );
 
 

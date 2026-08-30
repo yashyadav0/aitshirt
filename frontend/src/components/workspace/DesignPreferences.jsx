@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronDown, SlidersHorizontal, AlertCircle } from "lucide-react";
+
+import API from "../../api";
 
 import {
   PRODUCT_TYPES,
@@ -60,6 +62,8 @@ export default function DesignPreferences({
   onDesignTypeChange
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const [availableColors, setAvailableColors] = useState(null);
+  const [loadingColors, setLoadingColors] = useState(false);
 
   const productOptions = Object.values(PRODUCT_TYPES);
 
@@ -69,9 +73,36 @@ export default function DesignPreferences({
     (d) => !isKids || d.id === "single"
   );
 
-  const colorOptions = getColorsForProductType(preferences.productType);
-  const selectedColor =
-    preferences.selectedColor || preferences.color;
+  // Get all possible colors for this product type (from designPreferences config)
+  const allColorOptions = getColorsForProductType(preferences.productType);
+  const selectedColor = preferences.selectedColor || preferences.color;
+
+  // Fetch available colors from backend when productType changes
+  useEffect(() => {
+    const fetchAvailableColors = async () => {
+      setLoadingColors(true);
+      try {
+        const res = await API.get(`/inventory/colors/${preferences.productType}`);
+        if (res.data?.colors) {
+          // Create a set of available color IDs
+          const availableColorIds = new Set(res.data.colors.map(c => c.color));
+          setAvailableColors(availableColorIds);
+        }
+      } catch (err) {
+        console.log("Failed to fetch available colors:", err);
+        setAvailableColors(null); // On error, allow all colors
+      } finally {
+        setLoadingColors(false);
+      }
+    };
+
+    fetchAvailableColors();
+  }, [preferences.productType]);
+
+  // Filter color options to only show available ones (or all if loading/error)
+  const colorOptions = availableColors !== null
+    ? allColorOptions.filter(color => availableColors.has(color.id))
+    : allColorOptions;
 
   const handleDesignTypeChange = (designType) => {
     // Kids only supports single — ignore invalid selection
@@ -190,56 +221,86 @@ export default function DesignPreferences({
               <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
                 Color Preference
               </p>
+
+              {availableColors !== null && colorOptions.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-400 mb-3">
+                  <AlertCircle size={16} />
+                  <span>All colors out of stock for this product type</span>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-3">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color.id}
-                    type="button"
-                    onClick={() => setColor(color.id)}
-                    className="
-                      group
-                      flex
-                      flex-col
-                      items-center
-                      gap-2
-                    "
-                    aria-label={`Select ${color.label}`}
-                    aria-pressed={selectedColor === color.id}
-                    >
-                    <span
+                {colorOptions.map((color) => {
+                  const isSelected = selectedColor === color.id;
+                  const isAvailable = availableColors === null || availableColors.has(color.id);
+
+                  return (
+                    <button
+                      key={color.id}
+                      type="button"
+                      onClick={() => isAvailable && setColor(color.id)}
+                      disabled={!isAvailable}
                       className={`
-                        relative
-                        h-11
-                        w-11
-                        rounded-full
-                        border-2
+                        group
+                        flex
+                        flex-col
+                        items-center
+                        gap-2
                         transition-all
                         duration-200
-                        group-hover:scale-105
-                        ${
-                          selectedColor === color.id
-                            ? "border-white ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-[#141414]"
-                            : "border-[#3f3f46] group-hover:border-zinc-400"
-                        }
+                        ${!isAvailable ? "opacity-40 cursor-not-allowed" : ""}
                       `}
-                      style={{ backgroundColor: color.hex }}
-                    />
-                    <span
-                      className={`
-                        text-xs
-                        transition-colors
-                        ${
-                          selectedColor === color.id
-                            ? "text-white"
-                            : "text-zinc-500 group-hover:text-zinc-300"
-                        }
-                      `}
+                      aria-label={`Select ${color.label}${!isAvailable ? " (out of stock)" : ""}`}
+                      aria-pressed={isSelected}
+                      aria-disabled={!isAvailable}
                     >
-                      {color.label}
-                    </span>
-                  </button>
-                ))}
+                      <span
+                        className={`
+                          relative
+                          h-11
+                          w-11
+                          rounded-full
+                          border-2
+                          transition-all
+                          duration-200
+                          group-hover:scale-105
+                          ${isSelected
+                            ? "border-white ring-2 ring-cyan-400/50 ring-offset-2 ring-offset-[#141414]"
+                            : isAvailable
+                              ? "border-[#3f3f46] group-hover:border-zinc-400"
+                              : "border-[#3f3f46]"
+                          }
+                        `}
+                        style={{ backgroundColor: color.hex }}
+                      >
+                        {!isAvailable && (
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full">
+                            <AlertCircle size={16} className="text-white" />
+                          </span>
+                        )}
+                      </span>
+                      <span
+                        className={`
+                          text-xs
+                          transition-colors
+                          ${isSelected
+                            ? "text-white"
+                            : isAvailable
+                              ? "text-zinc-500 group-hover:text-zinc-300"
+                              : "text-zinc-600"
+                          }
+                        `}
+                      >
+                        {color.label}{!isAvailable && " (OOS)"}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+
+              {loadingColors && (
+                <p className="mt-2 text-xs text-zinc-500">Checking stock availability…</p>
+              )}
             </div>
           </div>
         </div>

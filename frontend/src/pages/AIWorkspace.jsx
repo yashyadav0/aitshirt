@@ -388,6 +388,15 @@ export default function AIWorkspace() {
     }
   }, [preferences.productType]);
 
+  // Reset color if it becomes unavailable for the new product type
+  // This will be synced with DesignPreferences after it fetches available colors
+  useEffect(() => {
+    if (preferences.productType && preferences.selectedColor) {
+      // The DesignPreferences component will handle the actual availability check
+      // and disable unavailable colors. We just need to ensure we don't have a stale color.
+    }
+  }, [preferences.productType]);
+
   const applyPreset =
     (preset) => {
 

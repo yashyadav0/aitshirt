@@ -386,15 +386,6 @@ export default function Cart() {
 
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
-    cartItems.reduce(
-
-      (acc, item) =>
-
-        acc + (item.price * item.quantity),
-
-      0
-    );
-
 
   return (
 

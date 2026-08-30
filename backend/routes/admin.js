@@ -1127,5 +1127,149 @@ router.put(
   }
 );
 
+// =====================================
+// 📦 INVENTORY MANAGEMENT
+// =====================================
+
+// GET inventory grouped by product type + color
+router.get(
+  "/inventory",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const products = await Product.find().sort({ createdAt: -1 });
+
+      // Group variants by product type + color for easier frontend consumption
+      const inventoryByTypeAndColor = {};
+
+      products.forEach(product => {
+        const productType = product.category || "tshirt";
+
+        if (!inventoryByTypeAndColor[productType]) {
+          inventoryByTypeAndColor[productType] = {};
+        }
+
+        (product.variants || []).forEach(variant => {
+          const color = variant.color.toLowerCase();
+          const size = variant.size.toUpperCase();
+          const stock = variant.stock || 0;
+
+          if (!inventoryByTypeAndColor[productType][color]) {
+            inventoryByTypeAndColor[productType][color] = {
+              totalStock: 0,
+              sizes: {}
+            };
+          }
+
+          inventoryByTypeAndColor[productType][color].sizes[size] = stock;
+          inventoryByTypeAndColor[productType][color].totalStock += stock;
+        });
+      });
+
+      res.json({
+        success: true,
+        inventory: inventoryByTypeAndColor,
+        products // Also return raw products for detailed view
+      });
+    } catch (err) {
+      console.log("FETCH INVENTORY ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// GET available colors for a product type (colors with stock > 0)
+router.get(
+  "/inventory/colors/:productType",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { productType } = req.params;
+
+      const products = await Product.find({ category: productType });
+
+      const colorsWithStock = {};
+
+      products.forEach(product => {
+        (product.variants || []).forEach(variant => {
+          const color = variant.color.toLowerCase();
+          const size = variant.size.toUpperCase();
+          const stock = variant.stock || 0;
+
+          if (!colorsWithStock[color]) {
+            colorsWithStock[color] = {
+              totalStock: 0,
+              sizes: {}
+            };
+          }
+
+          colorsWithStock[color].sizes[size] = stock;
+          colorsWithStock[color].totalStock += stock;
+        });
+      });
+
+      // Filter to only colors with stock > 0
+      const availableColors = Object.entries(colorsWithStock)
+        .filter(([, data]) => data.totalStock > 0)
+        .map(([color, data]) => ({
+          color,
+          ...data
+        }));
+
+      res.json({
+        success: true,
+        productType,
+        colors: availableColors
+      });
+    } catch (err) {
+      console.log("FETCH COLORS ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// UPDATE stock for a specific variant
+router.put(
+  "/inventory/stock",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, color, size, stock } = req.body;
+
+      if (!productType || !color || !size || stock === undefined) {
+        return res.status(400).json({ error: "productType, color, size, and stock are required" });
+      }
+
+      const product = await Product.findOne({ category: productType });
+
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const variant = product.variants.find(v =>
+        v.color.toLowerCase() === color.toLowerCase() &&
+        v.size.toLowerCase() === size.toLowerCase()
+      );
+
+      if (!variant) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+
+      variant.stock = Math.max(0, Number(stock));
+      await product.save();
+
+      res.json({
+        success: true,
+        variant
+      });
+    } catch (err) {
+      console.log("UPDATE STOCK ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 module.exports =
   router;

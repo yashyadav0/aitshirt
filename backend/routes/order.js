@@ -12,6 +12,9 @@ const User =
 const Coupon =
   require("../models/Coupon");
 
+const Product =
+  require("../models/Product");
+
 const authMiddleware =
   require("../middleware/authMiddleware");
 
@@ -140,6 +143,38 @@ router.post(
       // 💾 SAVE ORDER
 
       await order.save();
+
+
+      // 📦 DECREMENT INVENTORY STOCK for each item
+      for (const item of cartItems) {
+        const productId = item.productType || "tshirt"; // Use productType as product identifier
+        const color = item.color || item.selectedColor;
+        const size = item.size;
+
+        if (productId && color && size) {
+          try {
+            const product = await Product.findOne({
+              category: productId
+            });
+
+            if (product && product.variants) {
+              const variant = product.variants.find(v =>
+                v.color.toLowerCase() === color.toLowerCase() &&
+                v.size.toLowerCase() === size.toLowerCase()
+              );
+
+              if (variant) {
+                // Decrease stock but don't go below 0
+                variant.stock = Math.max(0, variant.stock - item.quantity);
+                await product.save();
+              }
+            }
+          } catch (stockErr) {
+            console.log("STOCK DECREMENT ERROR:", stockErr);
+            // Don't fail the order if stock update fails
+          }
+        }
+      }
 
 
       // 🛒 CLEAR CART
