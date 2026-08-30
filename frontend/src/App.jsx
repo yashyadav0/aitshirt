@@ -41,9 +41,6 @@ import AdminUsers
 import AdminOrders
   from "./pages/AdminOrders";
 
-import AdminProducts
-  from "./pages/AdminProducts";
-
 import AdminCoupons
   from "./pages/AdminCoupons";
 
@@ -140,15 +137,6 @@ function AppShell() {
               element={
                 <AdminRoute>
                   <AdminOrders />
-                </AdminRoute>
-              }
-            />
-
-            <Route
-              path="/admin-products"
-              element={
-                <AdminRoute>
-                  <AdminProducts />
                 </AdminRoute>
               }
             />

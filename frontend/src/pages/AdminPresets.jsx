@@ -264,14 +264,8 @@ export default function AdminPresets() {
           "
         >
 
-          <div
-            className="
-              grid
-              gap-3
-              md:grid-cols-[1fr_120px]
-            "
-          >
-
+          <label className="block">
+            <span className="text-xs text-zinc-400 mb-1 block">Preset Name & Emoji</span>
             <input
               value={form.name}
               onChange={(e) =>
@@ -280,23 +274,11 @@ export default function AdminPresets() {
                   name: e.target.value
                 })
               }
-              placeholder="Preset name"
-              className="rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
+              placeholder="e.g., 🎨 Anime Style or Anime Style"
+              className="mt-1 w-full rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
             />
-
-            <input
-              value={form.emoji}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  emoji: e.target.value
-                })
-              }
-              placeholder="Emoji"
-              className="rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
-            />
-
-          </div>
+            <p className="mt-1 text-xs text-zinc-500">Include emoji in the name (e.g., "🎨 Anime Style") or leave blank for default ✨</p>
+          </label>
 
           <textarea
             value={form.prompt}
@@ -307,7 +289,7 @@ export default function AdminPresets() {
               })
             }
             placeholder="Preset prompt"
-            className="mt-3 w-full min-h-28 rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none resize-none"
+            className="mt-4 w-full min-h-28 rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none resize-none"
           />
 
           <button
@@ -337,12 +319,13 @@ export default function AdminPresets() {
 
                 <div className="flex items-start justify-between gap-4">
 
-                  <div>
-                    <h2 className="font-medium">
-                      {preset.emoji} {preset.name}
+                  <div className="flex-1 min-w-0">
+                    <h2 className="font-medium flex items-center gap-2">
+                      <span className="text-xl">{preset.emoji || "✨"}</span>
+                      <span className="truncate">{preset.name}</span>
                     </h2>
 
-                    <p className="mt-2 text-sm text-zinc-400">
+                    <p className="mt-2 text-sm text-zinc-400 truncate">
                       {preset.prompt}
                     </p>
                   </div>
@@ -353,7 +336,8 @@ export default function AdminPresets() {
                         preset._id
                       )
                     }
-                    className="rounded-xl border border-[#333] p-3 text-zinc-400 hover:text-white"
+                    className="rounded-xl border border-[#333] p-3 text-zinc-400 hover:text-white hover:bg-red-500/10 hover:border-red-500/30 transition-colors"
+                    title="Delete preset"
                   >
                     <Trash2 size={18} />
                   </button>

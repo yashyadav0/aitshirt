@@ -137,11 +137,6 @@ export default function Sidebar() {
       icon: Package
     },
     {
-      to: "/admin-products",
-      label: "Products",
-      icon: Shirt
-    },
-    {
       to: "/admin-coupons",
       label: "Coupons",
       icon: TicketPercent
