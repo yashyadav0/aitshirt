@@ -704,7 +704,7 @@ export default function AdminInventory() {
                     className="mt-1 w-full rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
                   >
                     {productTypesArray.map(p => (
-                      <option key={id} value={id}>{p.label}</option>
+                      <option key={p.id} value={p.id}>{p.label}</option>
                     ))}
                   </select>
                 </label>
