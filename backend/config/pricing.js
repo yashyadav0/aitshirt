@@ -1,132 +1,136 @@
-// Pricing Variables - All 14 Design Options
+// Pricing Variables - Print-Side Based Pricing
 // Prices are in INR (₹). Default 0 - editable from Admin Panel
 
 const PRICING = {
   // =====================================
-  // A4 SINGLE SIDE (Front OR Back)
+  // T-SHIRT (Standard)
   // =====================================
-  "a4-tshirt-single": {
-    key: "a4-tshirt-single",
-    label: "A4 Design Front Or Back T-Shirt",
+  "tshirt-front": {
+    key: "tshirt-front",
+    label: "T-Shirt - Front Only",
     productType: "tshirt",
-    printSize: "A4",
-    sides: "single",
+    printSide: "front",
     price: 0
   },
-  "a4-hoodie-single": {
-    key: "a4-hoodie-single",
-    label: "A4 Design Front or Back Hoodie",
-    productType: "hoodie",
-    printSize: "A4",
-    sides: "single",
+  "tshirt-back": {
+    key: "tshirt-back",
+    label: "T-Shirt - Back Only",
+    productType: "tshirt",
+    printSide: "back",
     price: 0
   },
-  "a4-oversized-single": {
-    key: "a4-oversized-single",
-    label: "A4 Design Front Or Back Oversized T-Shirt",
+  "tshirt-both": {
+    key: "tshirt-both",
+    label: "T-Shirt - Front & Back",
+    productType: "tshirt",
+    printSide: "both",
+    price: 0
+  },
+
+  // =====================================
+  // OVERSIZED T-SHIRT
+  // =====================================
+  "oversized-front": {
+    key: "oversized-front",
+    label: "Oversized T-Shirt - Front Only",
     productType: "oversized",
-    printSize: "A4",
-    sides: "single",
+    printSide: "front",
     price: 0
   },
-  "a4-kids-single": {
-    key: "a4-kids-single",
-    label: "A4 Design Front or Back Kids T-Shirt",
+  "oversized-back": {
+    key: "oversized-back",
+    label: "Oversized T-Shirt - Back Only",
+    productType: "oversized",
+    printSide: "back",
+    price: 0
+  },
+  "oversized-both": {
+    key: "oversized-both",
+    label: "Oversized T-Shirt - Front & Back",
+    productType: "oversized",
+    printSide: "both",
+    price: 0
+  },
+
+  // =====================================
+  // KIDS T-SHIRT
+  // =====================================
+  "kids-front": {
+    key: "kids-front",
+    label: "Kids T-Shirt - Front Only",
     productType: "kids",
-    printSize: "A4",
-    sides: "single",
+    printSide: "front",
     price: 0
   },
-
-  // =====================================
-  // A3 SINGLE SIDE (Front OR Back for T-Shirt/Oversized, Back only for Hoodie)
-  // =====================================
-  "a3-tshirt-single": {
-    key: "a3-tshirt-single",
-    label: "A3 Design Front or Back T-Shirt",
-    productType: "tshirt",
-    printSize: "A3",
-    sides: "single",
-    price: 0
-  },
-  "a3-hoodie-single": {
-    key: "a3-hoodie-single",
-    label: "A3 Design Back (front Not possible) Hoodie",
-    productType: "hoodie",
-    printSize: "A3",
-    sides: "single",
-    price: 0
-  },
-  "a3-oversized-single": {
-    key: "a3-oversized-single",
-    label: "A3 Design front/back Oversized Tshirt",
-    productType: "oversized",
-    printSize: "A3",
-    sides: "single",
-    price: 0
-  },
-
-  // =====================================
-  // A4 DOUBLE SIDE (Front AND Back)
-  // =====================================
-  "a4-tshirt-double": {
-    key: "a4-tshirt-double",
-    label: "Small + A4 Design Front and Back T-Shirt",
-    productType: "tshirt",
-    printSize: "A4",
-    sides: "double",
-    price: 0
-  },
-  "a4-hoodie-double": {
-    key: "a4-hoodie-double",
-    label: "Small + A4 Design front and Back Hoodie",
-    productType: "hoodie",
-    printSize: "A4",
-    sides: "double",
-    price: 0
-  },
-  "a4-oversized-double": {
-    key: "a4-oversized-double",
-    label: "Small + A4 Design front and Back Oversized T-Shirt",
-    productType: "oversized",
-    printSize: "A4",
-    sides: "double",
-    price: 0
-  },
-  "a4-kids-double": {
-    key: "a4-kids-double",
-    label: "Small + A4 Design Front and back Kids T-shirt",
+  "kids-back": {
+    key: "kids-back",
+    label: "Kids T-Shirt - Back Only",
     productType: "kids",
-    printSize: "A4",
-    sides: "double",
+    printSide: "back",
+    price: 0
+  },
+  "kids-both": {
+    key: "kids-both",
+    label: "Kids T-Shirt - Front & Back",
+    productType: "kids",
+    printSide: "both",
     price: 0
   },
 
   // =====================================
-  // A3 & A4 DOUBLE SIDE (Front AND Back)
+  // HOODIE
   // =====================================
-  "a3a4-tshirt-double": {
-    key: "a3a4-tshirt-double",
-    label: "A3 & A4 Design Front and back T-Shirt",
-    productType: "tshirt",
-    printSize: "A3+A4",
-    sides: "double",
-    price: 0
-  },
-  "a3a4-hoodie-double": {
-    key: "a3a4-hoodie-double",
-    label: "A3 & A4 Design Front and Back Hoodie",
+  "hoodie-front": {
+    key: "hoodie-front",
+    label: "Hoodie - Front Only",
     productType: "hoodie",
-    printSize: "A3+A4",
-    sides: "double",
+    printSide: "front",
     price: 0
   },
-  "a3a4-oversized-double": {
-    key: "a3a4-oversized-double",
-    label: "A3 & A4 Design front and back Oversized T-shirt",
+  "hoodie-back": {
+    key: "hoodie-back",
+    label: "Hoodie - Back Only",
+    productType: "hoodie",
+    printSide: "back",
+    price: 0
+  },
+  "hoodie-both": {
+    key: "hoodie-both",
+    label: "Hoodie - Front & Back",
+    productType: "hoodie",
+    printSide: "both",
+    price: 0
+  },
+
+  // =====================================
+  // COUPLE DESIGNS (Unified Front Pricing)
+  // =====================================
+  "couple-tshirt": {
+    key: "couple-tshirt",
+    label: "Couple Design - T-Shirt (Front)",
+    productType: "tshirt",
+    printSide: "couple",
+    price: 0
+  },
+  "couple-oversized": {
+    key: "couple-oversized",
+    label: "Couple Design - Oversized (Front)",
     productType: "oversized",
-    printSize: "A3+A4",
-    sides: "double",
+    printSide: "couple",
+    price: 0
+  },
+  "couple-hoodie": {
+    key: "couple-hoodie",
+    label: "Couple Design - Hoodie (Front)",
+    productType: "hoodie",
+    printSide: "couple",
+    price: 0
+  },
+  "couple-kids": {
+    key: "couple-kids",
+    label: "Couple Design - Kids (Front)",
+    productType: "kids",
+    printSide: "couple",
     price: 0
   }
 };
@@ -144,12 +148,8 @@ function getPricingByProductType(productType) {
   return Object.values(PRICING).filter(p => p.productType === productType);
 }
 
-function getPricingByPrintSize(printSize) {
-  return Object.values(PRICING).filter(p => p.printSize === printSize);
-}
-
-function getPricingBySides(sides) {
-  return Object.values(PRICING).filter(p => p.sides === sides);
+function getPricingByPrintSide(printSide) {
+  return Object.values(PRICING).filter(p => p.printSide === printSide);
 }
 
 function updatePrice(key, price) {
@@ -174,14 +174,33 @@ function getPriceMap() {
   return map;
 }
 
+// Get pricing key based on product type, print side, and design type
+function getPricingKey(productType, designType, printSide) {
+  // Couple designs always use couple pricing (unified front)
+  if (designType === "couple") {
+    return `couple-${productType}`;
+  }
+
+  // For single/double designs, use printSide (front, back, both)
+  const sideMap = {
+    "front": "front",
+    "back": "back",
+    "both": "both",
+    "single": "front",  // Default single to front
+    "double": "both"    // Default double to both
+  };
+  const side = sideMap[printSide] || sideMap[designType] || "front";
+  return `${productType}-${side}`;
+}
+
 module.exports = {
   PRICING,
   getAllPricing,
   getPricingByKey,
   getPricingByProductType,
-  getPricingByPrintSize,
-  getPricingBySides,
+  getPricingByPrintSide,
   updatePrice,
   getDefaultPrice,
-  getPriceMap
+  getPriceMap,
+  getPricingKey
 };

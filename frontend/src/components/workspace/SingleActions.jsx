@@ -398,8 +398,8 @@ export default function SingleActions({
             "token"
           );
 
-        // Determine pricing key based on product type and design type (single)
-        const pricingKey = getPricingKey(productType, "single");
+        // Determine pricing key based on product type, design type, and print side
+        const pricingKey = getPricingKey(productType, "single", selectedSide);
 
 
         await API.post(

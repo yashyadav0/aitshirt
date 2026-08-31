@@ -150,12 +150,23 @@ function PricingRow({ item, onSave, saving }) {
     }
   };
 
+  // Determine display label for print side
+  const getPrintSideLabel = (printSide) => {
+    switch (printSide) {
+      case "front": return "Front Only";
+      case "back": return "Back Only";
+      case "both": return "Front & Back";
+      case "couple": return "Couple (Front)";
+      default: return printSide;
+    }
+  };
+
   return (
     <div className="px-6 py-4 flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
         <p className="font-medium text-white truncate">{item.label}</p>
         <p className="text-xs text-zinc-500 mt-1">
-          {item.printSize} • {item.sides} side{item.sides === "double" ? "s" : ""}
+          Print Side: {getPrintSideLabel(item.printSide)}
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">

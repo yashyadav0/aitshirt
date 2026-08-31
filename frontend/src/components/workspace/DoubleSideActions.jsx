@@ -430,8 +430,8 @@ export default function DoubleSideActions({
             "token"
           );
 
-        // Determine pricing key based on product type and design type (double)
-        const pricingKey = getPricingKey(productType, "double");
+        // Determine pricing key based on product type, design type, and print side (double = both)
+        const pricingKey = getPricingKey(productType, "double", "both");
 
 
         await API.post(

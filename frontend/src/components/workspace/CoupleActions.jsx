@@ -461,8 +461,8 @@ export default function CoupleActions({
             "token"
           );
 
-        // Determine pricing key based on product type and design type (couple)
-        const pricingKey = getPricingKey(productType, "couple");
+        // Determine pricing key based on product type, design type (couple uses unified front pricing)
+        const pricingKey = getPricingKey(productType, "couple", "front");
 
 
         await API.post(
