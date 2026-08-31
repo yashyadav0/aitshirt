@@ -25,4 +25,24 @@ API.interceptors.request.use((config) => {
   return config;
 });
 
+// Response interceptor to handle 304 Not Modified and ensure loading states resolve
+API.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle 304 Not Modified - axios treats this as an error sometimes
+    if (error.response?.status === 304) {
+      // Return a resolved response with the cached data
+      return Promise.resolve({
+        data: error.response.config.cachedResponse || {},
+        status: 304,
+        statusText: "Not Modified",
+        headers: error.response.headers,
+        config: error.response.config,
+        request: error.response.request
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default API;

@@ -35,6 +35,8 @@ import {
   getAdminHeaders
 } from "../utils/adminHeaders";
 
+import { getProductTypes } from "../config/designPreferences";
+
 // Mock products for graceful fallback
 const MOCK_INVENTORY_PRODUCTS = [
   {
@@ -89,13 +91,8 @@ export default function AdminInventory() {
   const token =
     localStorage.getItem("token");
 
-  // Product types from designPreferences
-  const PRODUCT_TYPES = {
-    tshirt: { label: "T-Shirt", colors: ["black", "white", "red"] },
-    hoodie: { label: "Hoodie", colors: ["black", "white", "blue"] },
-    oversized: { label: "Oversized", colors: ["black", "white", "red"] },
-    kids: { label: "Kids", colors: ["black", "white", "red"] }
-  };
+  // Product types from designPreferences (with localStorage overrides)
+  const PRODUCT_TYPES = useMemo(() => getProductTypes(), []);
 
   const fetchProducts =
     async () => {
@@ -165,6 +162,7 @@ export default function AdminInventory() {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
+      // Handle 304 Not Modified - data may be in res.data or need fallback
       if (res.data?.products) {
         const normalizedProducts = res.data.products.map(p => ({
           ...p,
@@ -175,6 +173,9 @@ export default function AdminInventory() {
         }));
         setProducts(normalizedProducts);
         setUsingMockData(res.data.usingMockData || false);
+      } else if (res.status === 304) {
+        // 304 - cached response, keep existing products (don't reset)
+        console.log("304 Not Modified - using cached data");
       } else {
         // No products in response, fallback
         await fetchProducts();
@@ -184,6 +185,9 @@ export default function AdminInventory() {
       console.log("Fetch inventory error:", err);
       // Fallback to products endpoint
       await fetchProducts();
+    } finally {
+      // Ensure loading is always reset
+      setLoading(false);
     }
   };
 
@@ -318,7 +322,7 @@ export default function AdminInventory() {
     }
   };
 
-  // Add new color to product type
+  // Add new color to product type (also creates stock entries)
   const handleAddColor = async (productType, color) => {
     try {
       const sizes = STANDARD_SIZES.map(size => ({ size, stock: 10 }));
@@ -327,11 +331,17 @@ export default function AdminInventory() {
         color,
         sizes
       }, { headers: getAdminHeaders() });
-      showSuccess(`Color "${color}" added with default stock`);
+      showSuccess(`Color "${color}" added with default stock (10 per size)`);
       await fetchInventory();
     } catch (err) {
       showError(err.response?.data?.error || err.message || "Failed to add color");
     }
+  };
+
+  // Get colors for a product type (including custom from localStorage)
+  const getColorsForProductType = (productType) => {
+    const types = getProductTypes();
+    return types[productType]?.colors?.map(c => c.id) || [];
   };
 
   // Remove color from product type
