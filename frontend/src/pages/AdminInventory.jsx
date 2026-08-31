@@ -35,7 +35,7 @@ import {
   getAdminHeaders
 } from "../utils/adminHeaders";
 
-import { getProductTypes } from "../config/designPreferences";
+import { getProductTypes, PRODUCT_TYPES as PRODUCT_TYPES_CONFIG } from "../config/designPreferences";
 
 // Mock products for graceful fallback
 const MOCK_INVENTORY_PRODUCTS = [
@@ -92,7 +92,9 @@ export default function AdminInventory() {
     localStorage.getItem("token");
 
   // Product types from designPreferences (with localStorage overrides)
-  const PRODUCT_TYPES = useMemo(() => getProductTypes(), []);
+  // Use getProductTypes for dynamic colors, but also keep static config for dropdown iteration
+  const productTypesData = useMemo(() => getProductTypes(), []);
+  const productTypesArray = useMemo(() => Object.values(productTypesData), []);
 
   const fetchProducts =
     async () => {
@@ -701,7 +703,7 @@ export default function AdminInventory() {
                     onChange={(e) => setSelectedProductType(e.target.value)}
                     className="mt-1 w-full rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
                   >
-                    {Object.entries(PRODUCT_TYPES).map(([id, p]) => (
+                    {productTypesArray.map(p => (
                       <option key={id} value={id}>{p.label}</option>
                     ))}
                   </select>
@@ -714,8 +716,8 @@ export default function AdminInventory() {
                     onChange={(e) => setSelectedColor(e.target.value)}
                     className="mt-1 w-full rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
                   >
-                    {PRODUCT_TYPES[selectedProductType]?.colors.map(c => (
-                      <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                    {productTypesData[selectedProductType]?.colors?.map(c => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </select>
                 </label>
