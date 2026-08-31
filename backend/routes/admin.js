@@ -1387,5 +1387,250 @@ router.put(
   }
 );
 
+// ADD/UPDATE stock for a product type + color (bulk upsert sizes)
+router.post(
+  "/inventory/stock",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, color, sizes } = req.body;
+
+      if (!productType || !color || !Array.isArray(sizes)) {
+        return res.status(400).json({ error: "productType, color, and sizes array are required" });
+      }
+
+      // Find or create product for this type
+      let product = await Product.findOne({ category: productType });
+
+      if (!product) {
+        // Create new product with default pricing
+        const defaultPrices = {
+          tshirt: 999,
+          hoodie: 1499,
+          oversized: 1199,
+          kids: 799
+        };
+        product = new Product({
+          name: productType.charAt(0).toUpperCase() + productType.slice(1),
+          category: productType,
+          price: defaultPrices[productType] || 999,
+          variants: []
+        });
+      }
+
+      const colorLower = color.toLowerCase();
+
+      // Upsert each size
+      sizes.forEach(({ size, stock }) => {
+        const sizeUpper = size.toUpperCase();
+        const stockNum = Math.max(0, Number(stock) || 0);
+
+        const existingIdx = product.variants.findIndex(v =>
+          v.color.toLowerCase() === colorLower &&
+          v.size.toLowerCase() === sizeUpper.toLowerCase()
+        );
+
+        if (existingIdx >= 0) {
+          product.variants[existingIdx].stock = stockNum;
+        } else {
+          product.variants.push({ color: colorLower, size: sizeUpper, stock: stockNum });
+        }
+      });
+
+      await product.save();
+
+      res.json({
+        success: true,
+        product
+      });
+    } catch (err) {
+      console.log("UPSERT STOCK ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// ADD a new color to a product type
+router.post(
+  "/inventory/color",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, color, sizes } = req.body;
+
+      if (!productType || !color || !Array.isArray(sizes)) {
+        return res.status(400).json({ error: "productType, color, and sizes array are required" });
+      }
+
+      let product = await Product.findOne({ category: productType });
+
+      if (!product) {
+        const defaultPrices = {
+          tshirt: 999,
+          hoodie: 1499,
+          oversized: 1199,
+          kids: 799
+        };
+        product = new Product({
+          name: productType.charAt(0).toUpperCase() + productType.slice(1),
+          category: productType,
+          price: defaultPrices[productType] || 999,
+          variants: []
+        });
+      }
+
+      const colorLower = color.toLowerCase();
+
+      // Check if color already exists
+      const colorExists = product.variants.some(v => v.color.toLowerCase() === colorLower);
+      if (colorExists) {
+        return res.status(400).json({ error: `Color "${color}" already exists for this product type` });
+      }
+
+      // Add all sizes for this color
+      sizes.forEach(({ size, stock }) => {
+        product.variants.push({
+          color: colorLower,
+          size: size.toUpperCase(),
+          stock: Math.max(0, Number(stock) || 0)
+        });
+      });
+
+      await product.save();
+
+      res.json({
+        success: true,
+        product
+      });
+    } catch (err) {
+      console.log("ADD COLOR ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// REMOVE a color from a product type
+router.delete(
+  "/inventory/color",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, color } = req.body;
+
+      if (!productType || !color) {
+        return res.status(400).json({ error: "productType and color are required" });
+      }
+
+      const product = await Product.findOne({ category: productType });
+
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const colorLower = color.toLowerCase();
+      const initialCount = product.variants.length;
+      product.variants = product.variants.filter(v => v.color.toLowerCase() !== colorLower);
+
+      if (product.variants.length === initialCount) {
+        return res.status(404).json({ error: `Color "${color}" not found` });
+      }
+
+      await product.save();
+
+      res.json({
+        success: true,
+        product
+      });
+    } catch (err) {
+      console.log("REMOVE COLOR ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// REMOVE a specific variant (product type + color + size)
+router.delete(
+  "/inventory/variant",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, color, size } = req.body;
+
+      if (!productType || !color || !size) {
+        return res.status(400).json({ error: "productType, color, and size are required" });
+      }
+
+      const product = await Product.findOne({ category: productType });
+
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      const colorLower = color.toLowerCase();
+      const sizeUpper = size.toUpperCase();
+      const initialCount = product.variants.length;
+      product.variants = product.variants.filter(v =>
+        !(v.color.toLowerCase() === colorLower && v.size.toLowerCase() === sizeUpper.toLowerCase())
+      );
+
+      if (product.variants.length === initialCount) {
+        return res.status(404).json({ error: "Variant not found" });
+      }
+
+      await product.save();
+
+      res.json({
+        success: true,
+        product
+      });
+    } catch (err) {
+      console.log("REMOVE VARIANT ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+// CREATE a new product type
+router.post(
+  "/inventory/product",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
+      const { productType, name, price, variants } = req.body;
+
+      if (!productType) {
+        return res.status(400).json({ error: "productType is required" });
+      }
+
+      const existing = await Product.findOne({ category: productType });
+      if (existing) {
+        return res.status(400).json({ error: `Product type "${productType}" already exists` });
+      }
+
+      const product = new Product({
+        name: name || productType.charAt(0).toUpperCase() + productType.slice(1),
+        category: productType,
+        price: price || 999,
+        variants: Array.isArray(variants) ? variants : []
+      });
+
+      await product.save();
+
+      res.json({
+        success: true,
+        product
+      });
+    } catch (err) {
+      console.log("CREATE PRODUCT ERROR:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 module.exports =
   router;
