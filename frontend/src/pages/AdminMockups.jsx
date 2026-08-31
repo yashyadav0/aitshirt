@@ -192,26 +192,33 @@ export default function AdminMockups() {
     }
   };
 
-  // Remove color from product type (only custom added colors)
-  const handleRemoveColor = (colorId) => {
-    // Can't remove default colors
-    const defaultColors = PRODUCT_TYPES[selected.productType]?.colors || [];
-    const isDefault = defaultColors.some(c => c.id === colorId);
-    if (isDefault) {
-      showError("Cannot remove default colors");
-      return;
-    }
-
+  // Remove color from product type (both default and custom colors)
+  const handleRemoveColor = (colorId, isDefault) => {
     const stored = localStorage.getItem("productTypesOverride");
-    if (!stored) return;
+    const overrides = stored ? JSON.parse(stored) : {};
 
-    const overrides = JSON.parse(stored);
-    if (overrides[selected.productType]) {
-      overrides[selected.productType].colors = overrides[selected.productType].colors
-        .filter(c => c.id !== colorId);
-      localStorage.setItem("productTypesOverride", JSON.stringify(overrides));
-      showSuccess("Color removed. Refresh page to update selector.");
+    // Ensure product type exists in overrides
+    if (!overrides[selected.productType]) {
+      overrides[selected.productType] = { ...PRODUCT_TYPES[selected.productType] };
     }
+
+    // Remove the color from the overrides
+    overrides[selected.productType].colors = overrides[selected.productType].colors
+      .filter(c => c.id !== colorId);
+
+    // If no colors left for this product type, remove the product type entry
+    if (overrides[selected.productType].colors.length === 0) {
+      delete overrides[selected.productType];
+    }
+
+    // If overrides is empty, remove the key entirely
+    if (Object.keys(overrides).length === 0) {
+      localStorage.removeItem("productTypesOverride");
+    } else {
+      localStorage.setItem("productTypesOverride", JSON.stringify(overrides));
+    }
+
+    showSuccess(`${isDefault ? "Default" : "Custom"} color removed. Refresh page to update selector.`);
   };
 
   // Track selection change so preview updates even when override removed.
@@ -616,15 +623,13 @@ export default function AdminMockups() {
                     <p className="text-sm font-medium truncate">{c.label}</p>
                     <p className="text-xs text-zinc-500 truncate">{c.id}</p>
                   </div>
-                  {!isDefault && (
-                    <button
-                      onClick={() => handleRemoveColor(c.id)}
-                      className="rounded-lg border border-red-500/30 p-2 text-red-400 hover:bg-red-500/10"
-                      title="Remove custom color"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleRemoveColor(c.id, isDefault)}
+                    className="rounded-lg border border-red-500/30 p-2 text-red-400 hover:bg-red-500/10"
+                    title={isDefault ? "Remove default color (will reset on refresh)" : "Remove custom color"}
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               );
             })}

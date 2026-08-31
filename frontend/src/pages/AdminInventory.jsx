@@ -155,8 +155,16 @@ export default function AdminInventory() {
 
   // Fetch from new inventory endpoint (grouped by type + color)
   const fetchInventory = async () => {
+    // Create an AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     try {
-      const res = await API.get("/admin/inventory", { headers: getAdminHeaders() });
+      const res = await API.get("/admin/inventory", {
+        headers: getAdminHeaders(),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
       if (res.data?.products) {
         const normalizedProducts = res.data.products.map(p => ({
           ...p,
@@ -167,8 +175,12 @@ export default function AdminInventory() {
         }));
         setProducts(normalizedProducts);
         setUsingMockData(res.data.usingMockData || false);
+      } else {
+        // No products in response, fallback
+        await fetchProducts();
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.log("Fetch inventory error:", err);
       // Fallback to products endpoint
       await fetchProducts();
