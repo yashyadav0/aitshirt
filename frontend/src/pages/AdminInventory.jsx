@@ -93,8 +93,20 @@ export default function AdminInventory() {
 
   // Product types from designPreferences (with localStorage overrides)
   // Use getProductTypes for dynamic colors, but also keep static config for dropdown iteration
-  const productTypesData = useMemo(() => getProductTypes(), []);
-  const productTypesArray = useMemo(() => Object.values(productTypesData), []);
+  const productTypesData = useMemo(() => {
+    try {
+      return getProductTypes();
+    } catch {
+      return {};
+    }
+  }, []);
+  const productTypesArray = useMemo(() => {
+    try {
+      return Object.values(productTypesData || {});
+    } catch {
+      return [];
+    }
+  }, [productTypesData]);
 
   const fetchProducts =
     async () => {
@@ -204,15 +216,19 @@ export default function AdminInventory() {
       let lowStock = 0;
       let outOfStock = 0;
 
-      products.forEach((product) => {
-        if (!product?._id) return;
-        (product.variants || []).forEach((variant) => {
-          totalVariants++;
-          const eff = getEffectiveStock(product._id, variant?.color, variant?.size, variant?.stock || 0);
-          if (eff <= 0) outOfStock++;
-          else if (eff <= 3) lowStock++;
+      try {
+        (products || []).forEach((product) => {
+          if (!product?._id) return;
+          (product.variants || []).forEach((variant) => {
+            totalVariants++;
+            const eff = getEffectiveStock(product._id, variant?.color, variant?.size, variant?.stock || 0);
+            if (eff <= 0) outOfStock++;
+            else if (eff <= 3) lowStock++;
+          });
         });
-      });
+      } catch {
+        // Ignore stats errors
+      }
 
       return { totalVariants, lowStock, outOfStock };
     }, [products]);
@@ -376,16 +392,24 @@ export default function AdminInventory() {
 
   // Get unique product types and colors from products
   const availableProductTypes = useMemo(() => {
-    const types = new Set(products.map(p => p.category || "tshirt"));
-    return Array.from(types);
+    try {
+      const types = new Set((products || []).map(p => p?.category || "tshirt"));
+      return Array.from(types);
+    } catch {
+      return ["tshirt"];
+    }
   }, [products]);
 
   const availableColors = useMemo(() => {
-    const colors = new Set();
-    products.forEach(p => {
-      (p.variants || []).forEach(v => colors.add(v.color.toLowerCase()));
-    });
-    return Array.from(colors);
+    try {
+      const colors = new Set();
+      (products || []).forEach(p => {
+        (p?.variants || []).forEach(v => colors.add(v?.color?.toLowerCase()));
+      });
+      return Array.from(colors);
+    } catch {
+      return [];
+    }
   }, [products]);
 
   return (
@@ -464,13 +488,13 @@ export default function AdminInventory() {
         </div>
 
         {/* Products list */}
-        {products.length === 0 ? (
+        {(products || []).length === 0 ? (
           <div className="rounded-3xl border border-[#2f2f2f] bg-[#171717] p-12 text-center text-zinc-500">
             No products found. Click "Add Stock" to create inventory.
           </div>
         ) : (
           <div className="space-y-4">
-            {products.map((product) => {
+            {(products || []).map((product) => {
               try {
                 const productLabel = product?.name || product?.prompt || "Unnamed";
                 const productImage = product?.image || product?.imageUrl || "";
@@ -716,7 +740,7 @@ export default function AdminInventory() {
                     onChange={(e) => setSelectedColor(e.target.value)}
                     className="mt-1 w-full rounded-2xl bg-[#0f0f0f] border border-[#333] px-4 py-3 outline-none"
                   >
-                    {productTypesData[selectedProductType]?.colors?.map(c => (
+                    {(productTypesData[selectedProductType]?.colors || []).map(c => (
                       <option key={c.id} value={c.id}>{c.label}</option>
                     ))}
                   </select>
