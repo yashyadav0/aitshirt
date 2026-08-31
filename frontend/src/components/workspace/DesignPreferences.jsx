@@ -83,10 +83,14 @@ export default function DesignPreferences({
       setLoadingColors(true);
       try {
         const res = await API.get(`/inventory/colors/${preferences.productType}`);
-        if (res.data?.colors) {
+        // Handle both successful empty response and error cases
+        if (res.data?.colors && res.data.colors.length > 0) {
           // Create a set of available color IDs
           const availableColorIds = new Set(res.data.colors.map(c => c.color));
           setAvailableColors(availableColorIds);
+        } else {
+          // Empty response or no colors available - treat as unavailable backend, allow all colors
+          setAvailableColors(null);
         }
       } catch (err) {
         console.log("Failed to fetch available colors:", err);
