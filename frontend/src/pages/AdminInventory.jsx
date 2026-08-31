@@ -108,6 +108,28 @@ export default function AdminInventory() {
     }
   }, [productTypesData]);
 
+  // Get unique product types and colors from products - must be before early return for consistent hook order
+  const availableProductTypes = useMemo(() => {
+    try {
+      const types = new Set((products || []).map(p => p?.category || "tshirt"));
+      return Array.from(types);
+    } catch {
+      return ["tshirt"];
+    }
+  }, [products]);
+
+  const availableColors = useMemo(() => {
+    try {
+      const colors = new Set();
+      (products || []).forEach(p => {
+        (p?.variants || []).forEach(v => colors.add(v?.color?.toLowerCase()));
+      });
+      return Array.from(colors);
+    } catch {
+      return [];
+    }
+  }, [products]);
+
   const fetchProducts =
     async () => {
       // Create an AbortController for timeout
@@ -389,28 +411,6 @@ export default function AdminInventory() {
       showError("Refresh failed");
     }
   };
-
-  // Get unique product types and colors from products
-  const availableProductTypes = useMemo(() => {
-    try {
-      const types = new Set((products || []).map(p => p?.category || "tshirt"));
-      return Array.from(types);
-    } catch {
-      return ["tshirt"];
-    }
-  }, [products]);
-
-  const availableColors = useMemo(() => {
-    try {
-      const colors = new Set();
-      (products || []).forEach(p => {
-        (p?.variants || []).forEach(v => colors.add(v?.color?.toLowerCase()));
-      });
-      return Array.from(colors);
-    } catch {
-      return [];
-    }
-  }, [products]);
 
   return (
     <ErrorBoundary>
