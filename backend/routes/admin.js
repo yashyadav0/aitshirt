@@ -1131,6 +1131,91 @@ router.put(
 // 📦 INVENTORY MANAGEMENT
 // =====================================
 
+// Fallback mock products for when database is empty
+const MOCK_INVENTORY_PRODUCTS = [
+  {
+    _id: "mock-tshirt",
+    name: "Classic Cotton T-Shirt",
+    category: "tshirt",
+    price: 999,
+    image: "",
+    variants: [
+      { color: "white", size: "S", stock: 50 },
+      { color: "white", size: "M", stock: 50 },
+      { color: "white", size: "L", stock: 50 },
+      { color: "white", size: "XL", stock: 30 },
+      { color: "black", size: "S", stock: 50 },
+      { color: "black", size: "M", stock: 50 },
+      { color: "black", size: "L", stock: 50 },
+      { color: "black", size: "XL", stock: 30 },
+      { color: "red", size: "S", stock: 30 },
+      { color: "red", size: "M", stock: 30 },
+      { color: "red", size: "L", stock: 30 },
+      { color: "red", size: "XL", stock: 20 }
+    ]
+  },
+  {
+    _id: "mock-hoodie",
+    name: "Premium Hoodie",
+    category: "hoodie",
+    price: 1499,
+    image: "",
+    variants: [
+      { color: "black", size: "S", stock: 30 },
+      { color: "black", size: "M", stock: 30 },
+      { color: "black", size: "L", stock: 30 },
+      { color: "black", size: "XL", stock: 20 },
+      { color: "white", size: "S", stock: 25 },
+      { color: "white", size: "M", stock: 25 },
+      { color: "white", size: "L", stock: 25 },
+      { color: "white", size: "XL", stock: 15 },
+      { color: "blue", size: "S", stock: 20 },
+      { color: "blue", size: "M", stock: 20 },
+      { color: "blue", size: "L", stock: 20 },
+      { color: "blue", size: "XL", stock: 15 }
+    ]
+  },
+  {
+    _id: "mock-oversized",
+    name: "Oversized T-Shirt",
+    category: "oversized",
+    price: 1199,
+    image: "",
+    variants: [
+      { color: "white", size: "S", stock: 40 },
+      { color: "white", size: "M", stock: 40 },
+      { color: "white", size: "L", stock: 40 },
+      { color: "white", size: "XL", stock: 30 },
+      { color: "black", size: "S", stock: 40 },
+      { color: "black", size: "M", stock: 40 },
+      { color: "black", size: "L", stock: 40 },
+      { color: "black", size: "XL", stock: 30 },
+      { color: "red", size: "S", stock: 25 },
+      { color: "red", size: "M", stock: 25 },
+      { color: "red", size: "L", stock: 25 },
+      { color: "red", size: "XL", stock: 20 }
+    ]
+  },
+  {
+    _id: "mock-kids",
+    name: "Kids T-Shirt",
+    category: "kids",
+    price: 799,
+    image: "",
+    variants: [
+      { color: "white", size: "S", stock: 40 },
+      { color: "white", size: "M", stock: 40 },
+      { color: "white", size: "L", stock: 40 },
+      { color: "black", size: "S", stock: 35 },
+      { color: "black", size: "M", stock: 35 },
+      { color: "black", size: "L", stock: 35 },
+      { color: "red", size: "S", stock: 30 },
+      { color: "red", size: "M", stock: 30 },
+      { color: "red", size: "L", stock: 30 }
+    ]
+  }
+];
+
 // GET inventory grouped by product type + color
 router.get(
   "/inventory",
@@ -1140,10 +1225,14 @@ router.get(
     try {
       const products = await Product.find().sort({ createdAt: -1 });
 
+      // If no products in database, use fallback mock data
+      const productsToUse = products.length > 0 ? products : MOCK_INVENTORY_PRODUCTS;
+      const usingMockData = products.length === 0;
+
       // Group variants by product type + color for easier frontend consumption
       const inventoryByTypeAndColor = {};
 
-      products.forEach(product => {
+      productsToUse.forEach(product => {
         const productType = product.category || "tshirt";
 
         if (!inventoryByTypeAndColor[productType]) {
@@ -1170,11 +1259,38 @@ router.get(
       res.json({
         success: true,
         inventory: inventoryByTypeAndColor,
-        products // Also return raw products for detailed view
+        products: productsToUse,
+        usingMockData
       });
     } catch (err) {
       console.log("FETCH INVENTORY ERROR:", err);
-      res.status(500).json({ error: err.message });
+      // On error, also fall back to mock data
+      const inventoryByTypeAndColor = {};
+      MOCK_INVENTORY_PRODUCTS.forEach(product => {
+        const productType = product.category || "tshirt";
+        if (!inventoryByTypeAndColor[productType]) {
+          inventoryByTypeAndColor[productType] = {};
+        }
+        (product.variants || []).forEach(variant => {
+          const color = variant.color.toLowerCase();
+          const size = variant.size.toUpperCase();
+          const stock = variant.stock || 0;
+          if (!inventoryByTypeAndColor[productType][color]) {
+            inventoryByTypeAndColor[productType][color] = {
+              totalStock: 0,
+              sizes: {}
+            };
+          }
+          inventoryByTypeAndColor[productType][color].sizes[size] = stock;
+          inventoryByTypeAndColor[productType][color].totalStock += stock;
+        });
+      });
+      res.json({
+        success: true,
+        inventory: inventoryByTypeAndColor,
+        products: MOCK_INVENTORY_PRODUCTS,
+        usingMockData: true
+      });
     }
   }
 );
