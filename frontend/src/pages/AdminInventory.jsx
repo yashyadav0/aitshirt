@@ -10,7 +10,8 @@ import {
   Trash2,
   RotateCcw,
   RefreshCw,
-  Database
+  Database,
+  X
 } from "lucide-react";
 
 import ErrorBoundary from "../components/ErrorBoundary";
