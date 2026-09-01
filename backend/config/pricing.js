@@ -125,13 +125,6 @@ const PRICING = {
     productType: "hoodie",
     printSide: "couple",
     price: 0
-  },
-  "couple-kids": {
-    key: "couple-kids",
-    label: "Couple Design - Kids (Front)",
-    productType: "kids",
-    printSide: "couple",
-    price: 0
   }
 };
 

@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { getPricingKey } from "../../config/pricing";
+import { downloadDesignAndMockup4K } from "../../utils/upscaleImage";
 
 
 export default function CoupleActions({
@@ -631,6 +632,28 @@ export default function CoupleActions({
       }
     };
 
+  // =====================================
+  // UPSCALE TO 4K
+  // =====================================
+
+  const handleUpscale4K = async () => {
+    try {
+      // For couple, download his design + his mockup
+      const mockupUrl = getMockup(productType, hisColor, hisSide);
+      await downloadDesignAndMockup4K(
+        generatedHisImage,
+        mockupUrl,
+        hisTransform,
+        productType,
+        `design-${productType}-couple-his`
+      );
+      showToast("4K Design & Mockup Downloaded");
+    } catch (err) {
+      console.log(err);
+      showToast("Failed to download 4K files");
+    }
+  };
+
 
   return (
 
@@ -782,6 +805,22 @@ export default function CoupleActions({
           mt-4
         "
       >
+
+        {/* UPSCALE 4K */}
+
+        <button
+          onClick={handleUpscale4K}
+          className="
+            flex-1
+            bg-purple-500
+            hover:bg-purple-600
+            py-4
+            rounded-[24px]
+            font-bold
+          "
+        >
+          Upscale to 4K
+        </button>
 
         {/* CART */}
 

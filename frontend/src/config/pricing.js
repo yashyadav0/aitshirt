@@ -27,7 +27,6 @@ export const PRICING_KEYS = {
   "couple-tshirt": { productType: "tshirt", printSide: "couple", label: "Couple Design - T-Shirt (Front)" },
   "couple-oversized": { productType: "oversized", printSide: "couple", label: "Couple Design - Oversized (Front)" },
   "couple-hoodie": { productType: "hoodie", printSide: "couple", label: "Couple Design - Hoodie (Front)" },
-  "couple-kids": { productType: "kids", printSide: "couple", label: "Couple Design - Kids (Front)" },
 };
 
 /**

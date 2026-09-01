@@ -30,8 +30,8 @@ router.post(
       const data =
         req.body;
 
-      // Use pricingKey from frontend, fallback to default
-      const pricingKey = data.pricingKey || "a4-tshirt-single";
+      // Use pricingKey from frontend, fallback to default (tshirt-front)
+      const pricingKey = data.pricingKey || "tshirt-front";
       const price = getDefaultPrice(pricingKey);
 
 
