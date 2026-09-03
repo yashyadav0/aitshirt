@@ -92,6 +92,57 @@ app.get("/", (req, res) => {
 
 
 // =====================================
+// PUBLIC API ROUTES (no auth required)
+// =====================================
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// Public pricing config (read-only)
+app.get("/api/pricing/public", (req, res) => {
+  try {
+    const { getAllPricing } = require("./config/pricing");
+    const pricing = getAllPricing();
+    res.json({ success: true, pricing });
+  } catch (err) {
+    console.log("PUBLIC PRICING ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public product types list
+app.get("/api/products/types", async (req, res) => {
+  try {
+    const Product = require("./models/Product");
+    const types = await Product.distinct("category");
+    const productTypes = types
+      .filter(Boolean)
+      .map(name => ({ name, id: name }));
+    res.json({ success: true, productTypes });
+  } catch (err) {
+    console.log("PUBLIC PRODUCT TYPES ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Public coupons (active, not expired)
+app.get("/api/coupons", async (req, res) => {
+  try {
+    const Coupon = require("./models/Coupon");
+    const coupons = await Coupon.find({
+      expiryDate: { $gt: new Date() }
+    });
+    res.json(coupons);
+  } catch (err) {
+    console.log("PUBLIC COUPONS ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// =====================================
 // API ROUTES
 // =====================================
 
