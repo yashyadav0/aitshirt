@@ -84,6 +84,8 @@ import {
   getMockup as getStaticOrOverrideMockup
 } from "../config/mockups";
 
+import { History as HistoryIcon, Sparkles } from "lucide-react";
+
 export default function AIWorkspace() {
 
   const {
@@ -174,6 +176,13 @@ export default function AIWorkspace() {
   const [isRefining,
     setIsRefining] =
     useState(false);
+
+  // =====================================
+  // SESSION & GENERATION HISTORY STATES
+  // =====================================
+  const [generationHistory, setGenerationHistory] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [showHistorySidebar, setShowHistorySidebar] = useState(false);
 
   const composerRef =
     useRef(null);
@@ -367,10 +376,6 @@ export default function AIWorkspace() {
     selectedPreferenceColor
   ]);
 
-  // Bootstrap generationMode / productType / selectedColor from
-  // stored preferences on first mount.  On initial render the
-  // state variables above are hardcoded defaults, so the sync
-  // effect above is a no-op — this one-time read closes the gap.
   useEffect(() => {
     if (preferences.designType)
       setGenerationMode(preferences.designType);
@@ -383,21 +388,11 @@ export default function AIWorkspace() {
       setHisColor(color);
       setHerColor(color);
     }
-  }, []); // mount only
+  }, []);
 
-  // Kids only supports single design — reset generationMode if productType becomes kids
   useEffect(() => {
     if (preferences.productType === "kids" && generationMode !== "single") {
       setGenerationMode("single");
-    }
-  }, [preferences.productType]);
-
-  // Reset color if it becomes unavailable for the new product type
-  // This will be synced with DesignPreferences after it fetches available colors
-  useEffect(() => {
-    if (preferences.productType && preferences.selectedColor) {
-      // The DesignPreferences component will handle the actual availability check
-      // and disable unavailable colors. We just need to ensure we don't have a stale color.
     }
   }, [preferences.productType]);
 
@@ -426,74 +421,56 @@ export default function AIWorkspace() {
       );
     };
 
-
-  // =====================================
-  // GET MOCKUP
-  // =====================================
-  // Delegate to config/mockups.js which layers localStorage overrides
-  // on top of the static imports. When no override exists, behavior is
-  // identical to the original inlined implementation.
   const getMockup = (productType, color, side) =>
     getStaticOrOverrideMockup(productType, color, side);
 
+  const startListening = () => {
 
-  // =====================================
-  // GENERATE
-  // =====================================
-const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition ||
+      window.webkitSpeechRecognition;
 
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
 
-  if (!SpeechRecognition) {
+      alert(
+        "Speech recognition not supported in this browser"
+      );
 
-    alert(
-      "Speech recognition not supported in this browser"
-    );
-
-    return;
-  }
-
-  const recognition =
-    new SpeechRecognition();
-
-  recognition.lang = "en-IN";
-
-  recognition.continuous = false;
-
-  recognition.interimResults = false;
-
-  recognition.onstart = () => {
-
-    setIsListening(true);
-  };
-
-  recognition.onend = () => {
-
-    setIsListening(false);
-  };
-
-  recognition.onresult = (event) => {
-
-    const transcript =
-      event.results[0][0].transcript;
-
-    if (
-      generationMode === "single" ||
-      generationMode === "double"
-    ) {
-
-      setPrompt(transcript);
-
-    } else {
-
-      setCouplePrompt(transcript);
+      return;
     }
+
+    const recognition =
+      new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript =
+        event.results[0][0].transcript;
+
+      if (
+        generationMode === "single" ||
+        generationMode === "double"
+      ) {
+        setPrompt(transcript);
+      } else {
+        setCouplePrompt(transcript);
+      }
+    };
+
+    recognition.start();
   };
 
-  recognition.start();
-};
   const handleGenerate =
     async (
       overridePreferences = null
@@ -525,10 +502,6 @@ const startListening = () => {
 
       try {
 
-        // =====================================
-        // CLIENT-SIDE QUOTA PRE-CHECK
-        // =====================================
-
         const authUser =
           user || profile;
 
@@ -549,47 +522,33 @@ const startListening = () => {
         setLoading(true);
 
         setGeneratedImage("");
-
         setGeneratedHisImage("");
-
         setGeneratedHerImage("");
-
         setGeneratedFrontImage("");
-
         setGeneratedBackImage("");
-
         setConfirmedDesign(null);
-
         setIsConfirmed(false);
-
 
         if (
           activeMode === "single"
         ) {
-
           setGenerationStep(
             "Enhancing prompt..."
           );
-
         } else if (
           activeMode === "double"
         ) {
-
           setGenerationStep(
             "Enhancing double-side prompt..."
           );
-
         } else {
-
           setGenerationStep(
             "Enhancing couple prompt..."
           );
         }
 
-
         const formData =
           new FormData();
-
 
         formData.append(
           "generationMode",
@@ -630,42 +589,23 @@ const startListening = () => {
           )
         );
 
-
-        // =====================================
-        // SINGLE
-        // =====================================
-
         if (
           activeMode === "single" ||
           activeMode === "double"
         ) {
-
           formData.append(
             "prompt",
             prompt
           );
-        }
-
-        // =====================================
-        // COUPLE
-        // =====================================
-
-        else {
-
+        } else {
           formData.append(
             "prompt",
             couplePrompt
           );
         }
 
-
-        // =====================================
-        // REFERENCES
-        // =====================================
-
         referenceImages.forEach(
           (file) => {
-
             formData.append(
               "referenceImages",
               file
@@ -673,43 +613,30 @@ const startListening = () => {
           }
         );
 
-
         const token =
           localStorage.getItem(
             "token"
           );
 
-
         const res =
           await API.post(
-
             "/generation/create",
-
             formData,
-
             {
               headers: {
-
                 Authorization:
                   `Bearer ${token}`,
-
                 "Content-Type":
                   "multipart/form-data"
               }
             }
           );
 
-
         setIsRefining(false);
-
-        // =====================================
-        // SYNC QUOTA FROM RESPONSE
-        // =====================================
 
         if (res.data?.quota) {
           refreshUser();
         }
-
 
         const responsePreferences =
           normalizePreferences(
@@ -737,22 +664,20 @@ const startListening = () => {
           responsePreferences.selectedColor || responsePreferences.color
         );
 
-
-        // =====================================
-        // SINGLE
-        // =====================================
+        let finalSingle = "";
+        let finalFront = "";
+        let finalBack = "";
+        let finalHis = "";
+        let finalHer = "";
 
         if (
           activeMode === "single"
         ) {
-
           setGenerationStep(
             "Removing background..."
           );
 
-
           try {
-
             const imageBlob =
               await fetch(
                 res.data.imageUrl
@@ -760,20 +685,14 @@ const startListening = () => {
                 r.blob()
               );
 
-
             const transparentResult =
-
               await removeBackground(
                 imageBlob
               );
 
-
             const transparentBlob =
-
               transparentResult instanceof Blob
-
                 ? transparentResult
-
                 : new Blob(
                     [transparentResult],
                     {
@@ -782,11 +701,9 @@ const startListening = () => {
                     }
                   );
 
-
             setGenerationStep(
               "Uploading design..."
             );
-
 
             const uploadFormData =
               new FormData();
@@ -796,69 +713,43 @@ const startListening = () => {
               transparentBlob
             );
 
-
             const uploadRes =
               await API.post(
-
                 "/upload",
-
                 uploadFormData,
-
                 {
                   headers: {
-
                     Authorization:
                       `Bearer ${token}`,
-
                     "Content-Type":
                       "multipart/form-data"
                   }
                 }
               );
 
-
-            setGeneratedImage(
-              uploadRes.data.imageUrl
-            );
+            finalSingle = uploadRes.data.imageUrl;
+            setGeneratedImage(finalSingle);
 
           } catch (bgErr) {
-
-            console.log(
-              bgErr
-            );
-
-            setGeneratedImage(
-              res.data.imageUrl
-            );
+            console.log(bgErr);
+            finalSingle = res.data.imageUrl;
+            setGeneratedImage(finalSingle);
           }
-
 
           setGenerationStep("");
         }
 
-
-        // =====================================
-        // DOUBLE-SIDE
-        // =====================================
-
         else if (
           activeMode === "double"
         ) {
-
-          // Render immediately from raw response
-          setGeneratedFrontImage(
-            res.data.frontImage
-          );
-
-          setGeneratedBackImage(
-            res.data.backImage
-          );
+          finalFront = res.data.frontImage;
+          finalBack = res.data.backImage;
+          setGeneratedFrontImage(finalFront);
+          setGeneratedBackImage(finalBack);
 
           setGenerationStep("");
 
-          // Background removal + upload can safely replace after display
           try {
-
             setGenerationStep(
               "Processing Front..."
             );
@@ -869,10 +760,10 @@ const startListening = () => {
                 token
               );
 
-            if (frontArtwork)
-              setGeneratedFrontImage(
-                frontArtwork
-              );
+            if (frontArtwork) {
+              finalFront = frontArtwork;
+              setGeneratedFrontImage(finalFront);
+            }
 
             setGenerationStep(
               "Processing Back..."
@@ -884,40 +775,24 @@ const startListening = () => {
                 token
               );
 
-            if (backArtwork)
-              setGeneratedBackImage(
-                backArtwork
-              );
+            if (backArtwork) {
+              finalBack = backArtwork;
+              setGeneratedBackImage(finalBack);
+            }
 
             setGenerationStep("");
 
           } catch (bgErr) {
-
-            console.log(
-              bgErr
-            );
-
+            console.log(bgErr);
             setGenerationStep("");
           }
         }
 
-
-        // =====================================
-        // COUPLE
-        // =====================================
-
         else {
-
           try {
-
-            // =====================================
-            // HIS DESIGN
-            // =====================================
-
             setGenerationStep(
               "Removing his background..."
             );
-
 
             const hisBlob =
               await fetch(
@@ -926,20 +801,14 @@ const startListening = () => {
                 r.blob()
               );
 
-
             const hisTransparentResult =
-
               await removeBackground(
                 hisBlob
               );
 
-
             const hisTransparentBlob =
-
               hisTransparentResult instanceof Blob
-
                 ? hisTransparentResult
-
                 : new Blob(
                     [hisTransparentResult],
                     {
@@ -947,7 +816,6 @@ const startListening = () => {
                         "image/png"
                     }
                   );
-
 
             const hisUploadForm =
               new FormData();
@@ -957,40 +825,26 @@ const startListening = () => {
               hisTransparentBlob
             );
 
-
             const hisUploadRes =
               await API.post(
-
                 "/upload",
-
                 hisUploadForm,
-
                 {
                   headers: {
-
                     Authorization:
                       `Bearer ${token}`,
-
                     "Content-Type":
                       "multipart/form-data"
                   }
                 }
               );
 
-
-            setGeneratedHisImage(
-              hisUploadRes.data.imageUrl
-            );
-
-
-            // =====================================
-            // HER DESIGN
-            // =====================================
+            finalHis = hisUploadRes.data.imageUrl;
+            setGeneratedHisImage(finalHis);
 
             setGenerationStep(
               "Removing her background..."
             );
-
 
             const herBlob =
               await fetch(
@@ -999,20 +853,14 @@ const startListening = () => {
                 r.blob()
               );
 
-
             const herTransparentResult =
-
               await removeBackground(
                 herBlob
               );
 
-
             const herTransparentBlob =
-
               herTransparentResult instanceof Blob
-
                 ? herTransparentResult
-
                 : new Blob(
                     [herTransparentResult],
                     {
@@ -1020,7 +868,6 @@ const startListening = () => {
                         "image/png"
                     }
                   );
-
 
             const herUploadForm =
               new FormData();
@@ -1030,68 +877,69 @@ const startListening = () => {
               herTransparentBlob
             );
 
-
             const herUploadRes =
               await API.post(
-
                 "/upload",
-
                 herUploadForm,
-
                 {
                   headers: {
-
                     Authorization:
                       `Bearer ${token}`,
-
                     "Content-Type":
                       "multipart/form-data"
                   }
                 }
               );
 
-
-            setGeneratedHerImage(
-              herUploadRes.data.imageUrl
-            );
-
+            finalHer = herUploadRes.data.imageUrl;
+            setGeneratedHerImage(finalHer);
 
             setGenerationStep("");
 
           } catch (bgErr) {
-
             console.log(bgErr);
-
-            setGeneratedHisImage(
-              res.data.hisImage
-            );
-
-            setGeneratedHerImage(
-              res.data.herImage
-            );
-
+            finalHis = res.data.hisImage;
+            finalHer = res.data.herImage;
+            setGeneratedHisImage(finalHis);
+            setGeneratedHerImage(finalHer);
             setGenerationStep("");
           }
         }
 
-      } catch (err) {
+        // =====================================
+        // RECORD SESSION IN HISTORY
+        // =====================================
+        const currentPromptText = activeMode === "couple" ? couplePrompt : prompt;
+        const newSessionItem = {
+          id: Date.now().toString(),
+          mode: activeMode,
+          prompt: currentPromptText || "Custom Generation",
+          image: finalSingle || finalFront || finalHis,
+          frontImage: finalFront,
+          backImage: finalBack,
+          hisImage: finalHis,
+          herImage: finalHer,
+          preferences: responsePreferences,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
 
+        setGenerationHistory((prev) => [newSessionItem, ...prev]);
+        setActiveSessionId(newSessionItem.id);
+
+      } catch (err) {
         console.log("GENERATION ERROR:", err);
 
         const status =
           err?.response?.status;
 
         if (status === 409) {
-
           showError(
             err?.response?.data?.error ||
             "You've reached your prompt limit."
           );
-
         } else if (
           err?.response?.data?.error
         ) {
-
           showError(
             err.response.data.error
           );
@@ -1099,7 +947,6 @@ const startListening = () => {
           showError("Generation failed. Please try again.");
         }
       } finally {
-
         setLoading(false);
       }
     };
@@ -1138,15 +985,17 @@ const startListening = () => {
       setSelectedStyles([]);
       setIsRefining(false);
       setGenerationStep("");
+      setActiveSessionId(null);
     };
 
-  // Refine: reuse the current artwork as the reference image so
-  // Gemini edits it according to the next instruction.
   const handleRefine =
     async () => {
       try {
+        const targetImg = generatedImage || generatedFrontImage;
+        if (!targetImg) return;
+
         const blob =
-          await fetch(generatedImage)
+          await fetch(targetImg)
             .then((r) => r.blob());
 
         const file =
@@ -1172,6 +1021,22 @@ const startListening = () => {
       }
     };
 
+  // Restore session from history
+  const handleSelectHistorySession = (session) => {
+    setActiveSessionId(session.id);
+    setGenerationMode(session.mode);
+    if (session.mode === "couple") {
+      setCouplePrompt(session.prompt);
+    } else {
+      setPrompt(session.prompt);
+    }
+    setGeneratedImage(session.image || "");
+    setGeneratedFrontImage(session.frontImage || "");
+    setGeneratedBackImage(session.backImage || "");
+    setGeneratedHisImage(session.hisImage || "");
+    setGeneratedHerImage(session.herImage || "");
+  };
+
   const isCouple =
     generationMode === "couple";
 
@@ -1194,8 +1059,67 @@ const startListening = () => {
         pt-20
         md:px-8
         md:pt-8
+        relative
       "
     >
+
+      {/* HISTORY TOGGLE BUTTON */}
+      {generationHistory.length > 0 && (
+        <button
+          onClick={() => setShowHistorySidebar(!showHistorySidebar)}
+          className="fixed top-6 right-6 z-40 flex items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 py-2 text-xs font-medium text-zinc-300 shadow-xl transition hover:bg-[#222] hover:text-white"
+        >
+          <HistoryIcon size={14} />
+          <span>Session History ({generationHistory.length})</span>
+        </button>
+      )}
+
+      {/* HISTORY SIDEBAR DRAWER */}
+      {showHistorySidebar && generationHistory.length > 0 && (
+        <div className="fixed inset-y-0 right-0 z-50 w-80 border-l border-[#2f2f2f] bg-[#121212] p-4 shadow-2xl flex flex-col">
+          <div className="flex items-center justify-between pb-3 border-b border-[#2f2f2f]">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <HistoryIcon size={16} />
+              <span>Generation History</span>
+            </div>
+            <button
+              onClick={() => setShowHistorySidebar(false)}
+              className="text-zinc-400 hover:text-white text-xs px-2 py-1 rounded bg-[#1f1f1f]"
+            >
+              Close
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto mt-3 flex flex-col gap-2.5 pr-1">
+            {generationHistory.map((item) => {
+              const isActive = item.id === activeSessionId;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    handleSelectHistorySession(item);
+                    setShowHistorySidebar(false);
+                  }}
+                  className={`flex items-center gap-3 p-2.5 rounded-xl text-left transition-all border ${
+                    isActive
+                      ? "border-cyan-500/50 bg-[#1e1e1e]"
+                      : "border-[#222] bg-[#171717] hover:bg-[#1a1a1a]"
+                  }`}
+                >
+                  <img
+                    src={item.image || item.frontImage || item.hisImage}
+                    alt="History thumbnail"
+                    className="w-11 h-11 object-cover rounded-lg bg-black shrink-0 border border-[#2f2f2f]"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-zinc-200 truncate">{item.prompt}</p>
+                    <span className="text-[10px] text-zinc-500 uppercase">{item.mode} • {item.timestamp}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* SUCCESS TOAST */}
 
@@ -1443,7 +1367,7 @@ const startListening = () => {
 
                 getMockup={
                   getMockup
-                  }
+                 }
 
                 productType={
                    activeResultProductType
@@ -1563,7 +1487,7 @@ const startListening = () => {
 
               <CouplePreview
 
-  productType={
+productType={
     resolvedPreferences.productType
   }
 
@@ -1606,9 +1530,9 @@ const startListening = () => {
 
               <CoupleControls
 
-  productType={
-                  resolvedPreferences.productType
-                }
+productType={
+                resolvedPreferences.productType
+              }
 
 
                 hisColor={
@@ -1661,8 +1585,8 @@ const startListening = () => {
                 }
 
   productType={
-                  resolvedPreferences.productType
-                }
+                resolvedPreferences.productType
+              }
 
                 couplePrompt={
                   couplePrompt
@@ -1710,8 +1634,8 @@ const startListening = () => {
                 }
 
   generationPreferences={
-                  resolvedPreferences
-                }
+                resolvedPreferences
+              }
               />
 
             </>
