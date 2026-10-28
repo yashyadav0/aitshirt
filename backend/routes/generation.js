@@ -28,7 +28,9 @@ const {
 
 const {
   buildPreferenceEnrichedPrompt,
-  normalizePreferences
+  normalizePreferences,
+  parseStyles,
+  applyStylesToPrompt
 } = require("../config/designPreferences");
 
 
@@ -957,11 +959,20 @@ router.post(
         color = "white",
         selectedColor,
 
-        prompt,
+        prompt: rawPrompt,
+
+        styles: rawStyles,
 
         preferences: rawPreferences
 
       } = req.body;
+
+      // Style chips (graphic / text / aesthetic / minimal) steer the Gemini enhancer
+      const prompt =
+        applyStylesToPrompt(
+          rawPrompt,
+          parseStyles(rawStyles)
+        );
 
       const activeMode =
         designType

@@ -13,6 +13,7 @@ import {
   Menu,
   X,
   Sparkles,
+  MessageSquare,
   ShoppingCart,
   Heart,
   Package,
@@ -92,6 +93,11 @@ export default function Sidebar() {
       to: "/workspace",
       label: "AI Workspace",
       icon: Sparkles
+    },
+    {
+      to: "/chat",
+      label: "AI Chat",
+      icon: MessageSquare
     },
     {
       to: "/history",

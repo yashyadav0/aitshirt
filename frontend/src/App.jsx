@@ -29,6 +29,9 @@ import LandingPage
 import History
   from "./pages/History";
 
+import Chat
+  from "./pages/Chat";
+
 import Settings
   from "./pages/Settings";
 
@@ -82,6 +85,11 @@ function AppShell() {
             <Route
               path="/history"
               element={<History />}
+            />
+
+            <Route
+              path="/chat"
+              element={<Chat />}
             />
 
             <Route

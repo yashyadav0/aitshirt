@@ -11,6 +11,43 @@ import API from "../api";
 const AuthContext =
   createContext(null);
 
+// Local testing only: skip the login screen when the backend has DEV_LOGIN=true
+const DEV_AUTOLOGIN =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_DEV_AUTOLOGIN === "true";
+
+async function devLogin() {
+
+  try {
+
+    const res =
+      await API.post(
+        "/auth/dev-login"
+      );
+
+    localStorage.setItem(
+      "token",
+      res.data.token
+    );
+
+    localStorage.setItem(
+      "role",
+      res.data.user.role || "user"
+    );
+
+    return res.data.token;
+
+  } catch (error) {
+
+    console.error(
+      "Dev auto-login failed",
+      error.message
+    );
+
+    return null;
+  }
+}
+
 export function AuthProvider({
 
   children
@@ -25,12 +62,16 @@ export function AuthProvider({
     setLoading] =
     useState(true);
 
-  async function loadUser() {
+  async function loadUser(allowDevRetry = true) {
 
-    const token =
+    let token =
       localStorage.getItem(
         "token"
       );
+
+    if (!token && DEV_AUTOLOGIN) {
+      token = await devLogin();
+    }
 
     if (!token) {
       setUser(null);
@@ -77,6 +118,12 @@ export function AuthProvider({
       );
 
       setUser(null);
+
+      // In-memory DB resets on restart, so re-create the dev session once
+      if (DEV_AUTOLOGIN && allowDevRetry) {
+        return loadUser(false);
+      }
+
       return null;
 
     } finally {

@@ -551,5 +551,56 @@ router.get("/me", authMiddleware, async (req, res) => {
   }
 });
 
+// =====================================
+// DEV LOGIN (local testing only)
+// Disabled unless DEV_LOGIN=true AND NODE_ENV !== "production".
+// =====================================
+router.post("/dev-login", async (req, res) => {
+
+  if (
+    process.env.NODE_ENV === "production" ||
+    process.env.DEV_LOGIN !== "true"
+  ) {
+    return res.status(404).json({ error: "Not found" });
+  }
+
+  try {
+
+    const phone = process.env.ADMIN_PHONE || "+919999999999";
+
+    let user = await User.findOne({ phone });
+
+    if (!user) {
+      user = new User({
+        name: "Dev User",
+        email: process.env.ADMIN_EMAIL || "admin@example.com",
+        phone,
+        phoneVerified: true,
+        role: "admin",
+        tier: "vip"
+      });
+    }
+
+    // Always give the dev user plenty of prompts for testing
+    user.weeklyLimit = 999;
+    user.weeklyPromptsLeft = 999;
+    user.lastPromptReset = new Date();
+    user.isBlocked = false;
+
+    await user.save();
+
+    res.json({
+      token: createToken(user),
+      user: publicUser(user)
+    });
+
+  } catch (err) {
+
+    console.error("DEV LOGIN ERROR:", err);
+
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports =
   router;

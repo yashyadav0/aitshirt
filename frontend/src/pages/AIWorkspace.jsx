@@ -4,9 +4,17 @@ import React, {
   useEffect
 } from "react";
 
-import {
-  Mic
-} from "lucide-react";
+import DesignModePill
+from "../components/workspace/DesignModePill";
+
+import StyleChips
+from "../components/workspace/StyleChips";
+
+import PromptComposer
+from "../components/workspace/PromptComposer";
+
+import ResultToolbar
+from "../components/workspace/ResultToolbar";
 
 import API from "../api";
 
@@ -17,9 +25,6 @@ import {
 import {
   useAuth
 } from "../auth/AuthContext";
-
-import DesignPreferences
-from "../components/workspace/DesignPreferences";
 
 import PreferenceChips
 from "../components/workspace/PreferenceChips";
@@ -34,9 +39,6 @@ import {
 import GenerationLoader
 from "../components/workspace/GenerationLoader";
 
-import GenerateButton
-from "../components/workspace/GenerateButton";
-
 import UsageIndicator
 from "../components/workspace/UsageIndicator";
 
@@ -47,15 +49,6 @@ import {
 import {
   showError
 } from "../utils/toast";
-
-import ReferenceUploader
-from "../components/workspace/ReferenceUploader";
-
-import SinglePromptBox
-from "../components/workspace/SinglePromptBox";
-
-import CouplePromptBox
-from "../components/workspace/CouplePromptBox";
 
 import SinglePreview
 from "../components/workspace/SinglePreview";
@@ -173,6 +166,17 @@ export default function AIWorkspace() {
   const [isListening,
     setIsListening] =
     useState(false);
+
+  const [selectedStyles,
+    setSelectedStyles] =
+    useState([]);
+
+  const [isRefining,
+    setIsRefining] =
+    useState(false);
+
+  const composerRef =
+    useRef(null);
 
   const fallbackPresets = [
     {
@@ -619,6 +623,13 @@ const startListening = () => {
           )
         );
 
+        formData.append(
+          "styles",
+          JSON.stringify(
+            selectedStyles
+          )
+        );
+
 
         // =====================================
         // SINGLE
@@ -688,6 +699,8 @@ const startListening = () => {
             }
           );
 
+
+        setIsRefining(false);
 
         // =====================================
         // SYNC QUOTA FROM RESPONSE
@@ -1096,6 +1109,78 @@ const startListening = () => {
       handleGenerate();
     };
 
+  const toggleStyle =
+    (id) => {
+      setSelectedStyles((prev) =>
+        prev.includes(id)
+          ? prev.filter((s) => s !== id)
+          : [...prev, id]
+      );
+    };
+
+  const handleStartOver =
+    () => {
+      setGeneratedImage("");
+      setGeneratedHisImage("");
+      setGeneratedHerImage("");
+      setGeneratedFrontImage("");
+      setGeneratedBackImage("");
+      setConfirmedDesign(null);
+      setIsConfirmed(false);
+      setSingleTransform(null);
+      setFrontTransform(null);
+      setBackTransform(null);
+      setHisTransform(null);
+      setHerTransform(null);
+      setPrompt("");
+      setCouplePrompt("");
+      setReferenceImages([]);
+      setSelectedStyles([]);
+      setIsRefining(false);
+      setGenerationStep("");
+    };
+
+  // Refine: reuse the current artwork as the reference image so
+  // Gemini edits it according to the next instruction.
+  const handleRefine =
+    async () => {
+      try {
+        const blob =
+          await fetch(generatedImage)
+            .then((r) => r.blob());
+
+        const file =
+          new File(
+            [blob],
+            "current-design.png",
+            { type: blob.type || "image/png" }
+          );
+
+        setReferenceImages([file]);
+        setPrompt("");
+        setIsRefining(true);
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        setTimeout(
+          () => composerRef.current?.focus(),
+          300
+        );
+      } catch (err) {
+        console.log(err);
+        showError("Could not load the design to refine.");
+      }
+    };
+
+  const isCouple =
+    generationMode === "couple";
+
+  const composerValue =
+    isCouple ? couplePrompt : prompt;
+
+  const setComposerValue =
+    isCouple ? setCouplePrompt : setPrompt;
+
 
   return (
 
@@ -1183,186 +1268,114 @@ const startListening = () => {
             `}
           >
 
-            <p className="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-cyan-300">
-              AI creative studio
-            </p>
-
-            <h1
-              className="
-                text-3xl
-                sm:text-4xl
-                font-semibold
-                tracking-tight
-                text-white
-                md:text-5xl
-                lg:text-6xl
-                leading-tight
-              "
-            >
-              Imagine Your Style...
-            </h1>
-
-            <p
-              className="
-                mx-auto
-                mt-3
-                sm:mt-4
-                max-w-2xl
-                text-sm
-                sm:text-base
-                leading-6
-                sm:leading-7
-                text-zinc-400
-                md:text-lg
-              "
-            >
-              Describe an idea, generate artwork, then apply it to premium apparel mockups.
-            </p>
-
-            <div
-              className="
-                mt-6
-                sm:mt-8
-                rounded-2xl
-                sm:rounded-[28px]
-                border
-                border-[#2f2f2f]
-                bg-[#171717]
-                p-3
-                shadow-2xl
-                shadow-black/30
-              "
-            >
-
-              <ReferenceUploader
-                referenceImages={
-                  referenceImages
-                }
-                setReferenceImages={
-                  setReferenceImages
-                }
-              />
-
-              <div className="px-2 pb-2">
-                <DesignPreferences
-                  preferences={preferences}
-                  setProductType={setPrefProductType}
-                  setDesignType={setPrefDesignType}
-                  setColor={setPrefColor}
-                  onDesignTypeChange={
-                    handlePreferenceDesignTypeChange
-                  }
-                />
-              </div>
-
-              <div className="px-2">
-                {
-                  generationMode === "single" ||
-                  generationMode === "double"
-
-                  ? (
-
-                    <SinglePromptBox
-                      prompt={prompt}
-                      setPrompt={
-                        setPrompt
-                      }
-                    />
-
-                  ) : (
-
-                    <CouplePromptBox
-                      couplePrompt={
-                        couplePrompt
-                      }
-                      setCouplePrompt={
-                        setCouplePrompt
-                      }
-                    />
-                  )
-                }
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={startListening}
-                    className={`
-                      flex
-                      h-12
-                      w-12
-                      items-center
-                      justify-center
-                      rounded-2xl
-                      border
-                      border-[#333]
-                      transition
-                      ${
-                        isListening
-                          ? "bg-red-500 text-white"
-                          : "bg-[#202020] text-zinc-300 hover:text-white"
-                      }
-                    `}
-                    aria-label="Voice input"
-                  >
-                    <Mic size={20} />
-                  </button>
-
-                  <UsageIndicator user={user || profile} />
-                </div>
-
-                <GenerateButton
-                  loading={loading}
-                  handleGenerate={
-                    handleGenerate
-                  }
-                />
-              </div>
-
-            </div>
-
-            <div
-              className="
-                mt-5
-                flex
-                gap-2
-                overflow-x-auto
-                pb-1
-                [-ms-overflow-style:none]
-                [scrollbar-width:none]
-                [&::-webkit-scrollbar]:hidden
-              "
-            >
-              {
-                presets.map((preset) => (
-
-                  <button
-                    key={preset._id || preset.name}
-                    onClick={() =>
-                      applyPreset(
-                        preset
-                      )
-                    }
-                    className="
-                      shrink-0
-                      rounded-full
-                      border
-                      border-[#2f2f2f]
-                      bg-[#121212]
-                      px-4
-                      py-3
-                      text-sm
-                      text-zinc-300
-                      transition
-                      hover:border-cyan-500/60
-                      hover:text-white
-                    "
-                  >
-                    {preset.emoji} {preset.name}
-                  </button>
-                ))
+            <DesignModePill
+              preferences={preferences}
+              setProductType={setPrefProductType}
+              setDesignType={setPrefDesignType}
+              onDesignTypeChange={
+                handlePreferenceDesignTypeChange
               }
+              disabled={loading}
+            />
+
+            {
+              !hasGenerated && (
+                <h1
+                  className="
+                    mt-10
+                    sm:mt-14
+                    mb-8
+                    text-3xl
+                    sm:text-4xl
+                    md:text-5xl
+                    font-semibold
+                    tracking-tight
+                    text-white
+                    leading-tight
+                  "
+                >
+                  Imagine your dreams <span aria-hidden="true">⭐</span>
+                </h1>
+              )
+            }
+
+            <div className={hasGenerated ? "mt-6" : ""}>
+              <PromptComposer
+                value={composerValue}
+                onChange={setComposerValue}
+                onSubmit={() => handleGenerate()}
+                loading={loading}
+                placeholder={
+                  isRefining
+                    ? "Describe what to change..."
+                    : "Ask anything"
+                }
+                referenceImages={referenceImages}
+                setReferenceImages={setReferenceImages}
+                isListening={isListening}
+                onMic={startListening}
+                inputRef={composerRef}
+              />
             </div>
+
+            <div className="mt-3 flex justify-center">
+              <UsageIndicator user={user || profile} />
+            </div>
+
+            {
+              !hasGenerated && (
+                <div className="mt-5">
+                  <StyleChips
+                    selected={selectedStyles}
+                    onToggle={toggleStyle}
+                    disabled={loading}
+                  />
+                </div>
+              )
+            }
+
+            {
+              !hasGenerated && (
+                <div
+                  className="
+                    mt-4
+                    flex
+                    gap-2
+                    overflow-x-auto
+                    pb-1
+                    [-ms-overflow-style:none]
+                    [scrollbar-width:none]
+                    [&::-webkit-scrollbar]:hidden
+                  "
+                >
+                  {
+                    presets.map((preset) => (
+                      <button
+                        key={preset._id || preset.name}
+                        type="button"
+                        onClick={() => applyPreset(preset)}
+                        className="
+                          shrink-0
+                          rounded-full
+                          border
+                          border-[#2f2f2f]
+                          bg-[#121212]
+                          px-4
+                          py-3
+                          text-sm
+                          text-zinc-300
+                          transition
+                          hover:border-cyan-500/60
+                          hover:text-white
+                        "
+                      >
+                        {preset.emoji} {preset.name}
+                      </button>
+                    ))
+                  }
+                </div>
+              )
+            }
 
             {
               loading && (
@@ -1381,15 +1394,29 @@ const startListening = () => {
         {
           hasGenerated
           && resolvedPreferences && (
-            <PreferenceChips
-              preferences={
-                resolvedPreferences
-              }
-              onRegenerate={
-                handleRegenerate
-              }
-              loading={loading}
-            />
+            <>
+              <PreferenceChips
+                preferences={
+                  resolvedPreferences
+                }
+                loading={loading}
+              />
+
+              <ResultToolbar
+                onRefine={
+                  activeResultMode === "single"
+                    ? handleRefine
+                    : undefined
+                }
+                onRegenerate={
+                  handleRegenerate
+                }
+                onStartOver={
+                  handleStartOver
+                }
+                loading={loading}
+              />
+            </>
           )
         }
 

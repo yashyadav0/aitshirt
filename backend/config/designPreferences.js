@@ -126,10 +126,38 @@ function buildPreferenceEnrichedPrompt(
   ].join(" ");
 }
 
+
+// Style chips from the Gemini-style workspace UI. Whitelisted so the client
+// can never inject arbitrary instructions through the "styles" field.
+const STYLE_DIRECTIVES = {
+  graphic: "bold illustrated graphic artwork with strong imagery and a clear focal subject",
+  text: "typography-led design with premium, highly legible lettering as the hero element",
+  aesthetic: "trendy aesthetic streetwear look, curated colour palette, modern fashion mood",
+  minimal: "minimal clean design, generous negative space, restrained palette, simple shapes"
+};
+
+function parseStyles(raw) {
+  let list = raw;
+  if (typeof raw === "string") {
+    try { list = JSON.parse(raw); } catch { list = []; }
+  }
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.map((s) => String(s).toLowerCase()))]
+    .filter((s) => STYLE_DIRECTIVES[s]);
+}
+
+function applyStylesToPrompt(userPrompt, styles = []) {
+  const base = String(userPrompt || "").trim();
+  if (!styles.length) return base;
+  return `${base}. Style direction: ${styles.map((s) => STYLE_DIRECTIVES[s]).join("; ")}.`;
+}
+
 module.exports = {
   DEFAULT_PREFERENCES,
   buildPreferenceEnrichedPrompt,
   getColorLabel,
   getProductLabels,
-  normalizePreferences
+  normalizePreferences,
+  parseStyles,
+  applyStylesToPrompt
 };

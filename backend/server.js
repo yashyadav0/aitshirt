@@ -15,6 +15,11 @@ const dotenv =
 
 dotenv.config();
 
+// Local testing helpers (ignored in production)
+if (process.env.NODE_ENV !== "production" && !process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = "local-dev-secret";
+}
+
 
 // =====================================
 // ROUTES
@@ -54,6 +59,9 @@ const presetRoutes =
 
 const inventoryRoutes =
   require("./routes/inventory");
+
+const chatRoutes =
+  require("./routes/chat");
 
 
 // =====================================
@@ -199,14 +207,34 @@ app.use(
   inventoryRoutes
 );
 
+app.use(
+  "/api/chat",
+  chatRoutes
+);
+
 
 // =====================================
 // MONGODB
 // =====================================
 
-mongoose.connect(process.env.MONGO_URI, {
+async function resolveMongoUri() {
+  // USE_MEMORY_DB=true -> throwaway in-memory MongoDB, nothing to install
+  if (
+    process.env.USE_MEMORY_DB === "true" &&
+    process.env.NODE_ENV !== "production"
+  ) {
+    const { MongoMemoryServer } = require("mongodb-memory-server");
+    const mem = await MongoMemoryServer.create();
+    console.log("Using in-memory MongoDB (data resets on restart)");
+    return mem.getUri();
+  }
+  return process.env.MONGO_URI;
+}
+
+resolveMongoUri()
+.then((uri) => mongoose.connect(uri, {
   serverSelectionTimeoutMS: 5000
-})
+}))
 .then(async () => {
   console.log("MongoDB Connected");
 
