@@ -737,6 +737,9 @@ export default function AIWorkspace() {
         if (
           activeMode === "single"
         ) {
+          finalSingle = res.data.imageUrl;
+          setGeneratedImage(finalSingle);
+
           setGenerationStep(
             "Removing background..."
           );
@@ -853,6 +856,11 @@ export default function AIWorkspace() {
         }
 
         else {
+          finalHis = res.data.hisImage;
+          finalHer = res.data.herImage;
+          setGeneratedHisImage(finalHis);
+          setGeneratedHerImage(finalHer);
+
           try {
             setGenerationStep(
               "Removing his background..."
