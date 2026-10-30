@@ -1453,8 +1453,10 @@ router.post(
 
     try {
 
-      const data =
-        req.body;
+      const data = { ...req.body };
+      const generationId = data._id;
+      delete data._id;
+      delete data.userId;
 
       const preferences =
         normalizePreferences({
@@ -1478,32 +1480,50 @@ router.post(
         });
 
 
-      const generation =
-        new Generation({
+      const generationData = {
+        ...data,
+        preferences,
+        productType: preferences.productType,
+        designType: preferences.designType,
+        generationMode:
+          data.generationMode || preferences.designType,
+        selectedColor: preferences.selectedColor,
+        color:
+          preferences.color
+          || preferences.selectedColor
+      };
 
-          userId:
-            req.user.id,
+      let generation;
 
-          ...data,
+      if (generationId) {
+        generation = await Generation.findOneAndUpdate(
+          {
+            _id: generationId,
+            userId: req.user.id
+          },
+          {
+            $set: generationData
+          },
+          {
+            new: true,
+            runValidators: true
+          }
+        );
 
-          preferences,
-
-          productType:
-            preferences.productType,
-
-          designType:
-            preferences.designType,
-
-          selectedColor:
-            preferences.selectedColor,
-
-          color:
-            preferences.color
-            || preferences.selectedColor
+        if (!generation) {
+          return res.status(404).json({
+            success: false,
+            error: "Generation not found"
+          });
+        }
+      } else {
+        generation = new Generation({
+          userId: req.user.id,
+          ...generationData
         });
 
-
-      await generation.save();
+        await generation.save();
+      }
 
 
       res.json({
@@ -1511,7 +1531,9 @@ router.post(
         success: true,
 
         message:
-          "Generation saved"
+          "Generation saved",
+
+        generation
       });
 
     } catch (err) {

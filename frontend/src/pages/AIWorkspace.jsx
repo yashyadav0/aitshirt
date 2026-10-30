@@ -1,8 +1,13 @@
 import React, {
+  useCallback,
   useState,
   useRef,
   useEffect
 } from "react";
+import {
+  useLocation,
+  useNavigate
+} from "react-router-dom";
 
 import DesignModePill
 from "../components/workspace/DesignModePill";
@@ -86,7 +91,49 @@ import {
 
 import { History as HistoryIcon, Sparkles } from "lucide-react";
 
+function toWorkspaceHistoryItem(item) {
+  const mode =
+    item.designType
+    || item.generationMode
+    || (item.isCouple ? "couple" : item.frontDesignImage ? "double" : "single");
+
+  return {
+    ...item,
+    id: item._id || item.id,
+    mode,
+    timestamp: item.timestamp || new Date(item.createdAt || Date.now()).toLocaleString(),
+    prompt: item.prompt || item.couplePrompt || item.sharedPrompt || "",
+    image:
+      item.transparentDesign
+      || item.designImage
+      || item.frontTransparentDesign
+      || item.frontDesignImage
+      || item.hisDesign
+      || item.hisDesignImage
+      || "",
+    frontImage:
+      item.frontTransparentDesign
+      || item.frontDesignImage
+      || "",
+    backImage:
+      item.backTransparentDesign
+      || item.backDesignImage
+      || "",
+    hisImage:
+      item.hisDesign
+      || item.hisDesignImage
+      || "",
+    herImage:
+      item.herDesign
+      || item.herDesignImage
+      || ""
+  };
+}
+
 export default function AIWorkspace() {
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const {
     user,
@@ -182,6 +229,7 @@ export default function AIWorkspace() {
   // =====================================
   const [generationHistory, setGenerationHistory] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
+  const [activeGenerationId, setActiveGenerationId] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
 
   const composerRef =
@@ -346,6 +394,22 @@ export default function AIWorkspace() {
 
     loadPresets();
 
+  }, []);
+
+  useEffect(() => {
+    const fetchGenerationHistory = async () => {
+      try {
+        const res = await API.get("/generation/my-generations");
+        setGenerationHistory(
+          res.data.map(toWorkspaceHistoryItem)
+        );
+      } catch (err) {
+        console.log(err);
+        showError("Failed to fetch generation history");
+      }
+    };
+
+    fetchGenerationHistory();
   }, []);
 
   useEffect(() => {
@@ -910,21 +974,53 @@ export default function AIWorkspace() {
         // RECORD SESSION IN HISTORY
         // =====================================
         const currentPromptText = activeMode === "couple" ? couplePrompt : prompt;
-        const newSessionItem = {
-          id: Date.now().toString(),
-          mode: activeMode,
-          prompt: currentPromptText || "Custom Generation",
-          image: finalSingle || finalFront || finalHis,
-          frontImage: finalFront,
-          backImage: finalBack,
-          hisImage: finalHis,
-          herImage: finalHer,
+        const historyData = {
+          generationMode: activeMode,
+          designType: activeMode,
+          productType: responsePreferences.productType,
+          selectedColor: responsePreferences.selectedColor || responsePreferences.color,
+          color: responsePreferences.selectedColor || responsePreferences.color,
           preferences: responsePreferences,
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          prompt: currentPromptText || "Custom Generation",
+          designImage: finalSingle || finalFront || finalHis,
+          transparentDesign: finalSingle || "",
+          frontDesignImage: finalFront || "",
+          backDesignImage: finalBack || "",
+          frontTransparentDesign: finalFront || "",
+          backTransparentDesign: finalBack || "",
+          isCouple: activeMode === "couple",
+          hisDesign: finalHis || "",
+          herDesign: finalHer || "",
+          hisDesignImage: finalHis || "",
+          herDesignImage: finalHer || "",
+          sharedPrompt: activeMode === "couple" ? currentPromptText : ""
         };
+        let savedGeneration;
 
-        setGenerationHistory((prev) => [newSessionItem, ...prev]);
+        try {
+          const historyRes = await API.post(
+            "/generation/save",
+            historyData
+          );
+          savedGeneration = historyRes.data.generation;
+        } catch (historyErr) {
+          console.log("GENERATION HISTORY SAVE ERROR:", historyErr);
+          showError("Design generated, but could not save it to history.");
+        }
+
+        const newSessionItem = toWorkspaceHistoryItem(
+          savedGeneration || {
+            ...historyData,
+            id: Date.now().toString()
+          }
+        );
+
+        setGenerationHistory((prev) => [
+          newSessionItem,
+          ...prev.filter((item) => item.id !== newSessionItem.id)
+        ]);
         setActiveSessionId(newSessionItem.id);
+        setActiveGenerationId(savedGeneration?._id || null);
 
       } catch (err) {
         console.log("GENERATION ERROR:", err);
@@ -986,27 +1082,39 @@ export default function AIWorkspace() {
       setIsRefining(false);
       setGenerationStep("");
       setActiveSessionId(null);
+      setActiveGenerationId(null);
     };
 
   const handleRefine =
     async () => {
       try {
-        const targetImg = generatedImage || generatedFrontImage;
-        if (!targetImg) return;
+        const targetImages =
+          generationMode === "couple"
+            ? [generatedHisImage, generatedHerImage]
+            : generationMode === "double"
+              ? [generatedFrontImage, generatedBackImage]
+              : [generatedImage];
+        const imageFiles = await Promise.all(
+          targetImages
+            .filter(Boolean)
+            .map(async (imageUrl, index) => {
+              const blob = await fetch(imageUrl).then((response) => response.blob());
+              return new File(
+                [blob],
+                `current-design-${index + 1}.png`,
+                { type: blob.type || "image/png" }
+              );
+            })
+        );
 
-        const blob =
-          await fetch(targetImg)
-            .then((r) => r.blob());
+        if (imageFiles.length === 0) return;
 
-        const file =
-          new File(
-            [blob],
-            "current-design.png",
-            { type: blob.type || "image/png" }
-          );
-
-        setReferenceImages([file]);
-        setPrompt("");
+        setReferenceImages(imageFiles);
+        if (generationMode === "couple") {
+          setCouplePrompt("");
+        } else {
+          setPrompt("");
+        }
         setIsRefining(true);
 
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1022,8 +1130,9 @@ export default function AIWorkspace() {
     };
 
   // Restore session from history
-  const handleSelectHistorySession = (session) => {
+  const handleSelectHistorySession = useCallback((session) => {
     setActiveSessionId(session.id);
+    setActiveGenerationId(session._id || null);
     setGenerationMode(session.mode);
     if (session.mode === "couple") {
       setCouplePrompt(session.prompt);
@@ -1035,7 +1144,41 @@ export default function AIWorkspace() {
     setGeneratedBackImage(session.backImage || "");
     setGeneratedHisImage(session.hisImage || "");
     setGeneratedHerImage(session.herImage || "");
-  };
+    const restoredPreferences = normalizePreferences(
+      session.preferences || {
+        ...preferences,
+        designType: session.mode
+      }
+    );
+    setActiveGenerationPreferences(restoredPreferences);
+    setPrefDesignType(session.mode);
+    setPrefProductType(restoredPreferences.productType);
+    setPrefColor(restoredPreferences.selectedColor || restoredPreferences.color);
+    setSelectedColor(restoredPreferences.selectedColor || restoredPreferences.color);
+    setProductType(restoredPreferences.productType);
+    setHisColor(restoredPreferences.selectedColor || restoredPreferences.color);
+    setHerColor(restoredPreferences.selectedColor || restoredPreferences.color);
+    setConfirmedDesign(null);
+    setIsConfirmed(false);
+  }, [
+    preferences,
+    setPrefColor,
+    setPrefDesignType,
+    setPrefProductType
+  ]);
+
+  useEffect(() => {
+    const historyGeneration = location.state?.historyGeneration;
+    if (!historyGeneration) return;
+
+    handleSelectHistorySession(
+      toWorkspaceHistoryItem(historyGeneration)
+    );
+    navigate("/workspace", {
+      replace: true,
+      state: null
+    });
+  }, [location.state, navigate, handleSelectHistorySession]);
 
   const isCouple =
     generationMode === "couple";
@@ -1327,11 +1470,7 @@ export default function AIWorkspace() {
               />
 
               <ResultToolbar
-                onRefine={
-                  activeResultMode === "single"
-                    ? handleRefine
-                    : undefined
-                }
+                onRefine={handleRefine}
                 onRegenerate={
                   handleRegenerate
                 }
@@ -1414,6 +1553,8 @@ export default function AIWorkspace() {
 
 
               <SingleActions
+
+                generationId={activeGenerationId}
 
                 generatedImage={
                   generatedImage
@@ -1572,6 +1713,8 @@ productType={
 
               <CoupleActions
 
+                generationId={activeGenerationId}
+
                 generatedHisImage={
                   generatedHisImage
                 }
@@ -1714,6 +1857,8 @@ productType={
 
 
               <DoubleSideActions
+
+                generationId={activeGenerationId}
 
                 generatedFrontImage={
                   generatedFrontImage

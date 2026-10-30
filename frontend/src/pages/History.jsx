@@ -2,6 +2,7 @@ import {
   useEffect,
   useState
 } from "react";
+import { useNavigate } from "react-router-dom";
 
 import API from "../api";
 
@@ -17,6 +18,8 @@ import {
 
 
 export default function History() {
+
+  const navigate = useNavigate();
 
   const [generations,
     setGenerations] =
@@ -203,7 +206,13 @@ export default function History() {
       >
 
         {
-          generations.map(
+          generations.length === 0
+            ? (
+              <p className="rounded-2xl border border-[#2f2f2f] bg-[#171717] p-6 text-zinc-400">
+                Your generated designs will appear here.
+              </p>
+            )
+            : generations.map(
             (item) => (
 
               <div
@@ -398,40 +407,45 @@ export default function History() {
 
                   <div
                     className="
-                      text-2xl
-                      font-black
+                      min-w-0
                     "
                   >
 
-                    {
-                      item.isCouple
-                        ? "Couple Design"
-                        : (item.frontDesignImage && item.backDesignImage)
-                          ? "Double Side"
-                          : "Single Design"
-                    }
+                    <div className="text-xl font-black">
+                      {
+                        item.isCouple
+                          ? "Couple Design"
+                          : (item.frontDesignImage && item.backDesignImage)
+                            ? "Double Side"
+                            : "Single Design"
+                      }
+                    </div>
+                    <p className="mt-1 max-w-xl truncate text-sm font-normal text-zinc-400">
+                      {item.prompt || item.couplePrompt || "Generated design"}
+                    </p>
 
                   </div>
 
 
-                  {/* WISHLIST */}
-
-                  <button
-
-                    onClick={() =>
-                      addToWishlist(
-                        item
-                      )
-                    }
-
-                    className="
-                      text-pink-500
-                    "
-                  >
-
-                    <Heart />
-
-                  </button>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <button
+                      onClick={() =>
+                        navigate("/workspace", {
+                          state: { historyGeneration: item }
+                        })
+                      }
+                      className="rounded-full border border-cyan-500/40 px-4 py-2 text-sm text-cyan-200 transition hover:bg-cyan-500/10"
+                    >
+                      Edit with prompt
+                    </button>
+                    <button
+                      onClick={() => addToWishlist(item)}
+                      aria-label="Add design to wishlist"
+                      className="text-pink-500"
+                    >
+                      <Heart />
+                    </button>
+                  </div>
 
                 </div>
 

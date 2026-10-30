@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 
 import { getPricingKey } from "../../config/pricing";
-import { downloadDesignAndMockup4K } from "../../utils/upscaleImage";
 
 
 export default function SingleActions({
@@ -23,6 +22,8 @@ export default function SingleActions({
   designTransform,
 
   confirmedDesign,
+
+  generationId,
 
   setConfirmedDesign,
 
@@ -292,6 +293,8 @@ export default function SingleActions({
 
         const designData = {
 
+          ...(generationId ? { _id: generationId } : {}),
+
           generationMode:
             "single",
 
@@ -459,27 +462,6 @@ export default function SingleActions({
       }
     };
 
-
-  // =====================================
-  // UPSCALE TO 4K
-  // =====================================
-
-  const handleUpscale4K = async () => {
-    try {
-      const mockupUrl = getMockup(productType, selectedColor, selectedSide);
-      await downloadDesignAndMockup4K(
-        generatedImage,
-        mockupUrl,
-        designTransform,
-        productType,
-        `design-${productType}-${selectedSide}`
-      );
-      showToast("4K Design & Mockup Downloaded");
-    } catch (err) {
-      console.log(err);
-      showToast("Failed to download 4K files");
-    }
-  };
 
   // =====================================
   // ADD TO WISHLIST
@@ -689,22 +671,6 @@ export default function SingleActions({
           mt-4
         "
       >
-
-        {/* UPSCALE 4K */}
-
-        <button
-          onClick={handleUpscale4K}
-          className="
-            flex-1
-            bg-purple-500
-            hover:bg-purple-600
-            py-4
-            rounded-[24px]
-            font-bold
-          "
-        >
-          Upscale to 4K
-        </button>
 
         {/* CART */}
 

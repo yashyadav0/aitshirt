@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 
 import { getPricingKey } from "../../config/pricing";
-import { downloadDesignAndMockup4K } from "../../utils/upscaleImage";
 
 
 // =====================================
@@ -60,7 +59,7 @@ export default function DoubleSideActions({
   backTransform,
 
   confirmedDesign,
-
+  generationId,
   setConfirmedDesign,
 
   isConfirmed,
@@ -305,6 +304,8 @@ export default function DoubleSideActions({
         // =====================================
 
         const designData = {
+
+          ...(generationId ? { _id: generationId } : {}),
 
           generationMode:
             "double",
@@ -588,29 +589,6 @@ export default function DoubleSideActions({
       }
     };
 
-  // =====================================
-  // UPSCALE TO 4K
-  // =====================================
-
-  const handleUpscale4K = async () => {
-    try {
-      // For double-sided, download front design + front mockup
-      const mockupUrl = getMockup(productType, selectedColor, "front");
-      await downloadDesignAndMockup4K(
-        generatedFrontImage,
-        mockupUrl,
-        frontTransform,
-        productType,
-        `design-${productType}-double`
-      );
-      showToast("4K Design & Mockup Downloaded");
-    } catch (err) {
-      console.log(err);
-      showToast("Failed to download 4K files");
-    }
-  };
-
-
   return (
 
     <>
@@ -752,22 +730,6 @@ export default function DoubleSideActions({
           mt-4
         "
       >
-
-        {/* UPSCALE 4K */}
-
-        <button
-          onClick={handleUpscale4K}
-          className="
-            flex-1
-            bg-purple-500
-            hover:bg-purple-600
-            py-4
-            rounded-[24px]
-            font-bold
-          "
-        >
-          Upscale to 4K
-        </button>
 
         {/* CART */}
 
