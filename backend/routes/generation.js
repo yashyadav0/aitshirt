@@ -518,7 +518,10 @@ async function generateImage(
     );
 
 
-    return `data:image/png;base64,${imagePart.inlineData.data}`;
+    const mimeType =
+      imagePart.inlineData.mimeType || "image/png";
+
+    return `data:${mimeType};base64,${imagePart.inlineData.data}`;
 
   } catch (err) {
 
@@ -1095,23 +1098,18 @@ IMPORTANT:
         );
 
 
-        const fallbackSingleImage =
-          req.files && req.files.length > 0
-            ? await createReferenceFallbackSingle(
-                req.files,
-                preferences,
-                prompt
-              )
-            : await createFallbackSingleImage(
-                preferences,
-                prompt
-              );
-
         const imageUrl =
-          (await generateImage(
+          await generateImage(
             finalSinglePrompt,
             imageParts
-          )) || fallbackSingleImage;
+          );
+
+        if (!imageUrl) {
+          return res.status(502).json({
+            success: false,
+            error: "Image generation failed. Please try again."
+          });
+        }
 
 
         console.log(
@@ -1233,21 +1231,15 @@ ${doubleReferenceInstruction}
             )
           ]);
 
-        const frontImage =
-          frontResult
-          || await createFallbackSingleImage(
-            preferences,
-            prompt,
-            "front"
-          );
+        if (!frontResult || !backResult) {
+          return res.status(502).json({
+            success: false,
+            error: "Image generation failed. Please try again."
+          });
+        }
 
-        const backImage =
-          backResult
-          || await createFallbackSingleImage(
-            preferences,
-            prompt,
-            "back"
-          );
+        const frontImage = frontResult;
+        const backImage = backResult;
 
 
         console.log(
@@ -1333,23 +1325,18 @@ console.log(
 );
 
 
-const fallbackCoupleImage =
-  req.files && req.files.length > 0
-    ? await createReferenceFallbackCouple(
-        req.files,
-        preferences,
-        prompt
-      )
-    : await createFallbackCoupleImage(
-        preferences,
-        prompt
-      );
-
 const combinedImage =
-  (await generateImage(
+  await generateImage(
     finalCouplePrompt,
     imageParts
-  )) || fallbackCoupleImage;
+  );
+
+if (!combinedImage) {
+  return res.status(502).json({
+    success: false,
+    error: "Image generation failed. Please try again."
+  });
+}
 
 
 console.log(
