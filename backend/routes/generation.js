@@ -1053,9 +1053,7 @@ router.post(
 
 
         const enhancedPrompt =
-          await enhanceSinglePrompt(
-            preferencePrompt
-          );
+          preferencePrompt;
 
 
         console.log(
@@ -1288,11 +1286,9 @@ console.log(
 
 
 const enhancedPrompt =
-  await enhanceCouplePrompt(
-    buildPreferenceEnrichedPrompt(
-      prompt,
-      preferences
-    )
+  buildPreferenceEnrichedPrompt(
+    prompt,
+    preferences
   );
 
 

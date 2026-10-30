@@ -597,17 +597,17 @@ export default function AIWorkspace() {
           activeMode === "single"
         ) {
           setGenerationStep(
-            "Enhancing prompt..."
+            "Generating design..."
           );
         } else if (
           activeMode === "double"
         ) {
           setGenerationStep(
-            "Enhancing double-side prompt..."
+            "Generating double-sided design..."
           );
         } else {
           setGenerationStep(
-            "Enhancing couple prompt..."
+            "Generating couple design..."
           );
         }
 
