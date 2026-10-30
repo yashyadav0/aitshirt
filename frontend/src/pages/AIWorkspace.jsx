@@ -749,10 +749,8 @@ export default function AIWorkspace() {
         ) {
           finalSingle = res.data.imageUrl;
 
-          setGenerationStep(
-            "Removing background..."
-          );
-
+          window.setTimeout(() => {
+            void (async () => {
           try {
             const imageBlob =
               await fetch(
@@ -776,10 +774,6 @@ export default function AIWorkspace() {
                         "image/png"
                     }
                   );
-
-            setGenerationStep(
-              "Uploading design..."
-            );
 
             const uploadFormData =
               new FormData();
@@ -812,7 +806,8 @@ export default function AIWorkspace() {
             setGeneratedImage(finalSingle);
           }
 
-          setGenerationStep("");
+            })();
+          }, 0);
         }
 
         else if (
@@ -821,13 +816,9 @@ export default function AIWorkspace() {
           finalFront = res.data.frontImage;
           finalBack = res.data.backImage;
 
-          setGenerationStep("");
-
+          window.setTimeout(() => {
+            void (async () => {
           try {
-            setGenerationStep(
-              "Processing Front..."
-            );
-
             const frontArtwork =
               await processGeneratedImage(
                 res.data.frontImage,
@@ -838,10 +829,6 @@ export default function AIWorkspace() {
               finalFront = frontArtwork;
               setGeneratedFrontImage(finalFront);
             }
-
-            setGenerationStep(
-              "Processing Back..."
-            );
 
             const backArtwork =
               await processGeneratedImage(
@@ -854,23 +841,20 @@ export default function AIWorkspace() {
               setGeneratedBackImage(finalBack);
             }
 
-            setGenerationStep("");
-
           } catch (bgErr) {
             console.log(bgErr);
-            setGenerationStep("");
           }
+            })();
+          }, 0);
         }
 
         else {
           finalHis = res.data.hisImage;
           finalHer = res.data.herImage;
 
+          window.setTimeout(() => {
+            void (async () => {
           try {
-            setGenerationStep(
-              "Removing his background..."
-            );
-
             const hisBlob =
               await fetch(
                 res.data.hisImage
@@ -918,10 +902,6 @@ export default function AIWorkspace() {
 
             finalHis = hisUploadRes.data.imageUrl;
             setGeneratedHisImage(finalHis);
-
-            setGenerationStep(
-              "Removing her background..."
-            );
 
             const herBlob =
               await fetch(
@@ -971,16 +951,15 @@ export default function AIWorkspace() {
             finalHer = herUploadRes.data.imageUrl;
             setGeneratedHerImage(finalHer);
 
-            setGenerationStep("");
-
           } catch (bgErr) {
             console.log(bgErr);
             finalHis = res.data.hisImage;
             finalHer = res.data.herImage;
             setGeneratedHisImage(finalHis);
             setGeneratedHerImage(finalHer);
-            setGenerationStep("");
           }
+            })();
+          }, 0);
         }
 
         // =====================================
