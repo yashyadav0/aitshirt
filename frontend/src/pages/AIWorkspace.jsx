@@ -696,6 +696,16 @@ export default function AIWorkspace() {
             }
           );
 
+        if (activeMode === "single") {
+          setGeneratedImage(res.data.imageUrl);
+        } else if (activeMode === "double") {
+          setGeneratedFrontImage(res.data.frontImage);
+          setGeneratedBackImage(res.data.backImage);
+        } else {
+          setGeneratedHisImage(res.data.hisImage);
+          setGeneratedHerImage(res.data.herImage);
+        }
+
         setIsRefining(false);
 
         if (res.data?.quota) {
@@ -738,7 +748,6 @@ export default function AIWorkspace() {
           activeMode === "single"
         ) {
           finalSingle = res.data.imageUrl;
-          setGeneratedImage(finalSingle);
 
           setGenerationStep(
             "Removing background..."
@@ -811,8 +820,6 @@ export default function AIWorkspace() {
         ) {
           finalFront = res.data.frontImage;
           finalBack = res.data.backImage;
-          setGeneratedFrontImage(finalFront);
-          setGeneratedBackImage(finalBack);
 
           setGenerationStep("");
 
@@ -858,8 +865,6 @@ export default function AIWorkspace() {
         else {
           finalHis = res.data.hisImage;
           finalHer = res.data.herImage;
-          setGeneratedHisImage(finalHis);
-          setGeneratedHerImage(finalHer);
 
           try {
             setGenerationStep(
