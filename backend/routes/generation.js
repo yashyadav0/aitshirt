@@ -388,10 +388,11 @@ async function generateImage(
     // GEMINI REQUEST
     // =====================================
 
+    const imageModel = "gemini-2.5-flash-image";
     const response =
       await axios.post(
 
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${process.env.GEMINI_API_KEY}`,
+`https://generativelanguage.googleapis.com/v1beta/models/${imageModel}:generateContent?key=${process.env.GEMINI_API_KEY}`,
 
         {
 
@@ -419,13 +420,9 @@ async function generateImage(
               "IMAGE"
             ],
 
-            temperature: 0.4,
-
-            topP: 0.95,
-
-            topK: 32,
-
-            maxOutputTokens: 512
+            imageConfig: {
+              aspectRatio: "1:1"
+            }
           }
         },
 
@@ -453,17 +450,7 @@ async function generateImage(
 
     if (!candidate) {
 
-      console.log(
-        "NO CANDIDATES"
-      );
-
-      console.log(
-        JSON.stringify(
-          response.data,
-          null,
-          2
-        )
-      );
+      console.error("GEMINI RETURNED NO CANDIDATES:", response.data);
 
       throw new Error(
         "No candidates returned"
@@ -495,17 +482,10 @@ async function generateImage(
 
     if (!imagePart) {
 
-      console.log(
-        "NO IMAGE PART FOUND"
-      );
-
-      console.log(
-        JSON.stringify(
-          parts,
-          null,
-          2
-        )
-      );
+      console.error("GEMINI RESPONSE DID NOT CONTAIN AN IMAGE:", {
+        finishReason: candidate.finishReason,
+        parts
+      });
 
       throw new Error(
         "No image generated"
@@ -524,26 +504,12 @@ async function generateImage(
     return `data:${mimeType};base64,${imagePart.inlineData.data}`;
 
   } catch (err) {
-
-    console.log(
-      "IMAGE GENERATION ERROR:"
-    );
-
-    console.log(
-      err.response?.data
-      || err.message
-    );
-
-    // More detailed error for debugging
-    if (err.response?.data) {
-      console.log("GEMINI API ERROR DETAILS:", JSON.stringify(err.response.data, null, 2));
-    }
-    if (err.response?.status) {
-      console.log("GEMINI API HTTP STATUS:", err.response.status);
-    }
-    if (err.code) {
-      console.log("ERROR CODE:", err.code);
-    }
+    console.error("GEMINI IMAGE GENERATION ERROR:", {
+      model: "gemini-2.5-flash-image",
+      status: err.response?.status,
+      code: err.code,
+      details: err.response?.data || err.message
+    });
 
     return null;
   }
