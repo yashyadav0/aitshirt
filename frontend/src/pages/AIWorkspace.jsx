@@ -667,7 +667,7 @@ export default function AIWorkspace({
         ) {
           const generationPrompt =
             activeMode === "single"
-              ? `${prompt}\n\nOutput restriction: create only the isolated flat print artwork as a standalone image asset. Do not depict a T-shirt, clothing, garment, mannequin, person, mockup, fabric folds, or background scene.`
+              ? `${prompt}\n\nOUTPUT ONLY THE PRINT GRAPHIC: create a single isolated flat apparel-print artwork on a transparent background. Do not draw, include, frame, or mock up a T-shirt, garment, clothing, person, mannequin, fabric, folds, or product scene. If the prompt mentions a shirt, interpret it only as the intended print surface, never as an object to draw.`
               : prompt;
 
           formData.append(
@@ -1497,7 +1497,6 @@ export default function AIWorkspace({
                     getMockup={getMockup}
                     productType={activeResultProductType}
                     selectedColor={resolvedPreferences.selectedColor}
-                    selectedSide={selectedSide}
                     designTransform={singleTransform}
                     onDesignTransformChange={setSingleTransform}
                   />
@@ -1505,8 +1504,6 @@ export default function AIWorkspace({
                   <SingleControls
                     selectedColor={resolvedPreferences.selectedColor}
                     setSelectedColor={setSelectedColor}
-                    selectedSide={selectedSide}
-                    setSelectedSide={setSelectedSide}
                     productType={resolvedPreferences.productType}
                     setPreferenceColor={setPrefColor}
                   />
@@ -1530,6 +1527,10 @@ export default function AIWorkspace({
 
                 selectedSide={
                   selectedSide
+                }
+
+                setSelectedSide={
+                  setSelectedSide
                 }
 
                 designTransform={singleTransform}

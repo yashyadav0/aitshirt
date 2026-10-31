@@ -23,6 +23,7 @@ export default function SingleActions({
   selectedColor,
 
   selectedSide,
+  setSelectedSide,
 
   designTransform,
 
@@ -195,9 +196,9 @@ export default function SingleActions({
 
         // Match preview defaults per product type
         const designStyles = {
-          tshirt: { top: "50%", width: "48%" },
+          tshirt: { top: "50%", width: "34%" },
           hoodie: { top: "42%", width: "27%" },
-          oversized: { top: "42%", width: "55%" },
+          oversized: { top: "42%", width: "45%" },
           kids: { top: "44%", width: "34%" }
         };
         const defaultStyle = designStyles[productType] || designStyles.tshirt;
@@ -627,6 +628,19 @@ export default function SingleActions({
         >
           <Heart size={19} />
           <span>Save</span>
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setSelectedSide(
+              selectedSide === "front" ? "back" : "front"
+            )
+          }
+          aria-label={`Show ${selectedSide === "front" ? "back" : "front"} of the shirt`}
+          title={`Show ${selectedSide === "front" ? "back" : "front"} of the shirt`}
+          className="workspace-action-button"
+        >
+          <span>{selectedSide === "front" ? "Front" : "Back"}</span>
         </button>
       </div>
 

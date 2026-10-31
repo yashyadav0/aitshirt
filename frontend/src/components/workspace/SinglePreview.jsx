@@ -19,9 +19,9 @@ export default function SinglePreview({
   // Memoize default style so it doesn't change on every render
   const defaultStyle = useMemo(() => {
     const designStyles = {
-      tshirt: { top: "50%", width: "48%" },
+      tshirt: { top: "50%", width: "34%" },
       hoodie: { top: "50%", width: "27%" },
-      oversized: { top: "50%", width: "55%" },
+      oversized: { top: "50%", width: "45%" },
       kids: { top: "50%", width: "34%" }
     };
     return designStyles[productType] || designStyles.tshirt;
@@ -55,6 +55,14 @@ export default function SinglePreview({
       setContainerRect(rect);
     }
   }, []);
+
+  const handleMockupLoad = useCallback((event) => {
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+    if (naturalWidth && naturalHeight && containerRef.current) {
+      containerRef.current.style.aspectRatio = `${naturalWidth} / ${naturalHeight}`;
+      window.requestAnimationFrame(measureContainer);
+    }
+  }, [measureContainer]);
 
   // Also try measuring on mount (handles cached images)
   useLayoutEffect(() => {
@@ -136,20 +144,10 @@ export default function SinglePreview({
 
       <div
         ref={containerRef}
-        className="
-          relative
-          overflow-hidden
-          rounded-2xl
-          sm:rounded-3xl
-          bg-[#171717]
-          border
-          border-[#2f2f2f]
-          aspect-square
-        "
+        className="workspace-mockup-canvas"
       >
 
         <img
-
           src={
             getMockup(
               productType,
@@ -157,16 +155,9 @@ export default function SinglePreview({
               selectedSide
             )
           }
-
-          alt="mockup"
-
-          className="
-            w-full
-            h-full
-            object-cover
-            block
-          "
-          onLoad={measureContainer}
+          alt={`${productType} ${selectedColor} shirt mockup`}
+          className="workspace-mockup-base"
+          onLoad={handleMockupLoad}
         />
 
         <Rnd
@@ -192,9 +183,9 @@ export default function SinglePreview({
           >
             <img
               src={generatedImage}
-              alt="design"
+              alt="Generated print artwork"
               draggable={false}
-              className="workspace-generated-artwork"
+              className="workspace-design-layer"
               style={{
                 width: "100%",
                 height: "100%",

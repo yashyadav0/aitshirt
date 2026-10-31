@@ -5,10 +5,6 @@ export default function SingleControls({
   selectedColor,
   setSelectedColor,
   setPreferenceColor,
-
-  selectedSide,
-  setSelectedSide,
-
   productType
 
 }) {
@@ -38,12 +34,9 @@ export default function SingleControls({
 
               className={`workspace-color-swatch ${
                 selectedColor === color.id
-
-                    ? "ring-2 ring-white scale-105"
-
-                    : ""
-                }
-              `}
+                  ? "ring-2 ring-cyan-400 scale-105"
+                  : ""
+              }`}
 
               style={{
                 backgroundColor:
@@ -57,33 +50,6 @@ export default function SingleControls({
 
       </div>
 
-
-      {/* FRONT / BACK */}
-
-      <button
-
-        onClick={() =>
-
-          setSelectedSide(
-
-            selectedSide === "front"
-
-              ? "back"
-
-              : "front"
-          )
-        }
-
-        className="workspace-side-toggle"
-      >
-
-        {selectedSide === "front" ? "Front" : "Back"}
-
-      </button>
-
-      <div className="workspace-color-help">
-        Drag the design to reposition • Drag corners to resize • Use the rotate handle to tilt
-      </div>
 
     </div>
   );

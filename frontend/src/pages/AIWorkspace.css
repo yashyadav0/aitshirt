@@ -136,7 +136,7 @@
 .workspace-single-result {
   width: 100%;
   max-width: 680px;
-  margin: 18px auto 34px;
+  margin: 16px auto 40px;
 }
 
 .workspace-single-preview-layout {
@@ -152,13 +152,31 @@
 
 .workspace-single-preview > div {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 2;
+  position: relative;
+  overflow: hidden;
+  background: #d4d4d4 !important;
   border: 1px solid #2f2f2f;
   border-radius: 22px !important;
 }
 
-.workspace-single-preview > div > img:first-child {
-  object-fit: contain !important;
+.workspace-mockup-base {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.workspace-design-layer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
 }
 
 .workspace-single-controls {
@@ -200,28 +218,14 @@
 }
 
 .workspace-color-swatch {
+  box-sizing: border-box;
   width: 34px !important;
   min-width: 34px !important;
   height: 34px !important;
   min-height: 34px !important;
   padding: 0 !important;
   border: 1px solid #a1a1aa !important;
-}
-
-.workspace-side-toggle {
-  width: 100% !important;
-  min-height: 34px !important;
-  padding: 4px !important;
-  border: 1px solid #52525b;
-  border-radius: 11px !important;
-  background: #27272a !important;
-  color: #f4f4f5 !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-}
-
-.workspace-color-help {
-  display: none;
+  border-radius: 50% !important;
 }
 
 .workspace-action-toolbar {
@@ -319,17 +323,19 @@
   gap: 8px;
   margin: 10px auto 0;
   padding: 0 18px;
-  border: 0;
+  border: 1px solid #3f3f46;
   border-radius: 14px;
-  background: #22c55e;
-  color: #fff;
+  background: #202020;
+  color: #e4e4e7;
   font-size: 13px;
   font-weight: 600;
   transition: background-color 150ms ease, opacity 150ms ease;
 }
 
 .workspace-confirm-button:hover {
-  background: #16a34a;
+  border-color: #52525b;
+  background: #292929;
+  color: #fff;
 }
 
 .workspace-confirm-button:disabled {
@@ -351,10 +357,16 @@
   color: #52525b;
 }
 
-.ai-workspace[data-workspace-theme="light"] .workspace-side-toggle {
+.ai-workspace[data-workspace-theme="light"] .workspace-confirm-button {
   border-color: #d4d4d8;
-  background: #f4f4f5 !important;
-  color: #3f3f46 !important;
+  background: #fff;
+  color: #3f3f46;
+}
+
+.ai-workspace[data-workspace-theme="light"] .workspace-confirm-button:hover {
+  border-color: #a1a1aa;
+  background: #f4f4f5;
+  color: #18181b;
 }
 
 .ai-workspace[data-workspace-theme="light"] .workspace-action-button {
@@ -424,17 +436,35 @@
     min-height: 29px !important;
   }
 
+  .workspace-single-result {
+    margin-bottom: 32px;
+  }
+
   .workspace-action-toolbar {
     gap: 7px;
     margin-top: 14px;
   }
 
   .workspace-action-button {
-    min-width: 58px;
+    min-width: 0;
     min-height: 50px;
+    flex: 1 1 0;
     flex-direction: column;
     gap: 3px;
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 4px;
+    font-size: 9px;
+  }
+
+  .workspace-cart-action {
+    display: flex;
+    flex: 1 1 0;
+  }
+
+  .workspace-cart-action > .workspace-action-button {
+    width: 100%;
+  }
+
+  .workspace-cart-action > .workspace-action-button > svg:last-child {
+    display: none;
   }
 }
