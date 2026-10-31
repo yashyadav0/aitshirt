@@ -44,9 +44,6 @@ import {
 import GenerationLoader
 from "../components/workspace/GenerationLoader";
 
-import UsageIndicator
-from "../components/workspace/UsageIndicator";
-
 import {
   hasQuota
 } from "../utils/quota";
@@ -90,10 +87,7 @@ import {
 } from "../config/mockups";
 
 import {
-  History as HistoryIcon,
-  Moon,
-  Sun,
-  Sparkles
+  History as HistoryIcon
 } from "lucide-react";
 import "./AIWorkspace.css";
 
@@ -137,8 +131,7 @@ function toWorkspaceHistoryItem(item) {
 }
 
 export default function AIWorkspace({
-  workspaceTheme,
-  setWorkspaceTheme
+  workspaceTheme
 }) {
 
   const location = useLocation();
@@ -1174,15 +1167,24 @@ export default function AIWorkspace({
 
   useEffect(() => {
     const historyGeneration = location.state?.historyGeneration;
-    if (!historyGeneration) return;
+    if (historyGeneration) {
+      handleSelectHistorySession(
+        toWorkspaceHistoryItem(historyGeneration)
+      );
+      navigate("/workspace", {
+        replace: true,
+        state: null
+      });
+      return;
+    }
 
-    handleSelectHistorySession(
-      toWorkspaceHistoryItem(historyGeneration)
-    );
-    navigate("/workspace", {
-      replace: true,
-      state: null
-    });
+    if (location.state?.openSessionHistory) {
+      setShowHistorySidebar(true);
+      navigate("/workspace", {
+        replace: true,
+        state: null
+      });
+    }
   }, [location.state, navigate, handleSelectHistorySession]);
 
   const isCouple =
@@ -1193,14 +1195,6 @@ export default function AIWorkspace({
 
   const setComposerValue =
     isCouple ? setCouplePrompt : setPrompt;
-
-  const toggleWorkspaceTheme = () => {
-    setWorkspaceTheme((currentTheme) => {
-      const nextTheme = currentTheme === "dark" ? "light" : "dark";
-      localStorage.setItem("aiWorkspaceTheme", nextTheme);
-      return nextTheme;
-    });
-  };
 
   return (
 
@@ -1220,30 +1214,18 @@ export default function AIWorkspace({
       "
     >
 
-      <button
-        type="button"
-        onClick={toggleWorkspaceTheme}
-        aria-label={`Switch to ${workspaceTheme === "dark" ? "light" : "dark"} mode`}
-        title={`Switch to ${workspaceTheme === "dark" ? "light" : "dark"} mode`}
-        className="fixed top-6 right-6 z-40 flex h-10 items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 text-xs font-medium text-zinc-300 shadow-xl transition hover:text-white"
-      >
-        {workspaceTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-        <span>{workspaceTheme === "dark" ? "Light mode" : "Dark mode"}</span>
-      </button>
-
-      {/* HISTORY TOGGLE BUTTON */}
-      {generationHistory.length > 0 && (
-        <button
-          onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-          className="fixed top-6 right-44 z-40 flex items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 py-2 text-xs font-medium text-zinc-300 shadow-xl transition hover:bg-[#222] hover:text-white max-sm:top-16 max-sm:right-4"
-        >
-          <HistoryIcon size={14} />
-          <span>Session History ({generationHistory.length})</span>
-        </button>
-      )}
+      <div className="workspace-design-header">
+        <DesignModePill
+          preferences={preferences}
+          setProductType={setPrefProductType}
+          setDesignType={setPrefDesignType}
+          onDesignTypeChange={handlePreferenceDesignTypeChange}
+          disabled={loading}
+        />
+      </div>
 
       {/* HISTORY SIDEBAR DRAWER */}
-      {showHistorySidebar && generationHistory.length > 0 && (
+      {showHistorySidebar && (
         <div className="fixed inset-y-0 right-0 z-50 w-80 border-l border-[#2f2f2f] bg-[#121212] p-4 shadow-2xl flex flex-col">
           <div className="flex items-center justify-between pb-3 border-b border-[#2f2f2f]">
             <div className="flex items-center gap-2 text-sm font-semibold text-white">
@@ -1258,7 +1240,7 @@ export default function AIWorkspace({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto mt-3 flex flex-col gap-2.5 pr-1">
-            {generationHistory.map((item) => {
+            {generationHistory.length > 0 ? generationHistory.map((item) => {
               const isActive = item.id === activeSessionId;
               return (
                 <button
@@ -1284,7 +1266,11 @@ export default function AIWorkspace({
                   </div>
                 </button>
               );
-            })}
+            }) : (
+              <p className="px-2 py-4 text-sm text-zinc-500">
+                Your generated designs will appear here.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -1359,16 +1345,6 @@ export default function AIWorkspace({
               }
             `}
           >
-
-            <DesignModePill
-              preferences={preferences}
-              setProductType={setPrefProductType}
-              setDesignType={setPrefDesignType}
-              onDesignTypeChange={
-                handlePreferenceDesignTypeChange
-              }
-              disabled={loading}
-            />
 
             {
               !hasGenerated && (
@@ -1921,9 +1897,6 @@ productType={
               onMic={startListening}
               inputRef={composerRef}
             />
-            <div className="mt-2 flex justify-center">
-              <UsageIndicator user={user || profile} />
-            </div>
           </div>
         </div>
 

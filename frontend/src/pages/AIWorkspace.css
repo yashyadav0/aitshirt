@@ -71,71 +71,19 @@
   box-shadow: none !important;
 }
 
-.app-shell[data-workspace-theme="light"] {
-  background-color: #f4f4f5;
-  color: #18181b;
-  transition: background-color 180ms ease, color 180ms ease;
+.workspace-design-header {
+  position: fixed;
+  z-index: 45;
+  top: 8px;
+  left: calc(50% + 140px);
+  width: max-content;
+  transform: translateX(-50%);
 }
 
-.app-sidebar-shell[data-workspace-theme="light"] aside {
-  border-color: #e4e4e7 !important;
-  background-color: #fafafa !important;
-  color: #27272a;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] header {
-  border-color: #e4e4e7 !important;
-  background-color: rgb(250 250 250 / 94%) !important;
-  color: #27272a;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="text-white"] {
-  color: #18181b !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="text-zinc-400"] {
-  color: #52525b !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="text-zinc-500"] {
-  color: #71717a !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="text-zinc-600"] {
-  color: #71717a !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="border-[#2f2f2f]"] {
-  border-color: #e4e4e7 !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="bg-[#0f0f0f]"],
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="bg-[#171717]"] {
-  background-color: #fafafa !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="bg-[#2f2f2f]"] {
-  background-color: #e4e4e7 !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="hover:bg-[#202020]"]:hover {
-  background-color: #e4e4e7 !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] aside [class~="hover:text-white"]:hover {
-  color: #18181b !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] header [class~="text-zinc-300"] {
-  color: #3f3f46 !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] header [class~="hover:bg-[#202020]"]:hover {
-  background-color: #e4e4e7 !important;
-}
-
-.app-sidebar-shell[data-workspace-theme="light"] header [class~="bg-[#0b0b0b]/95"] {
-  background-color: rgb(250 250 250 / 94%) !important;
+@media (max-width: 767px) {
+  .workspace-design-header {
+    left: 50%;
+  }
 }
 
 .workspace-single-result {

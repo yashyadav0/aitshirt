@@ -34,6 +34,11 @@ import {
   useAuth
 } from "../auth/AuthContext";
 
+import UsageIndicator
+  from "./workspace/UsageIndicator";
+
+import "./Sidebar.css";
+
 export default function Sidebar({ workspaceTheme = "dark" }) {
 
   const navigate =
@@ -93,6 +98,12 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
       to: "/workspace",
       label: "AI Workspace",
       icon: Sparkles
+    },
+    {
+      to: "/workspace",
+      label: "Session History",
+      icon: History,
+      state: { openSessionHistory: true }
     },
     {
       to: "/chat",
@@ -176,13 +187,16 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
         item.icon;
 
       const active =
-        location.pathname === item.to;
+        location.pathname === item.to &&
+        (!item.state ||
+          location.state?.openSessionHistory === item.state.openSessionHistory);
 
       return (
 
         <Link
-          key={item.to}
+          key={`${item.to}-${item.label}`}
           to={item.to}
+          state={item.state}
           onClick={() =>
             setOpen(false)
           }
@@ -236,7 +250,7 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
         {links.map(navLink)}
 
         {
@@ -250,6 +264,15 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
           )
         }
       </nav>
+
+      {profile && (
+        <div className="sidebar-usage-summary mx-3 my-3 rounded-2xl border border-[#2f2f2f] bg-[#171717] p-3">
+          <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Usage
+          </p>
+          <UsageIndicator user={profile} />
+        </div>
+      )}
 
       <div className="p-3">
         <div className="mb-3 rounded-3xl border border-[#2f2f2f] bg-[#171717] p-3">

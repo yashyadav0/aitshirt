@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   BrowserRouter,
@@ -70,19 +70,26 @@ import AdminRoute
 import ProtectedRoute
   from "./components/ProtectedRoute";
 
+import "./AppShell.css";
+
 function AppShell() {
   const [workspaceTheme, setWorkspaceTheme] = useState(
     () => {
-      const savedTheme = localStorage.getItem("aiWorkspaceTheme");
-      if (savedTheme === "light" || savedTheme === "dark") {
-        return savedTheme;
-      }
-
-      return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches
+      return window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
     }
   );
+
+  useEffect(() => {
+    const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateTheme = (event) => {
+      setWorkspaceTheme(event.matches ? "dark" : "light");
+    };
+
+    colorScheme.addEventListener("change", updateTheme);
+    return () => colorScheme.removeEventListener("change", updateTheme);
+  }, []);
 
   return (
     <ProtectedRoute>
@@ -99,7 +106,6 @@ function AppShell() {
               element={
                 <AIWorkspace
                   workspaceTheme={workspaceTheme}
-                  setWorkspaceTheme={setWorkspaceTheme}
                 />
               }
             />

@@ -1,0 +1,9 @@
+.app-shell {
+  min-height: 100vh;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.app-shell[data-workspace-theme="light"] {
+  background-color: #f4f4f5;
+  color: #18181b;
+}
