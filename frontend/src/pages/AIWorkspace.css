@@ -1,0 +1,67 @@
+.ai-workspace[data-workspace-theme="light"] {
+  background-color: #f4f4f5 !important;
+  color: #18181b !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#0b0b0b]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#0b0b0b]/95"] {
+  background-color: #f4f4f5 !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#121212]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#171717]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#1e1e1e]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#1f1f1f]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#141414]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#1a1a1a]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#1c1c1c]"] {
+  background-color: #ffffff !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#202020]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#222]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#232326]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#242424]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#2a2a2a]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#101010]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#222222]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#262626]"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-[#2f2f2f]"] {
+  background-color: #e4e4e7 !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="text-white"] {
+  color: #18181b !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-100"],
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-200"] {
+  color: #27272a !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-300"] {
+  color: #3f3f46 !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-400"],
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-500"],
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-600"],
+.ai-workspace[data-workspace-theme="light"] [class~="text-zinc-700"] {
+  color: #71717a !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="border-[#2f2f2f]"],
+.ai-workspace[data-workspace-theme="light"] [class~="border-[#222]"],
+.ai-workspace[data-workspace-theme="light"] [class~="divide-[#2f2f2f]"] {
+  border-color: #d4d4d8 !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] [class~="bg-green-500"][class~="text-white"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-emerald-500"][class~="text-white"],
+.ai-workspace[data-workspace-theme="light"] [class~="bg-red-500"][class~="text-white"] {
+  color: #ffffff !important;
+}
+
+.ai-workspace[data-workspace-theme="light"] .workspace-composer-dock {
+  background-color: rgb(244 244 245 / 95%) !important;
+}

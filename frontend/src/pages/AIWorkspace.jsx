@@ -89,7 +89,13 @@ import {
   getMockup as getStaticOrOverrideMockup
 } from "../config/mockups";
 
-import { History as HistoryIcon, Sparkles } from "lucide-react";
+import {
+  History as HistoryIcon,
+  Moon,
+  Sun,
+  Sparkles
+} from "lucide-react";
+import "./AIWorkspace.css";
 
 function toWorkspaceHistoryItem(item) {
   const mode =
@@ -231,6 +237,9 @@ export default function AIWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeGenerationId, setActiveGenerationId] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
+  const [workspaceTheme, setWorkspaceTheme] = useState(
+    () => localStorage.getItem("aiWorkspaceTheme") || "dark"
+  );
 
   const composerRef =
     useRef(null);
@@ -1181,16 +1190,25 @@ export default function AIWorkspace() {
   const setComposerValue =
     isCouple ? setCouplePrompt : setPrompt;
 
+  const toggleWorkspaceTheme = () => {
+    setWorkspaceTheme((currentTheme) => {
+      const nextTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("aiWorkspaceTheme", nextTheme);
+      return nextTheme;
+    });
+  };
 
   return (
 
     <div
+      data-workspace-theme={workspaceTheme}
       className="
+        ai-workspace
         min-h-screen
         bg-[#0b0b0b]
         text-white
         px-4
-        pb-20
+        pb-44
         pt-20
         md:px-8
         md:pt-8
@@ -1198,11 +1216,22 @@ export default function AIWorkspace() {
       "
     >
 
+      <button
+        type="button"
+        onClick={toggleWorkspaceTheme}
+        aria-label={`Switch to ${workspaceTheme === "dark" ? "light" : "dark"} mode`}
+        title={`Switch to ${workspaceTheme === "dark" ? "light" : "dark"} mode`}
+        className="fixed top-6 right-6 z-40 flex h-10 items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 text-xs font-medium text-zinc-300 shadow-xl transition hover:text-white"
+      >
+        {workspaceTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+        <span>{workspaceTheme === "dark" ? "Light mode" : "Dark mode"}</span>
+      </button>
+
       {/* HISTORY TOGGLE BUTTON */}
       {generationHistory.length > 0 && (
         <button
           onClick={() => setShowHistorySidebar(!showHistorySidebar)}
-          className="fixed top-6 right-6 z-40 flex items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 py-2 text-xs font-medium text-zinc-300 shadow-xl transition hover:bg-[#222] hover:text-white"
+          className="fixed top-6 right-44 z-40 flex items-center gap-2 rounded-full border border-[#2f2f2f] bg-[#171717] px-4 py-2 text-xs font-medium text-zinc-300 shadow-xl transition hover:bg-[#222] hover:text-white max-sm:top-16 max-sm:right-4"
         >
           <HistoryIcon size={14} />
           <span>Session History ({generationHistory.length})</span>
@@ -1310,7 +1339,7 @@ export default function AIWorkspace() {
             ${
               hasGenerated
                 ? "mb-6 sm:mb-8"
-                : "flex min-h-[calc(100vh-140px)] flex-col justify-center"
+                : "flex min-h-[calc(100vh-280px)] flex-col justify-center"
             }
           `}
         >
@@ -1357,29 +1386,6 @@ export default function AIWorkspace() {
                 </h1>
               )
             }
-
-            <div className={hasGenerated ? "mt-6" : ""}>
-              <PromptComposer
-                value={composerValue}
-                onChange={setComposerValue}
-                onSubmit={() => handleGenerate()}
-                loading={loading}
-                placeholder={
-                  isRefining
-                    ? "Describe what to change..."
-                    : "Ask anything"
-                }
-                referenceImages={referenceImages}
-                setReferenceImages={setReferenceImages}
-                isListening={isListening}
-                onMic={startListening}
-                inputRef={composerRef}
-              />
-            </div>
-
-            <div className="mt-3 flex justify-center">
-              <UsageIndicator user={user || profile} />
-            </div>
 
             {
               !hasGenerated && (
@@ -1433,16 +1439,6 @@ export default function AIWorkspace() {
                     ))
                   }
                 </div>
-              )
-            }
-
-            {
-              loading && (
-                <GenerationLoader
-                  generationStep={
-                    generationStep
-                  }
-                />
               )
             }
 
@@ -1909,6 +1905,37 @@ productType={
             </>
           )
         }
+
+        <div className="workspace-composer-dock fixed inset-x-0 bottom-0 z-30 border-t border-[#2f2f2f] bg-[#0b0b0b]/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl md:left-[280px] md:px-8">
+          <div className="mx-auto max-w-4xl">
+            {
+              loading && (
+                <GenerationLoader
+                  generationStep={generationStep}
+                />
+              )
+            }
+            <PromptComposer
+              value={composerValue}
+              onChange={setComposerValue}
+              onSubmit={() => handleGenerate()}
+              loading={loading}
+              placeholder={
+                isRefining
+                  ? "Describe what to change..."
+                  : "Ask anything"
+              }
+              referenceImages={referenceImages}
+              setReferenceImages={setReferenceImages}
+              isListening={isListening}
+              onMic={startListening}
+              inputRef={composerRef}
+            />
+            <div className="mt-2 flex justify-center">
+              <UsageIndicator user={user || profile} />
+            </div>
+          </div>
+        </div>
 
       </div>
 
