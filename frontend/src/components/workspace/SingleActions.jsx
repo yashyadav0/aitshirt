@@ -3,7 +3,12 @@ import React, {
 } from "react";
 
 import {
-  Heart
+  Check,
+  ChevronDown,
+  Heart,
+  Move,
+  Pencil,
+  ShoppingCart
 } from "lucide-react";
 
 import { getPricingKey } from "../../config/pricing";
@@ -38,7 +43,9 @@ export default function SingleActions({
 
   generationPreferences,
 
-  setSuccessMessage
+  setSuccessMessage,
+  onEditWithPrompt,
+  onReposition
 
 }) {
 
@@ -50,12 +57,16 @@ export default function SingleActions({
     setSelectedSize] =
       useState("M");
 
+  const [isSizePickerOpen, setIsSizePickerOpen] =
+    useState(false);
 
   const sizes = [
-
+    "XS",
     "S",
     "M",
-    "L"
+    "L",
+    "XL",
+    "XXL"
   ];
 
 
@@ -380,10 +391,13 @@ export default function SingleActions({
         showToast(
           "Design Confirmed"
         );
+        return designData;
 
       } catch (err) {
 
-        console.log(err);
+        console.error("Could not confirm design:", err);
+        showToast("Could not save this design. Please try again.");
+        return null;
       }
     };
 
@@ -396,6 +410,10 @@ export default function SingleActions({
     async () => {
 
       try {
+        const design =
+          confirmedDesign || await handleConfirmDesign();
+
+        if (!design) return;
 
         const token =
           localStorage.getItem(
@@ -418,28 +436,28 @@ export default function SingleActions({
               false,
 
             designImage:
-              confirmedDesign.designImage,
+              design.designImage,
 
             transparentDesign:
-              confirmedDesign.transparentDesign,
+              design.transparentDesign,
 
             prompt:
-              confirmedDesign.prompt,
+              design.prompt,
 
             color:
-              confirmedDesign.color,
+              design.color,
 
             selectedColor:
-              confirmedDesign.selectedColor,
+              design.selectedColor,
 
             size:
-              confirmedDesign.size,
+              selectedSize,
 
             side:
-              confirmedDesign.side,
+              design.side,
 
             designTransform:
-              confirmedDesign.designTransform
+              design.designTransform
           },
 
           {
@@ -455,10 +473,12 @@ export default function SingleActions({
         showToast(
           "Added To Cart"
         );
+        setIsSizePickerOpen(false);
 
       } catch (err) {
 
-        console.log(err);
+        console.error("Could not add design to cart:", err);
+        showToast("Could not add this design to cart. Please try again.");
       }
     };
 
@@ -471,6 +491,10 @@ export default function SingleActions({
     async () => {
 
       try {
+        const design =
+          confirmedDesign || await handleConfirmDesign();
+
+        if (!design) return;
 
         const token =
           localStorage.getItem(
@@ -485,28 +509,28 @@ export default function SingleActions({
           {
 
             designImage:
-              confirmedDesign.designImage,
+              design.designImage,
 
             transparentDesign:
-              confirmedDesign.transparentDesign,
+              design.transparentDesign,
 
             prompt:
-              confirmedDesign.prompt,
+              design.prompt,
 
             color:
-              confirmedDesign.color,
+              design.color,
 
             selectedColor:
-              confirmedDesign.selectedColor,
+              design.selectedColor,
 
             size:
-              confirmedDesign.size,
+              selectedSize,
 
             side:
-              confirmedDesign.side,
+              design.side,
 
             designTransform:
-              confirmedDesign.designTransform
+              design.designTransform
           },
 
           {
@@ -525,7 +549,8 @@ export default function SingleActions({
 
       } catch (err) {
 
-        console.log(err);
+        console.error("Could not add design to wishlist:", err);
+        showToast("Could not save this design to your wishlist.");
       }
     };
 
@@ -534,200 +559,84 @@ export default function SingleActions({
 
     <>
 
-      {/* SIZE */}
-
-      <div
-        className="
-          mt-4
-          sm:mt-6
-        "
-      >
-
-        <p
-          className="
-            text-white
-            font-semibold
-            mb-2
-            sm:mb-3
-            text-sm
-            sm:text-base
-          "
+      <div className="workspace-action-toolbar">
+        <button
+          type="button"
+          onClick={onEditWithPrompt}
+          aria-label="Edit with prompt"
+          title="Edit with prompt"
+          className="workspace-action-button"
         >
-
-          Select Size
-
-        </p>
-
-
-        <div
-          className="
-            flex
-            gap-2
-            sm:gap-3
-          "
+          <Pencil size={19} />
+          <span>Edit</span>
+        </button>
+        <button
+          type="button"
+          onClick={onReposition}
+          aria-label="Reposition design"
+          title="Drag the design on the mockup to reposition it"
+          className="workspace-action-button"
         >
-
-          {
-            sizes.map(
-              (size) => (
-
-                <button
-
-                  key={size}
-
-                  onClick={() =>
-                    setSelectedSize(
-                      size
-                    )
-                  }
-
-                  className={`...
-                    flex-1
-                    min-h-12
-                    py-2
-                    sm:py-3
-                    rounded-lg
-                    sm:rounded-[18px]
-                    border
-                    transition-all
-                    text-sm
-                    sm:text-base
-                    font-medium
-
-                    ${
-                      selectedSize === size
-
-                        ? `
-                          bg-cyan-500
-                          border-cyan-500
-                          text-white
-                        `
-
-                        : `
-                          border-white/20
-                          text-white
-                          hover:border-white/40
-                        `
-                    }
-                  `}
-                >
-
-                  {size}
-
-                </button>
-              )
-            )
-          }
-
+          <Move size={19} />
+          <span>Move</span>
+        </button>
+        <div className="workspace-cart-action">
+          <button
+            type="button"
+            onClick={() => setIsSizePickerOpen((open) => !open)}
+            aria-expanded={isSizePickerOpen}
+            aria-haspopup="dialog"
+            className="workspace-action-button"
+          >
+            <ShoppingCart size={19} />
+            <span>Cart</span>
+            <ChevronDown size={14} />
+          </button>
+          {isSizePickerOpen && (
+            <div className="workspace-size-picker" role="dialog" aria-label="Select a size">
+              <p>Select size</p>
+              <div className="workspace-size-options">
+                {sizes.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    aria-pressed={selectedSize === size}
+                    onClick={() => setSelectedSize(size)}
+                    className={selectedSize === size ? "is-selected" : ""}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="workspace-size-add"
+              >
+                Add {selectedSize} to cart
+              </button>
+            </div>
+          )}
         </div>
-
+        <button
+          type="button"
+          onClick={handleWishlist}
+          aria-label="Save to wishlist"
+          title="Save to wishlist"
+          className="workspace-action-button"
+        >
+          <Heart size={19} />
+          <span>Save</span>
+        </button>
       </div>
-
-
-      {/* CONFIRM */}
 
       <button
-
-        onClick={
-          handleConfirmDesign
-        }
-
-        disabled={
-          isConfirmed
-        }
-
-        className="
-          w-full
-          mt-6
-          bg-green-500
-          hover:bg-green-600
-          transition
-          text-white
-          py-4
-          rounded-[24px]
-          font-bold
-          text-lg
-          disabled:opacity-50
-        "
+        onClick={handleConfirmDesign}
+        disabled={isConfirmed}
+        className="workspace-confirm-button"
       >
-
-        {
-          isConfirmed
-
-            ? "Design Confirmed"
-
-            : "Confirm Design"
-        }
-
+        {isConfirmed ? <><Check size={17} /> Design Confirmed</> : "Confirm Design"}
       </button>
-
-
-      {/* ACTIONS */}
-
-      <div
-        className="
-          flex
-          gap-4
-          mt-4
-        "
-      >
-
-        {/* CART */}
-
-        <button
-
-          onClick={
-            handleAddToCart
-          }
-
-          disabled={
-            !isConfirmed
-          }
-
-          className="
-            flex-1
-            bg-cyan-500
-            py-4
-            rounded-[24px]
-            font-bold
-            disabled:opacity-50
-          "
-        >
-
-          Add To Cart
-
-        </button>
-
-
-        {/* WISHLIST */}
-
-        <button
-
-          onClick={
-            handleWishlist
-          }
-
-          disabled={
-            !isConfirmed
-          }
-
-          className="
-            w-20
-            border
-            border-white/20
-            rounded-[24px]
-            flex
-            items-center
-            justify-center
-            disabled:opacity-50
-          "
-        >
-
-          <Heart size={28} />
-
-        </button>
-
-      </div>
 
     </>
   );

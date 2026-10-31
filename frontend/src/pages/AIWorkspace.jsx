@@ -1482,63 +1482,31 @@ export default function AIWorkspace() {
 
             <>
 
-              <SinglePreview
+              <div className="workspace-single-result">
+                <div
+                  id="workspace-tshirt-preview"
+                  className="workspace-single-preview-layout"
+                >
+                  <SinglePreview
+                    generatedImage={generatedImage}
+                    mockupRef={mockupRef}
+                    getMockup={getMockup}
+                    productType={activeResultProductType}
+                    selectedColor={resolvedPreferences.selectedColor}
+                    selectedSide={selectedSide}
+                    designTransform={singleTransform}
+                    onDesignTransformChange={setSingleTransform}
+                  />
 
-                 generatedImage={
-                  generatedImage
-                }
-
-                mockupRef={
-                  mockupRef
-                }
-
-                getMockup={
-                  getMockup
-                 }
-
-                productType={
-                   activeResultProductType
-                }
-
-                selectedColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                selectedSide={
-                  selectedSide
-                }
-
-                designTransform={singleTransform}
-                onDesignTransformChange={setSingleTransform}
-              />
-
-
-              <SingleControls
-
-                selectedColor={
-                  resolvedPreferences.selectedColor
-                }
-
-                setSelectedColor={
-                  setSelectedColor
-                }
-
-                selectedSide={
-                  selectedSide
-                }
-
-                setSelectedSide={
-                  setSelectedSide
-                }
-
-                productType={
-                  resolvedPreferences.productType
-                }
-                setPreferenceColor={
-                  setPrefColor
-                }
-              />
-
+                  <SingleControls
+                    selectedColor={resolvedPreferences.selectedColor}
+                    setSelectedColor={setSelectedColor}
+                    selectedSide={selectedSide}
+                    setSelectedSide={setSelectedSide}
+                    productType={resolvedPreferences.productType}
+                    setPreferenceColor={setPrefColor}
+                  />
+                </div>
 
               <SingleActions
 
@@ -1595,7 +1563,24 @@ export default function AIWorkspace() {
                 generationPreferences={
                   resolvedPreferences
                 }
+
+                onEditWithPrompt={
+                  handleRefine
+                }
+
+                onReposition={() => {
+                  document
+                    .getElementById("workspace-tshirt-preview")
+                    ?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center"
+                    });
+                  setSuccessMessage(
+                    "Drag the artwork on the mockup to reposition it."
+                  );
+                }}
               />
+              </div>
 
             </>
           )
