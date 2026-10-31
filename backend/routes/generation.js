@@ -514,6 +514,10 @@ async function generateImage(
       }
     );
 
+    if (err.response?.status === 429) {
+      throw err;
+    }
+
     return null;
   }
 }
@@ -1356,26 +1360,25 @@ return res.json({
 
     } catch (err) {
 
-      console.log(
+      console.error(
         "GENERATION ERROR:"
       );
 
-      console.log(
+      console.error(
         err.response?.data
         || err.message
       );
 
-      // More detailed error for debugging
-      if (err.response?.data) {
-        console.log("ERROR DETAILS:", JSON.stringify(err.response.data, null, 2));
+      if (err.response?.status === 429) {
+        return res.status(429).json({
+          success: false,
+          error: "Image generation is temporarily unavailable because the Gemini free-tier quota or rate limit has been reached. Please try again later."
+        });
       }
-      if (err.response?.status) {
-        console.log("ERROR HTTP STATUS:", err.response.status);
+
+      if (err.stack) {
+        console.error("GENERATION ERROR STACK:", err.stack);
       }
-      if (err.code) {
-        console.log("ERROR CODE:", err.code);
-      }
-      console.log("ERROR STACK:", err.stack);
 
 
       return res.status(500)
