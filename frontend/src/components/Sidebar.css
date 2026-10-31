@@ -60,6 +60,32 @@
   flex-shrink: 0;
 }
 
+.sidebar-navigation {
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: #45454b transparent;
+  scrollbar-width: thin;
+}
+
+.sidebar-navigation::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-navigation::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-navigation::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background-color: #45454b;
+  background-clip: padding-box;
+}
+
+.sidebar-navigation::-webkit-scrollbar-thumb:hover {
+  background-color: #62626a;
+}
+
 .sidebar-usage-summary > div,
 .sidebar-usage-summary > span {
   display: flex;
@@ -76,6 +102,18 @@
 .app-sidebar-shell[data-workspace-theme="light"] .sidebar-usage-summary {
   border-color: #e4e4e7;
   background-color: #fff;
+}
+
+.app-sidebar-shell[data-workspace-theme="light"] .sidebar-navigation {
+  scrollbar-color: #c4c4cc transparent;
+}
+
+.app-sidebar-shell[data-workspace-theme="light"] .sidebar-navigation::-webkit-scrollbar-thumb {
+  background-color: #c4c4cc;
+}
+
+.app-sidebar-shell[data-workspace-theme="light"] .sidebar-navigation::-webkit-scrollbar-thumb:hover {
+  background-color: #a1a1aa;
 }
 
 .app-sidebar-shell[data-workspace-theme="light"] .sidebar-usage-summary > p {

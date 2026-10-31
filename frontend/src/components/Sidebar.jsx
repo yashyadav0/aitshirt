@@ -250,8 +250,19 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
-        {links.map(navLink)}
+      <nav className="sidebar-navigation flex-1 space-y-1 overflow-y-auto px-3">
+        {links.slice(0, 2).map(navLink)}
+
+        {profile && (
+          <div className="sidebar-usage-summary my-2 rounded-2xl border border-[#2f2f2f] bg-[#171717] p-3">
+            <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Usage
+            </p>
+            <UsageIndicator user={profile} />
+          </div>
+        )}
+
+        {links.slice(2).map(navLink)}
 
         {
           role === "admin" && (
@@ -264,15 +275,6 @@ export default function Sidebar({ workspaceTheme = "dark" }) {
           )
         }
       </nav>
-
-      {profile && (
-        <div className="sidebar-usage-summary mx-3 my-3 rounded-2xl border border-[#2f2f2f] bg-[#171717] p-3">
-          <p className="mb-2 px-1 text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Usage
-          </p>
-          <UsageIndicator user={profile} />
-        </div>
-      )}
 
       <div className="p-3">
         <div className="mb-3 rounded-3xl border border-[#2f2f2f] bg-[#171717] p-3">
