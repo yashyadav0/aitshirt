@@ -34,7 +34,7 @@ import {
   useAuth
 } from "../auth/AuthContext";
 
-export default function Sidebar() {
+export default function Sidebar({ workspaceTheme = "dark" }) {
 
   const navigate =
     useNavigate();
@@ -274,7 +274,10 @@ export default function Sidebar() {
 
   return (
 
-    <>
+    <div
+      className="app-sidebar-shell"
+      data-workspace-theme={workspaceTheme}
+    >
       <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-[#2f2f2f] bg-[#0b0b0b]/95 px-4 backdrop-blur md:hidden">
         <button
           onClick={() =>
@@ -329,6 +332,6 @@ export default function Sidebar() {
       >
         {sidebarContent}
       </aside>
-    </>
+    </div>
   );
 }

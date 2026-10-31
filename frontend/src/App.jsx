@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   BrowserRouter,
   Navigate,
@@ -69,17 +71,28 @@ import ProtectedRoute
   from "./components/ProtectedRoute";
 
 function AppShell() {
+  const [workspaceTheme, setWorkspaceTheme] = useState(
+    () => localStorage.getItem("aiWorkspaceTheme") || "dark"
+  );
 
   return (
     <ProtectedRoute>
-      <div className="flex w-full">
-        <Sidebar />
+      <div
+        className="app-shell flex w-full"
+        data-workspace-theme={workspaceTheme}
+      >
+        <Sidebar workspaceTheme={workspaceTheme} />
 
         <div className="min-w-0 flex-1 md:pl-[280px]">
           <Routes>
             <Route
               path="/workspace"
-              element={<AIWorkspace />}
+              element={
+                <AIWorkspace
+                  workspaceTheme={workspaceTheme}
+                  setWorkspaceTheme={setWorkspaceTheme}
+                />
+              }
             />
 
             <Route

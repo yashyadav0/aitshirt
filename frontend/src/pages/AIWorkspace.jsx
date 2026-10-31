@@ -136,7 +136,10 @@ function toWorkspaceHistoryItem(item) {
   };
 }
 
-export default function AIWorkspace() {
+export default function AIWorkspace({
+  workspaceTheme,
+  setWorkspaceTheme
+}) {
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -237,10 +240,6 @@ export default function AIWorkspace() {
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [activeGenerationId, setActiveGenerationId] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
-  const [workspaceTheme, setWorkspaceTheme] = useState(
-    () => localStorage.getItem("aiWorkspaceTheme") || "dark"
-  );
-
   const composerRef =
     useRef(null);
 
