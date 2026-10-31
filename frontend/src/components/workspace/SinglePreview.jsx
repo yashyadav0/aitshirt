@@ -131,10 +131,7 @@ export default function SinglePreview({
   return (
 
     <div
-      className="
-        mt-6
-        sm:mt-10
-      "
+      className="workspace-single-preview"
     >
 
       <div
@@ -197,6 +194,7 @@ export default function SinglePreview({
               src={generatedImage}
               alt="design"
               draggable={false}
+              className="workspace-generated-artwork"
               style={{
                 width: "100%",
                 height: "100%",

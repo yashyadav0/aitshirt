@@ -665,9 +665,14 @@ export default function AIWorkspace({
           activeMode === "single" ||
           activeMode === "double"
         ) {
+          const generationPrompt =
+            activeMode === "single"
+              ? `${prompt}\n\nOutput restriction: create only the isolated flat print artwork as a standalone image asset. Do not depict a T-shirt, clothing, garment, mannequin, person, mockup, fabric folds, or background scene.`
+              : prompt;
+
           formData.append(
             "prompt",
-            prompt
+            generationPrompt
           );
         } else {
           formData.append(

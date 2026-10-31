@@ -17,33 +17,11 @@ export default function SingleControls({
 
   return (
 
-    <div
-      className="
-        mt-4
-        sm:mt-5
-        bg-[#171717]
-        rounded-xl
-        sm:rounded-2xl
-        p-3
-        sm:p-4
-        border
-        border-[#2f2f2f]
-      "
-    >
+    <div className="workspace-single-controls">
 
       {/* COLOR PICKER */}
 
-      <div
-        className="
-          flex
-          justify-center
-          gap-2
-          sm:gap-3
-          mb-2
-          sm:mb-3
-          flex-wrap
-        "
-      >
+      <div className="workspace-color-swatches">
 
         {
 
@@ -51,25 +29,14 @@ export default function SingleControls({
 
             <button
 
-              key={color}
+              key={color.id}
 
             onClick={() => {
                 setSelectedColor(color.id);
                 setPreferenceColor?.(color.id);
               }}
 
-              className={`
-                min-w-11
-                min-h-11
-                sm:w-12
-                sm:h-12
-                rounded-full
-                border
-                border-[#3f3f46]
-                transition-all
-                flex-shrink-0
-
-                ${
+              className={`workspace-color-swatch ${
                 selectedColor === color.id
 
                     ? "ring-2 ring-white scale-105"
@@ -107,34 +74,14 @@ export default function SingleControls({
           )
         }
 
-        className="
-          w-full
-          min-h-12
-          rounded-xl
-          sm:rounded-2xl
-          bg-[#202020]
-          text-xs
-          sm:text-sm
-          font-medium
-          text-zinc-200
-          transition
-          hover:bg-[#2a2a2a]
-        "
+        className="workspace-side-toggle"
       >
 
         {selectedSide === "front" ? "Front" : "Back"}
 
       </button>
 
-      <div
-        className="
-          mt-2
-          sm:mt-3
-          text-xs
-          text-zinc-500
-          text-center
-        "
-      >
+      <div className="workspace-color-help">
         Drag the design to reposition • Drag corners to resize • Use the rotate handle to tilt
       </div>
 
