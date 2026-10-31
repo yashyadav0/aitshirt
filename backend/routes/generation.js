@@ -416,8 +416,8 @@ async function generateImage(
           generationConfig: {
 
             responseModalities: [
-              "TEXT",
-              "IMAGE"
+              "IMAGE",
+              "TEXT"
             ],
 
             imageConfig: {
@@ -504,12 +504,15 @@ async function generateImage(
     return `data:${mimeType};base64,${imagePart.inlineData.data}`;
 
   } catch (err) {
-    console.error("GEMINI IMAGE GENERATION ERROR:", {
-      model: "gemini-2.5-flash-image",
-      status: err.response?.status,
-      code: err.code,
-      details: err.response?.data || err.message
-    });
+    console.error(
+      "GEMINI IMAGE GENERATION ERROR:",
+      err.response?.data || err.message,
+      {
+        model: "gemini-2.5-flash-image",
+        status: err.response?.status,
+        code: err.code
+      }
+    );
 
     return null;
   }
