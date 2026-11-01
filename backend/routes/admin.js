@@ -74,8 +74,7 @@ router.post(
       const jwt = require("jsonwebtoken");
       const newToken = jwt.sign(
         { id: user._id, role: "admin" },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        process.env.JWT_SECRET
       );
 
       res.json({
