@@ -217,6 +217,8 @@ export default function AIWorkspace({
   const [isListening,
     setIsListening] =
     useState(false);
+  const recognitionRef =
+    useRef(null);
 
   const [selectedStyles,
     setSelectedStyles] =
@@ -491,6 +493,11 @@ export default function AIWorkspace({
 
   const startListening = () => {
 
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
     const SpeechRecognition =
       window.SpeechRecognition ||
       window.webkitSpeechRecognition;
@@ -506,31 +513,46 @@ export default function AIWorkspace({
 
     const recognition =
       new SpeechRecognition();
+    const setActivePrompt =
+      generationMode === "couple"
+        ? setCouplePrompt
+        : setPrompt;
+    const initialPrompt =
+      generationMode === "couple"
+        ? couplePrompt
+        : prompt;
 
     recognition.lang = "en-IN";
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognitionRef.current = recognition;
 
     recognition.onstart = () => {
       setIsListening(true);
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
       setIsListening(false);
     };
 
     recognition.onresult = (event) => {
-      const transcript =
-        event.results[0][0].transcript;
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript.trim())
+        .filter(Boolean)
+        .join(" ")
+        .trim();
 
-      if (
-        generationMode === "single" ||
-        generationMode === "double"
-      ) {
-        setPrompt(transcript);
-      } else {
-        setCouplePrompt(transcript);
-      }
+      const separator =
+        initialPrompt && !/\s$/.test(initialPrompt)
+          ? " "
+          : "";
+
+      setActivePrompt(
+        `${initialPrompt}${separator}${transcript}`
+      );
     };
 
     recognition.start();
