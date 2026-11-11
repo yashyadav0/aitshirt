@@ -219,6 +219,17 @@ export default function AIWorkspace({
     useState(false);
   const recognitionRef =
     useRef(null);
+  const manualListeningRef =
+    useRef(false);
+
+  useEffect(() => () => {
+    manualListeningRef.current = false;
+    const recognition = recognitionRef.current;
+    recognitionRef.current = null;
+    if (recognition) {
+      recognition.stop();
+    }
+  }, []);
 
   const [selectedStyles,
     setSelectedStyles] =
@@ -493,8 +504,10 @@ export default function AIWorkspace({
 
   const startListening = () => {
 
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (manualListeningRef.current) {
+      manualListeningRef.current = false;
+      setIsListening(false);
+      recognitionRef.current?.stop();
       return;
     }
 
@@ -526,16 +539,36 @@ export default function AIWorkspace({
     recognition.continuous = true;
     recognition.interimResults = true;
     recognitionRef.current = recognition;
+    manualListeningRef.current = true;
+    setIsListening(true);
 
     recognition.onstart = () => {
-      setIsListening(true);
+      if (manualListeningRef.current) {
+        setIsListening(true);
+      }
     };
 
     recognition.onend = () => {
-      if (recognitionRef.current === recognition) {
-        recognitionRef.current = null;
+      if (
+        recognitionRef.current !== recognition
+      ) {
+        return;
       }
-      setIsListening(false);
+
+      if (manualListeningRef.current) {
+        try {
+          recognition.start();
+        } catch (error) {
+          manualListeningRef.current = false;
+          recognitionRef.current = null;
+          setIsListening(false);
+          console.error("Could not resume speech recognition:", error);
+          alert("Speech recognition stopped unexpectedly. Please try again.");
+        }
+      } else {
+        recognitionRef.current = null;
+        setIsListening(false);
+      }
     };
 
     recognition.onresult = (event) => {
@@ -555,7 +588,15 @@ export default function AIWorkspace({
       );
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (error) {
+      manualListeningRef.current = false;
+      recognitionRef.current = null;
+      setIsListening(false);
+      console.error("Could not start speech recognition:", error);
+      alert("Could not start speech recognition. Please try again.");
+    }
   };
 
   const handleGenerate =
